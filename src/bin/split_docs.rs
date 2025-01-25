@@ -53,14 +53,20 @@ fn main() {
 
                         if let Some(file_writer) = &mut file_writer {
                             // flush previous file content, before creating new one
-                            file_writer.flush().unwrap();
+                            file_writer
+                                .flush()
+                                .expect("file buffer should be fully flushed");
                         }
 
                         let file_path =
                             std::path::PathBuf::from("data/docs/").join(docid);
 
-                        std::fs::create_dir_all(file_path.parent().unwrap())
-                            .expect("failed to create data directory");
+                        std::fs::create_dir_all(
+                            file_path
+                                .parent()
+                                .expect("file should have valid parent dir"),
+                        )
+                        .expect("failed to create data directory");
 
                         let file = File::create(file_path)
                             .expect("failed to create file");
@@ -70,7 +76,7 @@ fn main() {
                     ESectionType::Author | ESectionType::Text => {
                         file_writer
                             .as_mut()
-                            .unwrap()
+                            .expect("file writer should be mutable")
                             .write_all(b"\n")
                             .expect("failed to write");
                     }
@@ -87,13 +93,13 @@ fn main() {
                     _default => {
                         file_writer
                             .as_mut()
-                            .unwrap()
+                            .expect("file writer should be mutable")
                             .write_all(line.as_bytes())
                             .expect("failed to write");
 
                         file_writer
                             .as_mut()
-                            .unwrap()
+                            .expect("file writer should be mutable")
                             .write_all(b"\n")
                             .expect("failed to write");
                     }

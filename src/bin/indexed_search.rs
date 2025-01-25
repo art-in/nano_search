@@ -11,10 +11,14 @@ fn main() {
     let index = build_index();
 
     print!("type search word: ");
-    std::io::stdout().flush().unwrap();
+    std::io::stdout()
+        .flush()
+        .expect("prompt should be fully flushed to stdout");
 
     let mut search_word = String::new();
-    std::io::stdin().read_line(&mut search_word).unwrap();
+    std::io::stdin()
+        .read_line(&mut search_word)
+        .expect("search word should be read from stdin");
 
     let search_word = search_word.trim();
     let search_word = utils::normalize_word(search_word);
@@ -39,18 +43,20 @@ fn build_index() -> HashMap<String, BTreeSet<u64>> {
     println!("indexing documents in folder: {}", dir_path.display());
 
     nano_search::utils::visit_dir_files(dir_path, &mut |path| {
-        let mut file = std::fs::File::open(path.clone()).unwrap();
+        let mut file =
+            std::fs::File::open(path.clone()).expect("file should exist");
 
         let mut buffer = String::new();
-        file.read_to_string(&mut buffer).unwrap();
+        file.read_to_string(&mut buffer)
+            .expect("file should contain valid unicode");
 
         let docid = path
             .file_name()
-            .unwrap()
+            .expect("filename should be extracted from path")
             .to_str()
-            .unwrap()
+            .expect("filename should be converted to string")
             .parse::<u64>()
-            .unwrap();
+            .expect("filename should be parsed to integer");
 
         let words: Vec<&str> = buffer.split(' ').collect();
 
