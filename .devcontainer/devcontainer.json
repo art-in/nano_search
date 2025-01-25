@@ -1,0 +1,17 @@
+{
+	"name": "nano-search",
+	"build": {
+	  "dockerfile": "Dockerfile"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"eamodio.gitlens",
+				"rust-lang.rust-analyzer",
+				"tamasfe.even-better-toml",
+				"fill-labs.dependi",
+				"mutantdino.resourcemonitor"
+			]
+		}
+	}
+  }

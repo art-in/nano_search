@@ -1,0 +1,18 @@
+{
+    "editor.formatOnSave": true,
+    // match default rust style
+    "editor.tabSize": 4,
+    "editor.semanticTokenColorCustomizations": {
+        "enabled": true,
+        "rules": {
+            "*.mutable": {
+                // do not underline mutable variables, because it's too much visual noise
+                "underline": false,
+            }
+        }
+    },
+    "resmon.show.cpufreq": false,
+    "rust-analyzer.showUnlinkedFileNotification": false,
+    "rust-analyzer.rustfmt.extraArgs": ["--config", "max_width=80"],
+    "rust-analyzer.check.command": "clippy"
+}
