@@ -1,5 +1,5 @@
 [package]
-name = "nano-search"
+name = "nano_search"
 version = "0.1.0"
 # TODO: change edition to 2024, as it soon will be released
 edition = "2021"

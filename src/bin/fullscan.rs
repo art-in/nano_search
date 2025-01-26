@@ -1,5 +1,3 @@
-use nano_search::utils;
-
 use std::io::{Read, Write};
 use std::path::Path;
 use std::time::Instant;
@@ -34,7 +32,7 @@ fn search(search_word: &str) -> Vec<u64> {
     let dir_path = Path::new("data/docs");
     let mut docids = std::collections::BTreeSet::new();
 
-    utils::visit_dir_files(dir_path, &mut |path| {
+    nano_search::utils::visit_dir_files(dir_path, &mut |path| {
         let mut file =
             std::fs::File::open(path.clone()).expect("doc file should exist");
 

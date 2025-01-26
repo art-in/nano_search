@@ -59,7 +59,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nano-search"
+name = "nano_search"
 version = "0.1.0"
 dependencies = [
  "rusty-hook",
