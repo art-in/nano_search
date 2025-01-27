@@ -1,7 +1,7 @@
 pub fn normalize_word(word: &str) -> String {
-    // lowercase
-    let word = word.to_lowercase();
-
     // remove non-alphabetic characters
-    word.replace(|c: char| !c.is_alphabetic(), "")
+    let word = word.replace(|c: char| !c.is_alphabetic(), "");
+
+    // make lowercase
+    word.to_lowercase()
 }

@@ -2,6 +2,7 @@ use std::{io::Write, time::Instant};
 
 fn main() {
     let index = nano_search::fulltext::index::build_index();
+    let stop_words = nano_search::data::stop_words::parse_stop_words();
 
     print!("type search word: ");
     std::io::stdout()
@@ -17,7 +18,11 @@ fn main() {
     let search_word = nano_search::utils::normalize_word(search_word);
 
     let start = Instant::now();
-    let docids = nano_search::fulltext::index::search(&search_word, &index);
+    let docids = nano_search::fulltext::search::search(
+        &search_word,
+        &index,
+        &stop_words,
+    );
     let search_duration = start.elapsed();
 
     print!("found docids: ");

@@ -7,6 +7,7 @@ fn main() {
 
     let queries = nano_search::data::query::get_queries();
     let index = nano_search::fulltext::index::build_index();
+    let stop_words = nano_search::data::stop_words::parse_stop_words();
 
     let mut precisions = Vec::new();
     let mut recalls = Vec::new();
@@ -16,8 +17,11 @@ fn main() {
     for query in queries {
         output.println("---");
         output.println(format!("query id: {}", query.id));
-        let found_docids =
-            nano_search::fulltext::index::search(&query.text, &index);
+        let found_docids = nano_search::fulltext::search::search(
+            &query.text,
+            &index,
+            &stop_words,
+        );
 
         let mut precise_docids: u64 = 0;
 
@@ -70,6 +74,12 @@ fn main() {
     let average_recall = recalls.iter().sum::<f64>() / recalls.len() as f64;
 
     output.println("===");
-    output.println(format!("average precision: {}", average_precision));
-    output.println(format!("average recall: {}", average_recall));
+    let average_precision_message =
+        format!("average precision: {}", average_precision);
+    let average_recall_message = format!("average recall: {}", average_recall);
+    output.println(&average_precision_message);
+    output.println(&average_recall_message);
+
+    println!("{average_precision_message}");
+    println!("{average_recall_message}");
 }
