@@ -1,9 +1,31 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::io::Read;
 use std::path::Path;
 
-pub fn build_index() -> HashMap<String, BTreeSet<u64>> {
-    let mut index: HashMap<String, BTreeSet<u64>> = HashMap::new();
+pub type Term = String;
+
+pub type DocId = u64;
+
+pub struct DocPosting {
+    pub docid: DocId,
+
+    // number of times this term appears in the doc
+    pub term_count: u64,
+
+    // total number of terms in this doc
+    pub total_terms_count: u64,
+}
+
+pub type TermPostingList = BTreeMap<DocId, DocPosting>;
+
+#[derive(Default)]
+pub struct Index {
+    pub total_docs_count: u64,
+    pub terms: HashMap<Term, TermPostingList>,
+}
+
+pub fn build_index() -> Index {
+    let mut index = Index::default();
 
     let dir_path = Path::new("data/docs");
     println!("indexing documents in folder: {}", dir_path.display());
@@ -12,8 +34,8 @@ pub fn build_index() -> HashMap<String, BTreeSet<u64>> {
         let mut file =
             std::fs::File::open(path.clone()).expect("file should exist");
 
-        let mut buffer = String::new();
-        file.read_to_string(&mut buffer)
+        let mut doc_content = String::new();
+        file.read_to_string(&mut doc_content)
             .expect("file should contain valid unicode");
 
         let docid = path
@@ -24,21 +46,46 @@ pub fn build_index() -> HashMap<String, BTreeSet<u64>> {
             .parse::<u64>()
             .expect("filename should be parsed to integer");
 
-        let words: Vec<&str> = buffer.split(' ').collect();
+        index.total_docs_count += 1;
 
-        for word in words {
-            let word = crate::utils::normalize_word(word);
+        let words: Vec<&str> = doc_content.split(' ').collect();
 
-            if word.is_empty() {
-                continue;
-            }
-
-            match index.get_mut(&word) {
-                Some(docids) => {
-                    docids.insert(docid);
+        let terms: Vec<String> = words
+            .iter()
+            .filter_map(|word| {
+                let term = crate::utils::normalize_word(word);
+                if term.is_empty() {
+                    None
+                } else {
+                    Some(term)
                 }
+            })
+            .collect();
+
+        for term in &terms {
+            match index.terms.get_mut(term) {
+                Some(posting_list) => match posting_list.get_mut(&docid) {
+                    Some(posting) => {
+                        posting.term_count += 1;
+                    }
+                    None => {
+                        let posting = DocPosting {
+                            docid,
+                            term_count: 1,
+                            total_terms_count: terms.len() as u64,
+                        };
+                        posting_list.insert(docid, posting);
+                    }
+                },
                 None => {
-                    index.insert(word, BTreeSet::from([docid]));
+                    let mut posting_list = TermPostingList::new();
+                    let posting = DocPosting {
+                        docid,
+                        term_count: 1,
+                        total_terms_count: terms.len() as u64,
+                    };
+                    posting_list.insert(docid, posting);
+                    index.terms.insert(term.clone(), posting_list);
                 }
             }
         }

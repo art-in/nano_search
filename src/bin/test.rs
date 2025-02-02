@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use nano_search::utils::Print;
 
 fn main() {
@@ -7,7 +9,9 @@ fn main() {
 
     let queries = nano_search::data::query::get_queries();
     let index = nano_search::fulltext::index::build_index();
-    let stop_words = nano_search::data::stop_words::parse_stop_words();
+
+    // let stop_words = nano_search::data::stop_words::parse_stop_words();
+    let stop_words = HashSet::new();
 
     let mut precisions = Vec::new();
     let mut recalls = Vec::new();
