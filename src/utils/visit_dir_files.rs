@@ -4,7 +4,13 @@ use std::{
 };
 
 pub fn visit_dir_files(path: &Path, cb: &mut dyn FnMut(PathBuf)) {
-    for e in read_dir(path).expect("dir should be readable") {
+    let dir = read_dir(path).unwrap_or_else(|_| {
+        panic!(
+            "dir {0} should exist",
+            path.to_str().expect("path should not be empty")
+        )
+    });
+    for e in dir {
         let path = e.expect("all dir entries should be accessible").path();
         if path.is_file() {
             cb(path);
