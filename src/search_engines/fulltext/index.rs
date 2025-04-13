@@ -1,10 +1,11 @@
 use std::collections::{BTreeMap, HashMap};
-use std::io::Read;
-use std::path::Path;
+
+use crate::model::{
+    doc::{Doc, DocId},
+    engine::IndexStats,
+};
 
 pub type Term = String;
-
-pub type DocId = u64;
 
 pub struct DocPosting {
     pub docid: DocId,
@@ -20,35 +21,15 @@ pub type TermPostingList = BTreeMap<DocId, DocPosting>;
 
 #[derive(Default)]
 pub struct Index {
-    pub total_docs_count: u64,
     pub terms: HashMap<Term, TermPostingList>,
+    pub stats: IndexStats,
 }
 
-pub fn build_index() -> Index {
+pub fn build_index(docs: &mut dyn Iterator<Item = Doc>) -> Index {
     let mut index = Index::default();
 
-    let dir_path = Path::new("data/docs");
-    println!("indexing documents in folder: {}", dir_path.display());
-
-    crate::utils::visit_dir_files(dir_path, &mut |path| {
-        let mut file =
-            std::fs::File::open(path.clone()).expect("file should exist");
-
-        let mut doc_content = String::new();
-        file.read_to_string(&mut doc_content)
-            .expect("file should contain valid unicode");
-
-        let docid = path
-            .file_name()
-            .expect("filename should be extracted from path")
-            .to_str()
-            .expect("filename should be converted to string")
-            .parse::<u64>()
-            .expect("filename should be parsed to integer");
-
-        index.total_docs_count += 1;
-
-        let words: Vec<&str> = doc_content.split(' ').collect();
+    for doc in docs.into_iter() {
+        let words: Vec<&str> = doc.text.split(' ').collect();
 
         let terms: Vec<String> = words
             .iter()
@@ -64,32 +45,38 @@ pub fn build_index() -> Index {
 
         for term in &terms {
             match index.terms.get_mut(term) {
-                Some(posting_list) => match posting_list.get_mut(&docid) {
+                Some(posting_list) => match posting_list.get_mut(&doc.id) {
                     Some(posting) => {
                         posting.term_count += 1;
                     }
                     None => {
                         let posting = DocPosting {
-                            docid,
+                            docid: doc.id,
                             term_count: 1,
                             total_terms_count: terms.len() as u64,
                         };
-                        posting_list.insert(docid, posting);
+                        posting_list.insert(doc.id, posting);
+                        index.stats.max_posting_list_size = (posting_list.len()
+                            as u64)
+                            .max(index.stats.max_posting_list_size);
                     }
                 },
                 None => {
                     let mut posting_list = TermPostingList::new();
                     let posting = DocPosting {
-                        docid,
+                        docid: doc.id,
                         term_count: 1,
                         total_terms_count: terms.len() as u64,
                     };
-                    posting_list.insert(docid, posting);
+                    posting_list.insert(doc.id, posting);
                     index.terms.insert(term.clone(), posting_list);
+                    index.stats.posting_lists_count += 1;
                 }
             }
         }
-    });
+
+        index.stats.indexed_docs_count += 1;
+    }
 
     index
 }

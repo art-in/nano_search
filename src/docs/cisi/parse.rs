@@ -1,5 +1,10 @@
 use std::fs::File;
-use std::io::{BufRead, Write};
+use std::io::BufRead;
+use std::path::PathBuf;
+
+use crate::model::doc::Doc;
+
+use super::docs::CisiDocs;
 
 enum ESectionType {
     DocId,
@@ -16,14 +21,14 @@ enum ELineType {
 }
 
 // splits CISI.ALL file to separate doc files
-pub fn split_docs() {
-    let source_file =
-        File::open("data/source/CISI.ALL").expect("failed to open file");
+pub fn parse(file_path: PathBuf) -> CisiDocs {
+    let source_file = File::open(file_path).expect("cisi file should exist");
     let source_file_reader = std::io::BufReader::new(source_file);
 
-    let mut file_writer: Option<std::io::BufWriter<File>> = None;
-
     let mut current_line_type = ELineType::Unknown;
+
+    let mut cisi_docs: CisiDocs = CisiDocs { docs: Vec::new() };
+    let mut doc: Option<Doc> = None;
 
     for line in source_file_reader.lines().map_while(Result::ok) {
         if line.starts_with(".I") {
@@ -49,35 +54,18 @@ pub fn split_docs() {
                     ESectionType::DocId => {
                         let parts: Vec<_> = line.split(' ').collect();
                         let docid = parts[1];
+                        let docid = docid
+                            .parse::<u64>()
+                            .expect("docid in line should be valid integer");
 
-                        if let Some(file_writer) = &mut file_writer {
-                            // flush previous file content, before creating new one
-                            file_writer
-                                .flush()
-                                .expect("file buffer should be fully flushed");
+                        if let Some(doc) = doc.as_ref() {
+                            cisi_docs.docs.push(doc.clone());
                         }
 
-                        let file_path =
-                            std::path::PathBuf::from("data/docs/").join(docid);
-
-                        std::fs::create_dir_all(
-                            file_path
-                                .parent()
-                                .expect("file should have valid parent dir"),
-                        )
-                        .expect("failed to create data directory");
-
-                        let file = File::create(file_path)
-                            .expect("failed to create file");
-
-                        file_writer = Some(std::io::BufWriter::new(file));
-                    }
-                    ESectionType::Author | ESectionType::Text => {
-                        file_writer
-                            .as_mut()
-                            .expect("file writer should be mutable")
-                            .write_all(b"\n")
-                            .expect("failed to write");
+                        doc = Some(Doc {
+                            id: docid,
+                            text: String::new(),
+                        });
                     }
                     _default => {
                         // skip
@@ -90,20 +78,14 @@ pub fn split_docs() {
                         // skip
                     }
                     _default => {
-                        file_writer
-                            .as_mut()
-                            .expect("file writer should be mutable")
-                            .write_all(line.as_bytes())
-                            .expect("failed to write");
-
-                        file_writer
-                            .as_mut()
-                            .expect("file writer should be mutable")
-                            .write_all(b"\n")
-                            .expect("failed to write");
+                        doc.as_mut()
+                            .expect("doc should be initialized")
+                            .text += &line;
                     }
                 }
             }
         }
     }
+
+    cisi_docs
 }
