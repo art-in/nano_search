@@ -1,11 +1,12 @@
 use super::doc::{Doc, DocId};
 
 pub trait SearchEngine {
+    fn get_name(&self) -> &'static str;
     fn index_docs(
         &mut self,
         // TODO: use iterator over doc reference
         docs: &mut dyn Iterator<Item = Doc>,
-    ) -> IndexStats;
+    );
     fn search(&self, query: &str) -> Vec<DocId>;
 }
 

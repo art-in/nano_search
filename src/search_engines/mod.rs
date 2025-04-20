@@ -1,1 +1,2 @@
-pub mod fulltext;
+pub mod nano;
+pub mod tantivy;

@@ -28,7 +28,7 @@ pub struct Index {
 pub fn build_index(docs: &mut dyn Iterator<Item = Doc>) -> Index {
     let mut index = Index::default();
 
-    for doc in docs.into_iter() {
+    for doc in docs {
         let words: Vec<&str> = doc.text.split(' ').collect();
 
         let terms: Vec<String> = words

@@ -1,44 +1,54 @@
 use nano_search::{
     docs,
     model::{doc::DocsSource, engine::SearchEngine},
-    search_engines::fulltext::engine::FulltextSearchEngine,
+    search_engines::{
+        nano::engine::NanoSearchEngine, tantivy::engine::TantivySearchEngine,
+    },
 };
+use std::time::Instant;
 
 fn main() {
-    let mut engine = create_search_engine();
-    index(&mut engine, create_docs_source());
-    search("psychology", &engine);
+    let mut engines = create_search_engines();
+    for engine in &mut engines {
+        index(engine.as_mut(), create_docs_source());
+        search("psychology", engine.as_ref());
+    }
 }
 
 fn create_docs_source() -> impl DocsSource {
-    println!("creating docs source");
-    // docs::cisi::parse("data/cisi/CISI.ALL".into())
-    docs::simplewiki::parse("data/simplewiki/simplewiki.xml".into())
+    print!("creating docs source... ");
+    let now = Instant::now();
+    let res = docs::cisi::parse("data/cisi/CISI.ALL".into());
+    // let res = docs::simplewiki::parse("data/simplewiki/simplewiki.xml".into());
+    println!("done in {}ms", now.elapsed().as_millis());
+    res
 }
 
-fn create_search_engine() -> impl SearchEngine {
-    println!("creating search engine");
-    FulltextSearchEngine::default()
+fn create_search_engines() -> Vec<Box<dyn SearchEngine>> {
+    println!("creating search engines");
+    vec![
+        Box::new(TantivySearchEngine::default()),
+        Box::new(NanoSearchEngine::default()),
+    ]
 }
 
-fn index(engine: &mut impl SearchEngine, docs_source: impl DocsSource) {
-    println!("indexing docs");
-    let index_stats = engine.index_docs(&mut docs_source.into_iter());
+fn index(engine: &mut dyn SearchEngine, docs_source: impl DocsSource) {
+    print!("indexing docs with {} search engine... ", engine.get_name());
+    let now = Instant::now();
+    engine.index_docs(&mut docs_source.into_iter());
+    println!("done in {}ms", now.elapsed().as_millis());
+}
 
-    println!(
-        "index stats: indexed docs count = {}, \
-        posting lists count = {}, \
-        max posting list size = {}",
-        index_stats.indexed_docs_count,
-        index_stats.posting_lists_count,
-        index_stats.max_posting_list_size
+fn search(query: &str, engine: &dyn SearchEngine) {
+    print!(
+        "searching for query '{}' with {} search engine... ",
+        query,
+        engine.get_name()
     );
-}
 
-fn search(query: &str, engine: &impl SearchEngine) {
-    println!("searching for query: {}", query);
-
+    let now = Instant::now();
     let found_docids = engine.search(query);
+    println!("done in {}ms", now.elapsed().as_millis());
 
     print!("found doc IDs: ");
     for docid in found_docids {

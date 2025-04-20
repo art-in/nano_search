@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::model::{
     doc::{Doc, DocId},
-    engine::{IndexStats, SearchEngine},
+    engine::SearchEngine,
 };
 
 use super::{
@@ -11,24 +11,19 @@ use super::{
 };
 
 #[derive(Default)]
-pub struct FulltextSearchEngine {
+pub struct NanoSearchEngine {
     index: Option<Index>,
     stop_words: Option<HashSet<String>>,
 }
 
-impl SearchEngine for FulltextSearchEngine {
-    fn index_docs(
-        &mut self,
-        docs: &mut dyn Iterator<Item = Doc>,
-    ) -> IndexStats {
+impl SearchEngine for NanoSearchEngine {
+    fn get_name(&self) -> &'static str {
+        "nano"
+    }
+
+    fn index_docs(&mut self, docs: &mut dyn Iterator<Item = Doc>) {
         self.index = Some(build_index(docs));
         self.stop_words = Some(crate::stop_words::parse_stop_words());
-
-        self.index
-            .as_ref()
-            .expect("index should be initialized")
-            .stats
-            .clone()
     }
 
     fn search(&self, query: &str) -> Vec<DocId> {
