@@ -12,9 +12,9 @@ pub struct Query {
 
 pub fn get_queries() -> Vec<Query> {
     let queries_file =
-        std::fs::File::open("data/source/CISI.QRY").expect("file should exist");
+        std::fs::File::open("data/cisi/CISI.QRY").expect("file should exist");
     let query_docids_file =
-        std::fs::File::open("data/source/CISI.REL").expect("file should exist");
+        std::fs::File::open("data/cisi/CISI.REL").expect("file should exist");
 
     let mut queries = parse_queries(queries_file);
     parse_query_docids(query_docids_file, &mut queries);

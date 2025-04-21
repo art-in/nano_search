@@ -1,5 +1,5 @@
 use nano_search::{
-    docs,
+    docs::{self, cisi},
     model::{doc::DocsSource, engine::SearchEngine},
     search_engines::{
         nano::engine::NanoSearchEngine, tantivy::engine::TantivySearchEngine,
@@ -11,7 +11,15 @@ fn main() {
     let mut engines = create_search_engines();
     for engine in &mut engines {
         index(engine.as_mut(), create_docs_source());
-        search("psychology", engine.as_ref());
+    }
+
+    for engine in &engines {
+        println!("searching queries with {} search engine", engine.get_name());
+
+        let quality = cisi::search_quality::get_search_quality(engine.as_ref());
+
+        println!("precision avg = {}", quality.precision);
+        println!("recall avg = {}", quality.recall);
     }
 }
 
@@ -39,6 +47,7 @@ fn index(engine: &mut dyn SearchEngine, docs_source: impl DocsSource) {
     println!("done in {}ms", now.elapsed().as_millis());
 }
 
+#[allow(dead_code)]
 fn search(query: &str, engine: &dyn SearchEngine) {
     print!(
         "searching for query '{}' with {} search engine... ",
