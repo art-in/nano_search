@@ -2,7 +2,7 @@ ideas to what implement next:
 
 ---
 
-compare with elastic
+compare with other tantivy
 
 1. [done] find good dataset with text articles
 1. [done] parse and clean dataset
@@ -12,13 +12,11 @@ compare with elastic
     1. clean documents from special characters
     1. dump parsed documents as separate files for directory
 
-    RES: using `wikidump` crate for parsing wiki doc format. not optimal, as it loads entire simplewiki dump into memory, but ok for now
+    RES: using `wikidump` crate for parsing wiki doc format. not optimal, since it loads entire simplewiki dump into memory, but ok for now
 
-1. [in progress] install elasticsearch
-1. build elastic index from dataset
-1. build nano_search index from dataset
-1. find queries
-1. shoot queries to both indices and compare result
+1. [done] build tantivy index
+1. [done] build nano index
+1. [inprogress] run search query and compare result
 
 ---
 
