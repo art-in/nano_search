@@ -87,7 +87,7 @@ impl SearchEngine for TantivySearchEngine {
             .expect("index reader should be reloaded after writer commit");
     }
 
-    fn search(&self, query: &str) -> Vec<DocId> {
+    fn search(&self, query: &str, limit: u64) -> Vec<DocId> {
         let searcher = self.index_reader.searcher();
 
         let query_parser =
@@ -98,7 +98,7 @@ impl SearchEngine for TantivySearchEngine {
             .expect("query should be parsed");
 
         let top_docs = searcher
-            .search(&query, &TopDocs::with_limit(10))
+            .search(&query, &TopDocs::with_limit(limit as usize))
             .expect("should search");
 
         let mut result = Vec::new();

@@ -7,6 +7,8 @@ use crate::model::{
 
 pub type Term = String;
 
+// TODO: TF (term frequency) can be calculated as term_count/total_terms_count
+// and stored to posting on indexing stage, instead of search stage
 pub struct DocPosting {
     pub docid: DocId,
 

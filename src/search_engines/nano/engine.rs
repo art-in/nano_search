@@ -26,7 +26,7 @@ impl SearchEngine for NanoSearchEngine {
         self.stop_words = Some(crate::stop_words::parse_stop_words());
     }
 
-    fn search(&self, query: &str) -> Vec<DocId> {
+    fn search(&self, query: &str, limit: u64) -> Vec<DocId> {
         let index = self
             .index
             .as_ref()
@@ -37,6 +37,6 @@ impl SearchEngine for NanoSearchEngine {
             .as_ref()
             .expect("stop words should be initialized before search");
 
-        search(query, index, stop_words)
+        search(query, index, limit, stop_words)
     }
 }

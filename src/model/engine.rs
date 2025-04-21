@@ -7,7 +7,7 @@ pub trait SearchEngine {
         // TODO: use iterator over doc reference
         docs: &mut dyn Iterator<Item = Doc>,
     );
-    fn search(&self, query: &str) -> Vec<DocId>;
+    fn search(&self, query: &str, limit: u64) -> Vec<DocId>;
 }
 
 #[derive(Default, Clone)]

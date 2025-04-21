@@ -47,7 +47,7 @@ fn search(query: &str, engine: &dyn SearchEngine) {
     );
 
     let now = Instant::now();
-    let found_docids = engine.search(query);
+    let found_docids = engine.search(query, 10);
     println!("done in {}ms", now.elapsed().as_millis());
 
     print!("found doc IDs: ");
