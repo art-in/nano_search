@@ -30,6 +30,8 @@ pub struct Index {
 pub fn build_index(docs: &mut dyn Iterator<Item = Doc>) -> Index {
     let mut index = Index::default();
 
+    let mut docs_terms_count_sum: u64 = 0;
+
     for doc in docs {
         let words: Vec<&str> = doc.text.split(' ').collect();
 
@@ -44,6 +46,8 @@ pub fn build_index(docs: &mut dyn Iterator<Item = Doc>) -> Index {
                 }
             })
             .collect();
+
+        docs_terms_count_sum += terms.len() as u64;
 
         for term in &terms {
             match index.terms.get_mut(term) {
@@ -79,6 +83,9 @@ pub fn build_index(docs: &mut dyn Iterator<Item = Doc>) -> Index {
 
         index.stats.indexed_docs_count += 1;
     }
+
+    index.stats.terms_count_per_doc_avg =
+        docs_terms_count_sum as f64 / index.stats.indexed_docs_count as f64;
 
     index
 }

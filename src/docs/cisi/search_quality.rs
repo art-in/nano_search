@@ -10,7 +10,7 @@ pub struct SearchQuality {
     pub recall: f64,
 }
 
-pub fn get_search_quality(engine: &dyn SearchEngine) -> SearchQuality {
+pub fn search_and_calc_quality(engine: &dyn SearchEngine) -> SearchQuality {
     let queries = get_queries();
 
     let mut precision_sum: f64 = 0.0;

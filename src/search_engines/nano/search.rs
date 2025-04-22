@@ -1,4 +1,4 @@
-use super::index::Index;
+use super::{index::Index, scoring};
 use crate::model::doc::DocId;
 use std::collections::{HashMap, HashSet};
 
@@ -26,21 +26,22 @@ pub fn search(
 
         if let Some(term_posting_list) = index.terms.get(&term) {
             for (&docid, posting) in term_posting_list {
-                let tfidf = calc_tfidf(
+                let doc_term_relevance = scoring::calc_bm25(
                     posting.term_count,
                     posting.total_terms_count,
                     term_posting_list.len() as u64,
                     index.stats.indexed_docs_count,
+                    index.stats.terms_count_per_doc_avg,
                 );
 
                 if let Some(doc_candidate) = doc_candidates.get_mut(&docid) {
-                    doc_candidate.relevance += tfidf;
+                    doc_candidate.relevance += doc_term_relevance;
                 } else {
                     doc_candidates.insert(
                         docid,
                         DocCandidate {
                             id: docid,
-                            relevance: tfidf,
+                            relevance: doc_term_relevance,
                         },
                     );
                 }
@@ -64,21 +65,4 @@ pub fn search(
         }
     }
     res
-}
-
-// calculates term frequency – inverse document frequency.
-// using count-idf weighting scheme - tf*log(N/n)
-// https://en.wikipedia.org/wiki/Tf-idf
-fn calc_tfidf(
-    doc_term_count: u64,        // number of the term in the doc
-    doc_total_terms_count: u64, // total number of terms in the doc
-    docs_with_term_count: u64,  // number of docs containing this term
-    docs_total_count: u64,      // total number of docs in the index
-) -> f64 {
-    let term_frequency = doc_term_count as f64 / doc_total_terms_count as f64;
-
-    let inverted_doc_frequency =
-        f64::ln(docs_total_count as f64 / docs_with_term_count as f64);
-
-    term_frequency * inverted_doc_frequency
 }
