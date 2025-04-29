@@ -2,9 +2,12 @@ ideas to what implement next:
 
 ---
 
-compare with other tantivy
+compare with other search engines, e.g. elastic or quickwit/tantivy
 
 1. [done] find good dataset with text articles
+    RES:
+    - cisi
+    - simplewiki
 1. [done] parse and clean dataset
     1. find xml parser for rust
         - https://github.com/RazrFalcon/roxmltree
@@ -16,7 +19,7 @@ compare with other tantivy
 
 1. [done] build tantivy index
 1. [done] build nano index
-1. [inprogress] run search query and compare result
+1. [done] run search query and compare result
 
 ---
 

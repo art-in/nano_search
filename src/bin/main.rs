@@ -17,13 +17,9 @@ fn main() {
         index(engine.as_mut(), create_docs_source());
     }
 
-    let mut search_results = Vec::new();
     for engine in &engines {
-        let found_docids = search("psychology", engine.as_ref());
-        search_results.push(found_docids);
+        search_and_calc_quality(engine.as_ref());
     }
-
-    compare_search_results(&search_results);
 }
 
 fn create_docs_source() -> impl DocsSource {
@@ -51,15 +47,6 @@ fn index(engine: &mut dyn SearchEngine, docs_source: impl DocsSource) {
 }
 
 #[allow(dead_code)]
-fn search_and_calc_quality(engine: &dyn SearchEngine) {
-    println!("searching queries with {} search engine", engine.get_name());
-
-    let quality = cisi::search_quality::search_and_calc_quality(engine);
-
-    println!("precision avg = {}", quality.precision);
-    println!("recall avg = {}", quality.recall);
-}
-
 fn search(query: &str, engine: &dyn SearchEngine) -> Vec<DocId> {
     print!(
         "searching for query '{}' with {} search engine... ",
@@ -80,6 +67,44 @@ fn search(query: &str, engine: &dyn SearchEngine) -> Vec<DocId> {
     found_docids
 }
 
+#[allow(dead_code)]
+fn search_and_calc_quality(engine: &dyn SearchEngine) {
+    println!("searching queries with {} search engine", engine.get_name());
+
+    let quality = cisi::search_quality::search_and_calc_quality(engine);
+
+    println!("processed {} queries", quality.queries_count);
+
+    let precision_percs = quality
+        .precision_percs
+        .percentiles([0.5, 0.9, 1.0])
+        .expect("percentiles should be calculated")
+        .expect("percentiles should be calculated");
+
+    println!(
+        "precision: avg={:.1}%, p50={:.1}%, p90={:.1}%, p100={:.1}%",
+        quality.precision_avg * 100.0,
+        precision_percs[0] * 100.0,
+        precision_percs[1] * 100.0,
+        precision_percs[2] * 100.0
+    );
+
+    let recall_percs = quality
+        .recall_percs
+        .percentiles([0.5, 0.9, 1.0])
+        .expect("percentiles should be calculated")
+        .expect("percentiles should be calculated");
+
+    println!(
+        "recall: avg={:.1}%, p50={:.1}%, p90={:.1}%, p100={:.1}%",
+        quality.recall_avg * 100.0,
+        recall_percs[0] * 100.0,
+        recall_percs[1] * 100.0,
+        recall_percs[2] * 100.0
+    );
+}
+
+#[allow(dead_code)]
 fn compare_search_results(search_results: &[Vec<DocId>]) {
     if search_results.len() >= 2 {
         let compare_result =

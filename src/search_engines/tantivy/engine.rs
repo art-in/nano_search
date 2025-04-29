@@ -93,9 +93,7 @@ impl SearchEngine for TantivySearchEngine {
         let query_parser =
             QueryParser::for_index(&self.index, vec![self.text_field]);
 
-        let query = query_parser
-            .parse_query(query)
-            .expect("query should be parsed");
+        let (query, _) = query_parser.parse_query_lenient(query);
 
         let top_docs = searcher
             .search(&query, &TopDocs::with_limit(limit as usize))
