@@ -5,7 +5,8 @@ use nano_search::{
         engine::SearchEngine,
     },
     search_engines::{
-        nano::engine::NanoSearchEngine, tantivy::engine::TantivySearchEngine,
+        nano::{engine::NanoSearchEngine, index::model::IndexType},
+        tantivy::engine::TantivySearchEngine,
     },
     utils::compare_arrays,
 };
@@ -35,7 +36,7 @@ fn create_search_engines() -> Vec<Box<dyn SearchEngine>> {
     println!("creating search engines");
     vec![
         Box::new(TantivySearchEngine::default()),
-        Box::new(NanoSearchEngine::default()),
+        Box::new(NanoSearchEngine::new(IndexType::MemoryIndex)),
     ]
 }
 

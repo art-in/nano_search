@@ -1,4 +1,4 @@
-use super::{index::Index, scoring};
+use super::{index::model::Index, scoring};
 use crate::model::doc::DocId;
 use std::collections::{HashMap, HashSet};
 
@@ -9,7 +9,7 @@ struct DocCandidate {
 
 pub fn search(
     query: &str,
-    index: &Index,
+    index: &dyn Index,
     limit: u64,
     stop_words: &HashSet<String>,
 ) -> Vec<u64> {
@@ -24,23 +24,28 @@ pub fn search(
             continue;
         }
 
-        if let Some(term_posting_list) = index.terms.get(&term) {
-            for (&docid, posting) in term_posting_list {
+        if let Some(postings_iterator) = index.get_doc_postings_iterator(&term)
+        {
+            let postings_len = postings_iterator.postings_len() as u64;
+
+            for posting in postings_iterator {
                 let doc_term_relevance = scoring::calc_bm25(
                     posting.term_count,
                     posting.total_terms_count,
-                    term_posting_list.len() as u64,
-                    index.stats.indexed_docs_count,
-                    index.stats.terms_count_per_doc_avg,
+                    postings_len,
+                    index.get_index_stats().indexed_docs_count,
+                    index.get_index_stats().terms_count_per_doc_avg,
                 );
 
-                if let Some(doc_candidate) = doc_candidates.get_mut(&docid) {
+                if let Some(doc_candidate) =
+                    doc_candidates.get_mut(&posting.docid)
+                {
                     doc_candidate.relevance += doc_term_relevance;
                 } else {
                     doc_candidates.insert(
-                        docid,
+                        posting.docid,
                         DocCandidate {
-                            id: docid,
+                            id: posting.docid,
                             relevance: doc_term_relevance,
                         },
                     );

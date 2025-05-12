@@ -5,30 +5,40 @@ use crate::model::{
     engine::IndexStats,
 };
 
-pub type Term = String;
+use super::model::{DocPosting, DocPostingsIterator, Index, Term};
 
-// TODO: TF (term frequency) can be calculated as term_count/total_terms_count
-// and stored to posting on indexing stage, instead of search stage
-pub struct DocPosting {
-    pub docid: DocId,
-
-    // number of times this term appears in the doc
-    pub term_count: u64,
-
-    // total number of terms in this doc
-    pub total_terms_count: u64,
-}
-
-pub type TermPostingList = BTreeMap<DocId, DocPosting>;
+type TermPostingList = BTreeMap<DocId, DocPosting>;
 
 #[derive(Default)]
-pub struct Index {
-    pub terms: HashMap<Term, TermPostingList>,
-    pub stats: IndexStats,
+struct MemoryIndex {
+    terms: HashMap<Term, TermPostingList>,
+    stats: IndexStats,
 }
 
-pub fn build_index(docs: &mut dyn Iterator<Item = Doc>) -> Index {
-    let mut index = Index::default();
+impl Index for MemoryIndex {
+    fn get_doc_postings_iterator(
+        &self,
+        term: &Term,
+    ) -> Option<DocPostingsIterator> {
+        self.terms.get(term).map(|term_posting_list| {
+            DocPostingsIterator::new(
+                term_posting_list
+                    .iter()
+                    .map(|(_docid, posting)| posting.clone())
+                    .collect(),
+            )
+        })
+    }
+
+    fn get_index_stats(&self) -> IndexStats {
+        self.stats.clone()
+    }
+}
+
+pub fn build_memory_index(
+    docs: &mut dyn Iterator<Item = Doc>,
+) -> Box<dyn Index> {
+    let mut index = MemoryIndex::default();
 
     let mut docs_terms_count_sum: u64 = 0;
 
@@ -87,5 +97,5 @@ pub fn build_index(docs: &mut dyn Iterator<Item = Doc>) -> Index {
     index.stats.terms_count_per_doc_avg =
         docs_terms_count_sum as f64 / index.stats.indexed_docs_count as f64;
 
-    index
+    Box::new(index)
 }
