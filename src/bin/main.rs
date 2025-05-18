@@ -35,8 +35,10 @@ fn create_docs_source() -> impl DocsSource {
 fn create_search_engines() -> Vec<Box<dyn SearchEngine>> {
     println!("creating search engines");
     vec![
-        Box::new(TantivySearchEngine::default()),
-        Box::new(NanoSearchEngine::new(IndexType::MemoryIndex)),
+        Box::new(TantivySearchEngine::new("index_tantivy".into())),
+        Box::new(NanoSearchEngine::new(IndexType::FsIndex(
+            "index_nano".into(),
+        ))),
     ]
 }
 

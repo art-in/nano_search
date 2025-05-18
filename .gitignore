@@ -1,3 +1,5 @@
+# rust build artifacts
 /target
-/data/docs
-test_results
+
+# search index artifacts
+/index_*

@@ -24,15 +24,14 @@ pub fn search(
             continue;
         }
 
-        if let Some(postings_iterator) = index.get_doc_postings_iterator(&term)
+        if let Some((postings_count, postings_iterator)) =
+            index.get_doc_postings_for_term(&term)
         {
-            let postings_len = postings_iterator.postings_len() as u64;
-
             for posting in postings_iterator {
                 let doc_term_relevance = scoring::calc_bm25(
                     posting.term_count,
                     posting.total_terms_count,
-                    postings_len,
+                    postings_count,
                     index.get_index_stats().indexed_docs_count,
                     index.get_index_stats().terms_count_per_doc_avg,
                 );

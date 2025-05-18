@@ -35,7 +35,10 @@ impl SearchEngine for NanoSearchEngine {
     }
 
     fn index_docs(&mut self, docs: &mut dyn Iterator<Item = Doc>) {
-        self.index = Some(build_index(self.index_type, docs));
+        self.index = Some(
+            build_index(self.index_type.clone(), docs)
+                .expect("index should be built"),
+        );
         self.stop_words = Some(crate::stop_words::parse_stop_words());
     }
 

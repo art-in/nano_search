@@ -10,7 +10,7 @@ pub trait SearchEngine {
     fn search(&self, query: &str, limit: u64) -> Vec<DocId>;
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, PartialEq, Debug)]
 pub struct IndexStats {
     pub indexed_docs_count: u64,
     pub posting_lists_count: u64,

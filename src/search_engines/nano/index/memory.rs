@@ -1,43 +1,71 @@
-use std::collections::{BTreeMap, HashMap};
-
+use super::model::{DocPosting, Index, Term};
 use crate::model::{
     doc::{Doc, DocId},
     engine::IndexStats,
 };
-
-use super::model::{DocPosting, DocPostingsIterator, Index, Term};
+use std::collections::{BTreeMap, HashMap};
 
 type TermPostingList = BTreeMap<DocId, DocPosting>;
 
 #[derive(Default)]
-struct MemoryIndex {
-    terms: HashMap<Term, TermPostingList>,
-    stats: IndexStats,
+pub struct MemoryIndex {
+    pub terms: HashMap<Term, TermPostingList>,
+    pub stats: IndexStats,
+}
+
+pub struct MemoryDocPostingsIterator {
+    postings: Vec<DocPosting>,
+    position: usize,
+}
+
+impl MemoryDocPostingsIterator {
+    pub fn new(postings: Vec<DocPosting>) -> Self {
+        Self {
+            postings,
+            position: 0,
+        }
+    }
+}
+
+impl Iterator for MemoryDocPostingsIterator {
+    // TODO: iterate over references to avoid cloning
+    type Item = DocPosting;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.position < self.postings.len() {
+            let posting = self.postings[self.position].clone();
+            self.position += 1;
+            Some(posting)
+        } else {
+            None
+        }
+    }
 }
 
 impl Index for MemoryIndex {
-    fn get_doc_postings_iterator(
+    fn get_doc_postings_for_term(
         &self,
         term: &Term,
-    ) -> Option<DocPostingsIterator> {
+    ) -> Option<(u64, Box<dyn Iterator<Item = DocPosting>>)> {
         self.terms.get(term).map(|term_posting_list| {
-            DocPostingsIterator::new(
-                term_posting_list
-                    .iter()
-                    .map(|(_docid, posting)| posting.clone())
-                    .collect(),
+            (
+                term_posting_list.len() as u64,
+                Box::new(MemoryDocPostingsIterator::new(
+                    term_posting_list
+                        .iter()
+                        .map(|(_docid, posting)| posting.clone())
+                        .collect(),
+                )) as Box<dyn Iterator<Item = DocPosting>>,
             )
         })
     }
 
-    fn get_index_stats(&self) -> IndexStats {
-        self.stats.clone()
+    fn get_index_stats(&self) -> &IndexStats {
+        &self.stats
     }
 }
 
-pub fn build_memory_index(
-    docs: &mut dyn Iterator<Item = Doc>,
-) -> Box<dyn Index> {
+pub fn build_memory_index(docs: &mut dyn Iterator<Item = Doc>) -> MemoryIndex {
     let mut index = MemoryIndex::default();
 
     let mut docs_terms_count_sum: u64 = 0;
@@ -97,5 +125,5 @@ pub fn build_memory_index(
     index.stats.terms_count_per_doc_avg =
         docs_terms_count_sum as f64 / index.stats.indexed_docs_count as f64;
 
-    Box::new(index)
+    index
 }

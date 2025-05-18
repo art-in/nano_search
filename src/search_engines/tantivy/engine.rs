@@ -2,18 +2,15 @@ use crate::model::{
     doc::{Doc, DocId},
     engine::SearchEngine,
 };
+use std::path::PathBuf;
 use tantivy::{
     collector::TopDocs,
     query::QueryParser,
     schema::{Field, NumericOptions, Schema, Value, TEXT},
     Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument,
 };
-use tempfile::TempDir;
 
 pub struct TantivySearchEngine {
-    #[allow(dead_code)] // do not remove temp dir with index
-    index_dir: TempDir,
-
     index: Index,
     index_writer: IndexWriter,
     index_reader: IndexReader,
@@ -22,9 +19,11 @@ pub struct TantivySearchEngine {
     text_field: Field,
 }
 
-impl Default for TantivySearchEngine {
-    fn default() -> Self {
-        let index_dir = TempDir::new().expect("temp dir should be created");
+impl TantivySearchEngine {
+    pub fn new(index_dir: PathBuf) -> Self {
+        std::fs::remove_dir_all(&index_dir)
+            .expect("existing index dir should be removed");
+        std::fs::create_dir(&index_dir).expect("index dir should be created");
 
         let mut schema_builder = Schema::builder();
         schema_builder
@@ -52,7 +51,6 @@ impl Default for TantivySearchEngine {
             .expect("text field should be created");
 
         TantivySearchEngine {
-            index_dir,
             index,
             index_writer,
             index_reader,

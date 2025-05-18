@@ -10,7 +10,8 @@
 				"rust-lang.rust-analyzer",
 				"tamasfe.even-better-toml",
 				"fill-labs.dependi",
-				"mutantdino.resourcemonitor"
+				"mutantdino.resourcemonitor",
+				"ms-vscode.hexeditor"
 			]
 		}
 	}
