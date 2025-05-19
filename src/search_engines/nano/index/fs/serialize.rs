@@ -3,7 +3,10 @@ use crate::{
     model::engine::IndexStats, search_engines::nano::index::model::DocPosting,
 };
 use anyhow::Result;
-use std::io::{Read, Write};
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+};
 
 pub trait BinarySerializable: Sized {
     fn serialize(&self, write: &mut dyn Write) -> Result<()>;
@@ -15,7 +18,6 @@ impl BinarySerializable for u32 {
         write.write_all(&self.to_le_bytes())?;
         Ok(())
     }
-
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 4] = [0; 4];
         read.read_exact(&mut buf)?;
@@ -28,7 +30,6 @@ impl BinarySerializable for usize {
         write.write_all(&self.to_le_bytes())?;
         Ok(())
     }
-
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 8] = [0; 8];
         read.read_exact(&mut buf)?;
@@ -41,7 +42,6 @@ impl BinarySerializable for u64 {
         write.write_all(&self.to_le_bytes())?;
         Ok(())
     }
-
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 8] = [0; 8];
         read.read_exact(&mut buf)?;
@@ -54,7 +54,6 @@ impl BinarySerializable for f64 {
         write.write_all(&self.to_le_bytes())?;
         Ok(())
     }
-
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 8] = [0; 8];
         read.read_exact(&mut buf)?;
@@ -68,7 +67,6 @@ impl BinarySerializable for String {
         write.write_all(self.as_bytes())?;
         Ok(())
     }
-
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let string_length = usize::deserialize(read)?;
         let mut string = String::with_capacity(string_length);
@@ -86,7 +84,6 @@ impl BinarySerializable for IndexStats {
         self.terms_count_per_doc_avg.serialize(write)?;
         Ok(())
     }
-
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         Ok(IndexStats {
             indexed_docs_count: u64::deserialize(read)?,
@@ -126,5 +123,26 @@ impl BinarySerializable for TermPostingListFileAddress {
             start: u64::deserialize(read)?,
             end: u64::deserialize(read)?,
         })
+    }
+}
+
+impl BinarySerializable for HashMap<String, TermPostingListFileAddress> {
+    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+        self.len().serialize(write)?;
+        for (term, address) in self {
+            term.serialize(write)?;
+            address.serialize(write)?;
+        }
+        Ok(())
+    }
+    fn deserialize(read: &mut dyn Read) -> Result<Self> {
+        let terms_len = usize::deserialize(read)?;
+        let mut terms = HashMap::with_capacity(terms_len);
+        for _ in 0..terms_len {
+            let term = String::deserialize(read)?;
+            let address = TermPostingListFileAddress::deserialize(read)?;
+            terms.insert(term, address);
+        }
+        Ok(terms)
     }
 }

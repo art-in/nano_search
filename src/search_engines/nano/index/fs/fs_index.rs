@@ -101,47 +101,42 @@ pub fn build_fs_index(
 
     let mut terms_file = File::create(index_dir.join("terms"))
         .context("terms file should be created")?;
-    let mut postings_file = File::options()
-        .create(true)
-        .truncate(true)
-        .write(true)
-        .read(true)
-        .open(index_dir.join("postings"))
+    let mut postings_file = File::create(index_dir.join("postings"))
         .context("postings file should be created")?;
+    let mut index_stats_file = File::create(index_dir.join("stats"))
+        .context("stats file should be created")?;
 
-    memory_index.terms.len().serialize(&mut terms_file)?;
-
-    let mut terms_posting_lists = HashMap::new();
+    let mut terms = HashMap::new();
 
     for (term, posting_list) in &memory_index.terms {
-        let mut posting_list_file_address = TermPostingListFileAddress {
+        let mut address = TermPostingListFileAddress {
             postings_count: posting_list.len() as u64,
             start: 0,
             end: 0,
         };
 
-        posting_list_file_address.postings_count = posting_list.len() as u64;
-        posting_list_file_address.start = postings_file.stream_position()?;
-        for doc_posting in posting_list.values() {
-            doc_posting.serialize(&mut postings_file)?;
+        address.postings_count = posting_list.len() as u64;
+        address.start = postings_file.stream_position()?;
+        for posting in posting_list.values() {
+            posting.serialize(&mut postings_file)?;
         }
-        posting_list_file_address.end = postings_file.stream_position()?;
+        address.end = postings_file.stream_position()?;
 
-        terms_posting_lists
-            .insert(term.clone(), posting_list_file_address.clone());
-
-        term.serialize(&mut terms_file)?;
-        posting_list_file_address.serialize(&mut terms_file)?;
+        terms.insert(term.clone(), address.clone());
     }
 
-    let mut index_stats_file = File::create(index_dir.join("stats"))
-        .context("stats file should be created")?;
+    terms
+        .serialize(&mut terms_file)
+        .context("terms should be serialized to file")?;
 
     memory_index
         .stats
         .serialize(&mut index_stats_file)
         .context("stats should be serialized to file")?;
 
+    // TODO: opening from fs here only to make sure store/open cycle works.
+    // add SearchEngine::open_from_dir(), then build_fs_index() can just store
+    // index to fs and return already existing in-memory structures
     open_fs_index(index_dir)
 }
 
@@ -153,19 +148,10 @@ pub fn open_fs_index(index_dir: PathBuf) -> Result<FsIndex> {
     let mut index_stats_file = File::open(index_dir.join("stats"))
         .context("stats file should be created")?;
 
-    let terms_len = usize::deserialize(&mut terms_file)?;
-
-    let mut terms = HashMap::new();
-
-    for _ in 0..terms_len {
-        let term = String::deserialize(&mut terms_file)?;
-        let term_posting_list_address =
-            TermPostingListFileAddress::deserialize(&mut terms_file)?;
-        terms.insert(term, term_posting_list_address);
-    }
-
     Ok(FsIndex {
-        terms,
+        terms: HashMap::<String, TermPostingListFileAddress>::deserialize(
+            &mut terms_file,
+        )?,
         postings_file,
         stats: IndexStats::deserialize(&mut index_stats_file)?,
     })
