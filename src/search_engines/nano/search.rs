@@ -1,5 +1,6 @@
 use super::{index::model::Index, scoring};
 use crate::model::doc::DocId;
+use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 
 struct DocCandidate {
@@ -12,7 +13,7 @@ pub fn search(
     index: &dyn Index,
     limit: u64,
     stop_words: &HashSet<String>,
-) -> Vec<u64> {
+) -> Result<Vec<u64>> {
     let words: Vec<_> = query.split_whitespace().collect();
 
     let mut doc_candidates: HashMap<DocId, DocCandidate> = HashMap::new();
@@ -24,14 +25,14 @@ pub fn search(
             continue;
         }
 
-        if let Some((postings_count, postings_iterator)) =
-            index.get_doc_postings_for_term(&term)
+        if let Some(doc_postings_for_term) =
+            index.get_doc_postings_for_term(&term)?
         {
-            for posting in postings_iterator {
+            for posting in doc_postings_for_term.iterator {
                 let doc_term_relevance = scoring::calc_bm25(
                     posting.term_count,
                     posting.total_terms_count,
-                    postings_count,
+                    doc_postings_for_term.count,
                     index.get_index_stats().indexed_docs_count,
                     index.get_index_stats().terms_count_per_doc_avg,
                 );
@@ -68,5 +69,5 @@ pub fn search(
             break;
         }
     }
-    res
+    Ok(res)
 }

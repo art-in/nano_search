@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use nano_search::{
     docs::{self, cisi},
     model::{
@@ -11,43 +12,50 @@ use nano_search::{
 };
 use std::time::Instant;
 
-fn main() {
-    let mut engines = init_search_engines();
+fn main() -> Result<()> {
+    let mut engines = init_search_engines()?;
     for engine in &mut engines {
-        index(engine.as_mut(), create_docs_source());
+        index(engine.as_mut(), create_docs_source()?)?;
     }
 
     for engine in &engines {
-        search_and_calc_quality(engine.as_ref());
+        search_and_calc_quality(engine.as_ref())?;
     }
+
+    Ok(())
 }
 
-fn create_docs_source() -> impl DocsSource {
+fn create_docs_source() -> Result<impl DocsSource> {
     print!("creating docs source... ");
     let now = Instant::now();
-    let res = docs::cisi::parse("data/cisi/CISI.ALL".into());
+    let res = docs::cisi::parse("data/cisi/CISI.ALL".into())?;
     // let res = docs::simplewiki::parse("data/simplewiki/simplewiki.xml".into());
     println!("done in {}ms", now.elapsed().as_millis());
-    res
+    Ok(res)
 }
 
-fn init_search_engines() -> Vec<Box<dyn SearchEngine>> {
+fn init_search_engines() -> Result<Vec<Box<dyn SearchEngine>>> {
     println!("initializing search engines");
-    vec![
-        Box::new(TantivySearchEngine::create_index("index_tantivy")),
-        Box::new(NanoSearchEngine::create_index("index_nano")),
-    ]
+    Ok(vec![
+        Box::new(TantivySearchEngine::create_index("index_tantivy")?),
+        Box::new(NanoSearchEngine::create_index("index_nano")?),
+    ])
 }
 
-fn index(engine: &mut dyn SearchEngine, docs_source: impl DocsSource) {
+fn index(
+    engine: &mut dyn SearchEngine,
+    docs_source: impl DocsSource,
+) -> Result<()> {
     print!("indexing docs with {} search engine... ", engine.get_name());
     let now = Instant::now();
-    engine.index_docs(&mut docs_source.into_iter());
+    engine.index_docs(&mut docs_source.into_iter())?;
     println!("done in {}ms", now.elapsed().as_millis());
+
+    Ok(())
 }
 
 #[allow(dead_code)]
-fn search(query: &str, engine: &dyn SearchEngine) -> Vec<DocId> {
+fn search(query: &str, engine: &dyn SearchEngine) -> Result<Vec<DocId>> {
     print!(
         "searching for query '{}' with {} search engine... ",
         query,
@@ -55,7 +63,7 @@ fn search(query: &str, engine: &dyn SearchEngine) -> Vec<DocId> {
     );
 
     let now = Instant::now();
-    let found_docids = engine.search(query, 20);
+    let found_docids = engine.search(query, 20)?;
     println!("done in {}ms", now.elapsed().as_millis());
 
     print!("found doc IDs: ");
@@ -64,22 +72,22 @@ fn search(query: &str, engine: &dyn SearchEngine) -> Vec<DocId> {
     }
     println!();
 
-    found_docids
+    Ok(found_docids)
 }
 
 #[allow(dead_code)]
-fn search_and_calc_quality(engine: &dyn SearchEngine) {
+fn search_and_calc_quality(engine: &dyn SearchEngine) -> Result<()> {
     println!("searching queries with {} search engine", engine.get_name());
 
-    let quality = cisi::search_quality::search_and_calc_quality(engine);
+    let quality = cisi::search_quality::search_and_calc_quality(engine)?;
 
     println!("processed {} queries", quality.queries_count);
 
     let precision_percs = quality
         .precision_percs
         .percentiles([0.5, 0.9, 1.0])
-        .expect("percentiles should be calculated")
-        .expect("percentiles should be calculated");
+        .context("percentiles should be calculated")?
+        .context("percentiles should exist in result")?;
 
     println!(
         "precision: avg={:.1}%, p50={:.1}%, p90={:.1}%, p100={:.1}%",
@@ -92,8 +100,8 @@ fn search_and_calc_quality(engine: &dyn SearchEngine) {
     let recall_percs = quality
         .recall_percs
         .percentiles([0.5, 0.9, 1.0])
-        .expect("percentiles should be calculated")
-        .expect("percentiles should be calculated");
+        .context("percentiles should be calculated")?
+        .context("percentiles should exist in result")?;
 
     println!(
         "recall: avg={:.1}%, p50={:.1}%, p90={:.1}%, p100={:.1}%",
@@ -102,6 +110,8 @@ fn search_and_calc_quality(engine: &dyn SearchEngine) {
         recall_percs[1] * 100.0,
         recall_percs[2] * 100.0
     );
+
+    Ok(())
 }
 
 #[allow(dead_code)]

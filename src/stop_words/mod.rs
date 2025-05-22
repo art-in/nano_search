@@ -1,8 +1,9 @@
+use anyhow::{Context, Result};
 use std::{collections::HashSet, io::BufRead};
 
-pub fn parse_stop_words() -> HashSet<String> {
+pub fn parse_stop_words() -> Result<HashSet<String>> {
     let source_file = std::fs::File::open("data/stop_words/stop_words.txt")
-        .expect("file should exist");
+        .context("file should exist")?;
     let source_file_reader = std::io::BufReader::new(source_file);
 
     let mut stop_words = HashSet::new();
@@ -11,5 +12,5 @@ pub fn parse_stop_words() -> HashSet<String> {
         stop_words.insert(line);
     }
 
-    stop_words
+    Ok(stop_words)
 }

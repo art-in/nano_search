@@ -1,8 +1,9 @@
-use super::model::{DocPosting, Index, Term};
+use super::model::{DocPosting, DocPostingsForTerm, Index, Term};
 use crate::model::{
     doc::{Doc, DocId},
     engine::IndexStats,
 };
+use anyhow::Result;
 use std::collections::{BTreeMap, HashMap};
 
 type TermPostingList = BTreeMap<DocId, DocPosting>;
@@ -46,18 +47,23 @@ impl Index for MemoryIndex {
     fn get_doc_postings_for_term(
         &self,
         term: &Term,
-    ) -> Option<(u64, Box<dyn Iterator<Item = DocPosting>>)> {
-        self.terms.get(term).map(|term_posting_list| {
-            (
-                term_posting_list.len() as u64,
-                Box::new(MemoryDocPostingsIterator::new(
+    ) -> Result<Option<DocPostingsForTerm>> {
+        let term_posting_list = self.terms.get(term);
+
+        if let Some(term_posting_list) = term_posting_list {
+            Ok(Some(DocPostingsForTerm {
+                count: term_posting_list.len() as u64,
+                iterator: Box::new(MemoryDocPostingsIterator::new(
                     term_posting_list
                         .iter()
                         .map(|(_docid, posting)| posting.clone())
                         .collect(),
-                )) as Box<dyn Iterator<Item = DocPosting>>,
-            )
-        })
+                ))
+                    as Box<dyn Iterator<Item = DocPosting>>,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 
     fn get_index_stats(&self) -> &IndexStats {

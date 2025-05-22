@@ -1,6 +1,6 @@
-use std::path::PathBuf;
-
 use crate::model::{doc::DocId, engine::IndexStats};
+use anyhow::Result;
+use std::path::PathBuf;
 
 #[derive(Clone, PartialEq)]
 pub enum IndexType {
@@ -8,11 +8,16 @@ pub enum IndexType {
     FsIndex(PathBuf),
 }
 
+pub struct DocPostingsForTerm {
+    pub count: u64,
+    pub iterator: Box<dyn Iterator<Item = DocPosting>>,
+}
+
 pub trait Index {
     fn get_doc_postings_for_term(
         &self,
         term: &Term,
-    ) -> Option<(u64, Box<dyn Iterator<Item = DocPosting>>)>;
+    ) -> Result<Option<DocPostingsForTerm>>;
     fn get_index_stats(&self) -> &IndexStats;
 }
 

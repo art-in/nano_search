@@ -64,16 +64,16 @@ fn test_build_fs_index() -> Result<()> {
 fn test_build_index_with_type(index_type: IndexType) -> Result<()> {
     let index = build_index(&index_type, &mut TestDocsIterator::new())?;
 
-    let res = index.get_doc_postings_for_term(&"xxx".to_string());
+    let res = index.get_doc_postings_for_term(&"xxx".to_string())?;
     assert!(res.is_none(), "postings for term 'xxx' should not be found");
 
-    let (postings_count, posting_list) = index
-        .get_doc_postings_for_term(&"cat".to_string())
+    let doc_postings_for_term = index
+        .get_doc_postings_for_term(&"cat".to_string())?
         .context("postings for term 'cat' should be found")?;
 
-    assert_eq!(postings_count, 3);
+    assert_eq!(doc_postings_for_term.count, 3);
     assert_eq!(
-        posting_list.collect::<Vec<DocPosting>>(),
+        doc_postings_for_term.iterator.collect::<Vec<DocPosting>>(),
         Vec::from([
             DocPosting {
                 docid: 0,

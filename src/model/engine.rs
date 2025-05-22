@@ -1,13 +1,14 @@
 use super::doc::{Doc, DocId};
+use anyhow::Result;
 use std::path::Path;
 
 pub trait SearchEngine {
     fn get_name(&self) -> &'static str;
 
-    fn create_index(index_dir: impl AsRef<Path>) -> Self
+    fn create_index(index_dir: impl AsRef<Path>) -> Result<Self>
     where
         Self: Sized;
-    fn open_index(index_dir: impl AsRef<Path>) -> Self
+    fn open_index(index_dir: impl AsRef<Path>) -> Result<Self>
     where
         Self: Sized;
 
@@ -15,8 +16,8 @@ pub trait SearchEngine {
         &mut self,
         // TODO: use iterator over doc reference
         docs: &mut dyn Iterator<Item = Doc>,
-    );
-    fn search(&self, query: &str, limit: u64) -> Vec<DocId>;
+    ) -> Result<()>;
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>>;
 }
 
 #[derive(Default, PartialEq, Debug, Clone)]

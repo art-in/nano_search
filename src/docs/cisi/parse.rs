@@ -1,10 +1,9 @@
+use super::docs::CisiDocs;
+use crate::model::doc::Doc;
+use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::BufRead;
 use std::path::PathBuf;
-
-use crate::model::doc::Doc;
-
-use super::docs::CisiDocs;
 
 enum ESectionType {
     DocId,
@@ -21,8 +20,9 @@ enum ELineType {
 }
 
 // splits CISI.ALL file to separate doc files
-pub fn parse(file_path: PathBuf) -> CisiDocs {
-    let source_file = File::open(file_path).expect("cisi file should exist");
+pub fn parse(file_path: PathBuf) -> Result<CisiDocs> {
+    let source_file =
+        File::open(file_path).context("cisi file should exist")?;
     let source_file_reader = std::io::BufReader::new(source_file);
 
     let mut current_line_type = ELineType::Unknown;
@@ -56,7 +56,7 @@ pub fn parse(file_path: PathBuf) -> CisiDocs {
                         let docid = parts[1];
                         let docid = docid
                             .parse::<u64>()
-                            .expect("docid in line should be valid integer");
+                            .context("docid in line should be valid integer")?;
 
                         if let Some(doc) = doc.as_ref() {
                             cisi_docs.docs.push(doc.clone());
@@ -79,7 +79,7 @@ pub fn parse(file_path: PathBuf) -> CisiDocs {
                     }
                     _default => {
                         doc.as_mut()
-                            .expect("doc should be initialized")
+                            .context("doc should be initialized")?
                             .text += &line;
                     }
                 }
@@ -87,5 +87,5 @@ pub fn parse(file_path: PathBuf) -> CisiDocs {
         }
     }
 
-    cisi_docs
+    Ok(cisi_docs)
 }

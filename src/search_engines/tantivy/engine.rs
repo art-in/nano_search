@@ -2,6 +2,7 @@ use crate::model::{
     doc::{Doc, DocId},
     engine::SearchEngine,
 };
+use anyhow::{Context, Result};
 use std::path::Path;
 use tantivy::{
     collector::TopDocs,
@@ -20,33 +21,33 @@ pub struct TantivySearchEngine {
 }
 
 impl TantivySearchEngine {
-    fn new(index: Index) -> Self {
+    fn new(index: Index) -> Result<Self> {
         let index_writer: IndexWriter = index
             .writer(50_000_000)
-            .expect("index writer should be created");
+            .context("index writer should be created")?;
 
         let index_reader = index
             .reader_builder()
             .reload_policy(ReloadPolicy::Manual)
             .try_into()
-            .expect("should get index reader");
+            .context("should get index reader")?;
 
         let id_field = index
             .schema()
             .get_field("id")
-            .expect("id field should be created");
+            .context("id field should be created")?;
         let text_field = index
             .schema()
             .get_field("text")
-            .expect("text field should be created");
+            .context("text field should be created")?;
 
-        TantivySearchEngine {
+        Ok(TantivySearchEngine {
             index,
             index_writer,
             index_reader,
             id_field,
             text_field,
-        }
+        })
     }
 }
 
@@ -55,11 +56,11 @@ impl SearchEngine for TantivySearchEngine {
         "tantivy"
     }
 
-    fn create_index(index_dir: impl AsRef<Path>) -> Self {
+    fn create_index(index_dir: impl AsRef<Path>) -> Result<Self> {
         std::fs::remove_dir_all(index_dir.as_ref())
-            .expect("existing index dir should be removed");
+            .context("existing index dir should be removed")?;
         std::fs::create_dir(index_dir.as_ref())
-            .expect("index dir should be created");
+            .context("index dir should be created")?;
 
         let mut schema_builder = Schema::builder();
         schema_builder
@@ -68,19 +69,22 @@ impl SearchEngine for TantivySearchEngine {
         let schema = schema_builder.build();
 
         let index = Index::create_in_dir(index_dir, schema.clone())
-            .expect("index should be created in dir");
+            .context("index should be created in dir")?;
 
         TantivySearchEngine::new(index)
     }
 
-    fn open_index(index_dir: impl AsRef<Path>) -> Self {
+    fn open_index(index_dir: impl AsRef<Path>) -> Result<Self> {
         let index = Index::open_in_dir(index_dir)
-            .expect("index should be opened from dir");
+            .context("index should be opened from dir")?;
 
         TantivySearchEngine::new(index)
     }
 
-    fn index_docs(&mut self, docs: &mut dyn Iterator<Item = Doc>) {
+    fn index_docs(
+        &mut self,
+        docs: &mut dyn Iterator<Item = Doc>,
+    ) -> Result<()> {
         for doc in docs {
             let mut tantivy_doc = TantivyDocument::default();
             tantivy_doc.add_u64(self.id_field, doc.id);
@@ -88,19 +92,21 @@ impl SearchEngine for TantivySearchEngine {
 
             self.index_writer
                 .add_document(tantivy_doc)
-                .expect("doc should be added to index");
+                .context("doc should be added to index")?;
         }
 
         self.index_writer
             .commit()
-            .expect("indexer_writer should commit documents to index");
+            .context("indexer_writer should commit documents to index")?;
 
         self.index_reader
             .reload()
-            .expect("index reader should be reloaded after writer commit");
+            .context("index reader should be reloaded after writer commit")?;
+
+        Ok(())
     }
 
-    fn search(&self, query: &str, limit: u64) -> Vec<DocId> {
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>> {
         let searcher = self.index_reader.searcher();
 
         let query_parser =
@@ -110,20 +116,20 @@ impl SearchEngine for TantivySearchEngine {
 
         let top_docs = searcher
             .search(&query, &TopDocs::with_limit(limit as usize))
-            .expect("should search");
+            .context("should search")?;
 
         let mut result = Vec::new();
 
         for (_score, doc_address) in top_docs {
             let retrieved_doc: TantivyDocument =
-                searcher.doc(doc_address).expect("document");
+                searcher.doc(doc_address).context("document")?;
             let id = retrieved_doc
                 .get_first(self.id_field)
-                .expect("document should have id field");
+                .context("document should have id field")?;
 
-            result.push(id.as_u64().expect("id should be integer"));
+            result.push(id.as_u64().context("id should be integer")?);
         }
 
-        result
+        Ok(result)
     }
 }

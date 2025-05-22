@@ -3,7 +3,7 @@ use crate::{
     model::engine::IndexStats,
     search_engines::nano::index::{
         memory::MemoryIndex,
-        model::{DocPosting, Index, Term},
+        model::{DocPosting, DocPostingsForTerm, Index, Term},
     },
 };
 use anyhow::{Context, Result};
@@ -26,18 +26,23 @@ impl Index for FsIndex {
     fn get_doc_postings_for_term(
         &self,
         term: &Term,
-    ) -> Option<(u64, Box<dyn Iterator<Item = DocPosting>>)> {
-        self.terms.get(term).map(|term_posting_list_addr| {
-            (
-                term_posting_list_addr.postings_count,
-                Box::new(FsDocPostingsIterator::new(
-                    self.postings_file
-                        .try_clone()
-                        .expect("posting file handle should be clonned"),
+    ) -> Result<Option<DocPostingsForTerm>> {
+        let term_posting_list_addr = self.terms.get(term);
+
+        if let Some(term_posting_list_addr) = term_posting_list_addr {
+            Ok(Some(DocPostingsForTerm {
+                count: term_posting_list_addr.postings_count,
+                iterator: Box::new(FsDocPostingsIterator::new(
+                    self.postings_file.try_clone().context(
+                        "posting file handle should be clonned for iterator",
+                    )?,
                     term_posting_list_addr.clone(),
-                )) as Box<dyn Iterator<Item = DocPosting>>,
-            )
-        })
+                )?)
+                    as Box<dyn Iterator<Item = DocPosting>>,
+            }))
+        } else {
+            Ok(None)
+        }
     }
     fn get_index_stats(&self) -> &IndexStats {
         &self.stats
@@ -53,15 +58,15 @@ impl FsDocPostingsIterator {
     fn new(
         mut postings_file: File,
         address: TermPostingListFileAddress,
-    ) -> Self {
+    ) -> Result<Self> {
         postings_file
             .seek(std::io::SeekFrom::Start(address.start))
-            .expect("postings file position should be moved");
+            .context("postings file position should be moved")?;
 
-        FsDocPostingsIterator {
+        Ok(FsDocPostingsIterator {
             postings_file,
             end_position: address.end,
-        }
+        })
     }
 }
 

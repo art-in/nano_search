@@ -1,5 +1,6 @@
 use super::query::get_queries;
 use crate::model::{doc::DocId, engine::SearchEngine};
+use anyhow::Result;
 use std::collections::HashSet;
 
 // TODO: abstract test queries and merge with docs source into model/
@@ -18,8 +19,10 @@ pub struct QuerySearchQuality {
     pub recall: f64,
 }
 
-pub fn search_and_calc_quality(engine: &dyn SearchEngine) -> SearchQuality {
-    let queries = get_queries();
+pub fn search_and_calc_quality(
+    engine: &dyn SearchEngine,
+) -> Result<SearchQuality> {
+    let queries = get_queries()?;
 
     let mut precision_sum: f64 = 0.0;
     let mut recall_sum: f64 = 0.0;
@@ -28,7 +31,7 @@ pub fn search_and_calc_quality(engine: &dyn SearchEngine) -> SearchQuality {
     let mut recall_percs = inc_stats::Percentiles::new();
 
     for query in &queries {
-        let found_docids = engine.search(&query.text, 10);
+        let found_docids = engine.search(&query.text, 10)?;
 
         let quality =
             calc_search_result_quality(&found_docids, &query.expected_docids);
@@ -43,13 +46,13 @@ pub fn search_and_calc_quality(engine: &dyn SearchEngine) -> SearchQuality {
     let precision_avg = precision_sum / queries.len() as f64;
     let recall_avg = recall_sum / queries.len() as f64;
 
-    SearchQuality {
+    Ok(SearchQuality {
         queries_count: queries.len() as u64,
         precision_avg,
         recall_avg,
         precision_percs,
         recall_percs,
-    }
+    })
 }
 
 fn calc_search_result_quality(

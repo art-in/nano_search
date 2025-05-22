@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use std::{
     collections::{BTreeMap, HashSet},
     io::{BufRead, Read},
@@ -10,21 +11,21 @@ pub struct Query {
     pub expected_docids: HashSet<u64>,
 }
 
-pub fn get_queries() -> Vec<Query> {
-    let queries_file =
-        std::fs::File::open("data/cisi/CISI.QRY").expect("file should exist");
-    let query_docids_file =
-        std::fs::File::open("data/cisi/CISI.REL").expect("file should exist");
+pub fn get_queries() -> Result<Vec<Query>> {
+    let queries_file = std::fs::File::open("data/cisi/CISI.QRY")
+        .context("file should exist")?;
+    let query_docids_file = std::fs::File::open("data/cisi/CISI.REL")
+        .context("file should exist")?;
 
-    let mut queries = parse_queries(queries_file);
-    parse_query_docids(query_docids_file, &mut queries);
+    let mut queries = parse_queries(queries_file)?;
+    parse_query_docids(query_docids_file, &mut queries)?;
 
     let mut res = Vec::new();
     for (_, query) in queries {
         res.push(query);
     }
 
-    res
+    Ok(res)
 }
 
 enum ELineType {
@@ -48,7 +49,7 @@ enum ESectionType {
 //  optional section content:  <data>
 //  optional section content:  <data>
 //  etc.
-fn parse_queries<R: Read>(input: R) -> BTreeMap<u64, Query> {
+fn parse_queries<R: Read>(input: R) -> Result<BTreeMap<u64, Query>> {
     let lines = std::io::BufReader::new(input).lines();
 
     let mut queries: BTreeMap<u64, Query> = BTreeMap::new();
@@ -99,9 +100,9 @@ fn parse_queries<R: Read>(input: R) -> BTreeMap<u64, Query> {
                         let parts: Vec<_> = line.split(' ').collect();
                         query.id = parts
                             .get(1)
-                            .expect("query id should present on .I line")
+                            .context("query id should present on .I line")?
                             .parse::<u64>()
-                            .expect("query id should be integer");
+                            .context("query id should be integer")?;
 
                         current_query = Some(query);
                     }
@@ -115,7 +116,7 @@ fn parse_queries<R: Read>(input: R) -> BTreeMap<u64, Query> {
                     ESectionType::QueryText => {
                         let current_query = current_query
                             .as_mut()
-                            .expect("query should be initialized");
+                            .context("query should be initialized")?;
 
                         current_query.text += &line;
                         current_query.text += " ";
@@ -135,11 +136,14 @@ fn parse_queries<R: Read>(input: R) -> BTreeMap<u64, Query> {
         queries.insert(current_query.id, current_query);
     }
 
-    queries
+    Ok(queries)
 }
 
 // parses query docids from CISI.REL file
-fn parse_query_docids<R: Read>(input: R, queries: &mut BTreeMap<u64, Query>) {
+fn parse_query_docids<R: Read>(
+    input: R,
+    queries: &mut BTreeMap<u64, Query>,
+) -> Result<()> {
     let lines = std::io::BufReader::new(input).lines();
 
     for line in lines.map_while(Result::ok) {
@@ -147,22 +151,22 @@ fn parse_query_docids<R: Read>(input: R, queries: &mut BTreeMap<u64, Query>) {
 
         let query_id = parts
             .first()
-            .expect("first part should contain query id")
+            .context("first part should contain query id")?
             .parse::<u64>()
-            .expect("query id should be valid integer");
+            .context("query id should be valid integer")?;
 
         let docid = parts
             .get(1)
-            .expect("first part should contain docid")
+            .context("first part should contain docid")?
             .parse::<u64>()
-            .expect("docid should be valid integer");
+            .context("docid should be valid integer")?;
 
         queries
             .get_mut(&query_id)
-            .unwrap_or_else(|| {
-                panic!("query with id {} should exist", query_id)
-            })
+            .context("query should exist")?
             .expected_docids
             .insert(docid);
     }
+
+    Ok(())
 }

@@ -10,6 +10,7 @@ use crate::model::{
     doc::{Doc, DocId},
     engine::SearchEngine,
 };
+use anyhow::{Context, Result};
 use std::{collections::HashSet, path::Path};
 
 pub struct NanoSearchEngine {
@@ -23,46 +24,53 @@ impl SearchEngine for NanoSearchEngine {
         "nano"
     }
 
-    fn create_index(index_dir: impl AsRef<Path>) -> Self {
+    fn create_index(index_dir: impl AsRef<Path>) -> Result<Self> {
         std::fs::remove_dir_all(index_dir.as_ref())
-            .expect("existing index dir should be removed");
+            .context("existing index dir should be removed")?;
         std::fs::create_dir(index_dir.as_ref())
-            .expect("index dir should be created");
+            .context("index dir should be created")?;
 
-        NanoSearchEngine {
+        Ok(NanoSearchEngine {
             index_type: IndexType::FsIndex(index_dir.as_ref().to_path_buf()),
             index: None,
-            stop_words: Some(crate::stop_words::parse_stop_words()),
-        }
+            stop_words: Some(crate::stop_words::parse_stop_words()?),
+        })
     }
 
-    fn open_index(index_dir: impl AsRef<Path>) -> Self {
+    fn open_index(index_dir: impl AsRef<Path>) -> Result<Self> {
         let index_type = IndexType::FsIndex(index_dir.as_ref().to_path_buf());
-        let index = open_index(&index_type).expect("index should be opened");
+        let index =
+            open_index(&index_type).context("index should be opened")?;
 
-        NanoSearchEngine {
+        Ok(NanoSearchEngine {
             index_type,
             index: Some(index),
-            stop_words: Some(crate::stop_words::parse_stop_words()),
-        }
+            stop_words: Some(crate::stop_words::parse_stop_words()?),
+        })
     }
 
-    fn index_docs(&mut self, docs: &mut dyn Iterator<Item = Doc>) {
+    fn index_docs(
+        &mut self,
+        docs: &mut dyn Iterator<Item = Doc>,
+    ) -> Result<()> {
         self.index = Some(
-            build_index(&self.index_type, docs).expect("index should be built"),
+            build_index(&self.index_type, docs)
+                .context("index should be built")?,
         );
+
+        Ok(())
     }
 
-    fn search(&self, query: &str, limit: u64) -> Vec<DocId> {
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>> {
         let index = self
             .index
             .as_ref()
-            .expect("index should be initialized before search");
+            .context("index should be initialized before search")?;
 
         let stop_words = self
             .stop_words
             .as_ref()
-            .expect("stop words should be initialized before search");
+            .context("stop words should be initialized before search")?;
 
         search(query, index.as_ref(), limit, stop_words)
     }
