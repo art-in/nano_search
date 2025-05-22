@@ -33,7 +33,7 @@ impl SearchEngine for NanoSearchEngine {
         Ok(NanoSearchEngine {
             index_type: IndexType::FsIndex(index_dir.as_ref().to_path_buf()),
             index: None,
-            stop_words: Some(crate::stop_words::parse_stop_words()?),
+            stop_words: Some(crate::utils::parse_stop_words()?),
         })
     }
 
@@ -45,7 +45,7 @@ impl SearchEngine for NanoSearchEngine {
         Ok(NanoSearchEngine {
             index_type,
             index: Some(index),
-            stop_words: Some(crate::stop_words::parse_stop_words()?),
+            stop_words: Some(crate::utils::parse_stop_words()?),
         })
     }
 
