@@ -1,17 +1,16 @@
-use std::collections::HashSet;
-
-use crate::model::{
-    doc::{Doc, DocId},
-    engine::SearchEngine,
-};
-
 use super::{
     index::{
         build_index,
         model::{Index, IndexType},
+        open_index,
     },
     search::search,
 };
+use crate::model::{
+    doc::{Doc, DocId},
+    engine::SearchEngine,
+};
+use std::collections::HashSet;
 
 pub struct NanoSearchEngine {
     index_type: IndexType,
@@ -19,27 +18,38 @@ pub struct NanoSearchEngine {
     stop_words: Option<HashSet<String>>,
 }
 
-impl NanoSearchEngine {
-    pub fn new(index_type: IndexType) -> Self {
-        NanoSearchEngine {
-            index_type,
-            index: None,
-            stop_words: None,
-        }
-    }
-}
-
 impl SearchEngine for NanoSearchEngine {
     fn get_name(&self) -> &'static str {
         "nano"
     }
 
+    fn create_index(index_dir: &str) -> Self {
+        std::fs::remove_dir_all(index_dir)
+            .expect("existing index dir should be removed");
+        std::fs::create_dir(index_dir).expect("index dir should be created");
+
+        NanoSearchEngine {
+            index_type: IndexType::FsIndex(index_dir.into()),
+            index: None,
+            stop_words: Some(crate::stop_words::parse_stop_words()),
+        }
+    }
+
+    fn open_index(index_dir: &str) -> Self {
+        let index_type = IndexType::FsIndex(index_dir.into());
+        let index = open_index(&index_type).expect("index should be opened");
+
+        NanoSearchEngine {
+            index_type,
+            index: Some(index),
+            stop_words: Some(crate::stop_words::parse_stop_words()),
+        }
+    }
+
     fn index_docs(&mut self, docs: &mut dyn Iterator<Item = Doc>) {
         self.index = Some(
-            build_index(self.index_type.clone(), docs)
-                .expect("index should be built"),
+            build_index(&self.index_type, docs).expect("index should be built"),
         );
-        self.stop_words = Some(crate::stop_words::parse_stop_words());
     }
 
     fn search(&self, query: &str, limit: u64) -> Vec<DocId> {

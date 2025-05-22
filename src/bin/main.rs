@@ -5,15 +5,14 @@ use nano_search::{
         engine::SearchEngine,
     },
     search_engines::{
-        nano::{engine::NanoSearchEngine, index::model::IndexType},
-        tantivy::engine::TantivySearchEngine,
+        nano::engine::NanoSearchEngine, tantivy::engine::TantivySearchEngine,
     },
     utils::compare_arrays,
 };
 use std::time::Instant;
 
 fn main() {
-    let mut engines = create_search_engines();
+    let mut engines = init_search_engines();
     for engine in &mut engines {
         index(engine.as_mut(), create_docs_source());
     }
@@ -32,13 +31,11 @@ fn create_docs_source() -> impl DocsSource {
     res
 }
 
-fn create_search_engines() -> Vec<Box<dyn SearchEngine>> {
-    println!("creating search engines");
+fn init_search_engines() -> Vec<Box<dyn SearchEngine>> {
+    println!("initializing search engines");
     vec![
-        Box::new(TantivySearchEngine::new("index_tantivy".into())),
-        Box::new(NanoSearchEngine::new(IndexType::FsIndex(
-            "index_nano".into(),
-        ))),
+        Box::new(TantivySearchEngine::create_index("index_tantivy")),
+        Box::new(NanoSearchEngine::create_index("index_nano")),
     ]
 }
 

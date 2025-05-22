@@ -62,7 +62,7 @@ fn test_build_fs_index() -> Result<()> {
 }
 
 fn test_build_index_with_type(index_type: IndexType) -> Result<()> {
-    let index = build_index(index_type.clone(), &mut TestDocsIterator::new())?;
+    let index = build_index(&index_type, &mut TestDocsIterator::new())?;
 
     let res = index.get_doc_postings_for_term(&"xxx".to_string());
     assert!(res.is_none(), "postings for term 'xxx' should not be found");

@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use anyhow::{Context, Result};
-use std::{collections::HashMap, fs::File, io::Seek, path::PathBuf};
+use std::{collections::HashMap, fs::File, io::Seek, path::Path};
 
 pub struct FsIndex {
     terms: HashMap<Term, TermPostingListFileAddress>,
@@ -93,15 +93,15 @@ impl Iterator for FsDocPostingsIterator {
 // - or simply by removing memory index in favor of fs index
 pub fn build_fs_index(
     memory_index: &MemoryIndex,
-    index_dir: PathBuf,
+    index_dir: &Path,
 ) -> Result<FsIndex> {
-    std::fs::remove_dir_all(&index_dir)
-        .context("existing index dir should be removed")?;
-    std::fs::create_dir(&index_dir).context("index dir should be created")?;
-
     let mut terms_file = File::create(index_dir.join("terms"))
         .context("terms file should be created")?;
-    let mut postings_file = File::create(index_dir.join("postings"))
+    let mut postings_file = File::options()
+        .create(true)
+        .append(true)
+        .read(true)
+        .open(index_dir.join("postings"))
         .context("postings file should be created")?;
     let mut index_stats_file = File::create(index_dir.join("stats"))
         .context("stats file should be created")?;
@@ -134,13 +134,14 @@ pub fn build_fs_index(
         .serialize(&mut index_stats_file)
         .context("stats should be serialized to file")?;
 
-    // TODO: opening from fs here only to make sure store/open cycle works.
-    // add SearchEngine::open_from_dir(), then build_fs_index() can just store
-    // index to fs and return already existing in-memory structures
-    open_fs_index(index_dir)
+    Ok(FsIndex {
+        terms,
+        postings_file,
+        stats: memory_index.stats.clone(),
+    })
 }
 
-pub fn open_fs_index(index_dir: PathBuf) -> Result<FsIndex> {
+pub fn open_fs_index(index_dir: &Path) -> Result<FsIndex> {
     let mut terms_file = File::open(index_dir.join("terms"))
         .context("terms file should be created")?;
     let postings_file = File::open(index_dir.join("postings"))

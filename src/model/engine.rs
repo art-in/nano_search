@@ -2,6 +2,14 @@ use super::doc::{Doc, DocId};
 
 pub trait SearchEngine {
     fn get_name(&self) -> &'static str;
+
+    fn create_index(index_dir: &str) -> Self
+    where
+        Self: Sized;
+    fn open_index(index_dir: &str) -> Self
+    where
+        Self: Sized;
+
     fn index_docs(
         &mut self,
         // TODO: use iterator over doc reference
@@ -10,7 +18,7 @@ pub trait SearchEngine {
     fn search(&self, query: &str, limit: u64) -> Vec<DocId>;
 }
 
-#[derive(Default, PartialEq, Debug)]
+#[derive(Default, PartialEq, Debug, Clone)]
 pub struct IndexStats {
     pub indexed_docs_count: u64,
     pub posting_lists_count: u64,
