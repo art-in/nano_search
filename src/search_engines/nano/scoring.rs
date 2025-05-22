@@ -24,19 +24,24 @@ pub fn calc_bm25(
     docs_total_count: u64,        // total number of docs in the index
     terms_count_per_doc_avg: f64, // average number of terms in docs
 ) -> f64 {
+    let term_frequency = {
+        const K: f64 = 1.2; // [1.2, 2.0]
+        const B: f64 = 0.75;
+
+        let numerator = doc_term_count as f64 * (K + 1.0);
+        let denominator = doc_term_count as f64
+            + K * (1.0 - B
+                + ((B * doc_total_terms_count as f64)
+                    / terms_count_per_doc_avg));
+
+        numerator / denominator
+    };
+
     let inverted_doc_frequency = f64::ln(
         ((docs_total_count as f64 - docs_with_term_count as f64 + 0.5)
             / (docs_with_term_count as f64 + 0.5))
             + 1.0,
     );
 
-    let k = 1.2;
-    let b = 0.75;
-
-    inverted_doc_frequency
-        * ((doc_term_count as f64 * (k + 1.0))
-            / (doc_term_count as f64
-                + k * (1.0 - b
-                    + ((b * doc_total_terms_count as f64)
-                        / terms_count_per_doc_avg))))
+    term_frequency * inverted_doc_frequency
 }
