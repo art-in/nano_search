@@ -93,17 +93,17 @@ impl Iterator for FsDocPostingsIterator {
 // - or simply by removing memory index in favor of fs index
 pub fn build_fs_index(
     memory_index: &MemoryIndex,
-    index_dir: &Path,
+    index_dir: impl AsRef<Path>,
 ) -> Result<FsIndex> {
-    let mut terms_file = File::create(index_dir.join("terms"))
+    let mut terms_file = File::create(index_dir.as_ref().join("terms"))
         .context("terms file should be created")?;
     let mut postings_file = File::options()
         .create(true)
         .append(true)
         .read(true)
-        .open(index_dir.join("postings"))
+        .open(index_dir.as_ref().join("postings"))
         .context("postings file should be created")?;
-    let mut index_stats_file = File::create(index_dir.join("stats"))
+    let mut index_stats_file = File::create(index_dir.as_ref().join("stats"))
         .context("stats file should be created")?;
 
     let mut terms = HashMap::new();

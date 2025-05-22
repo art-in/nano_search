@@ -2,6 +2,7 @@ use crate::model::{
     doc::{Doc, DocId},
     engine::SearchEngine,
 };
+use std::path::Path;
 use tantivy::{
     collector::TopDocs,
     query::QueryParser,
@@ -54,10 +55,11 @@ impl SearchEngine for TantivySearchEngine {
         "tantivy"
     }
 
-    fn create_index(index_dir: &str) -> Self {
-        std::fs::remove_dir_all(index_dir)
+    fn create_index(index_dir: impl AsRef<Path>) -> Self {
+        std::fs::remove_dir_all(index_dir.as_ref())
             .expect("existing index dir should be removed");
-        std::fs::create_dir(index_dir).expect("index dir should be created");
+        std::fs::create_dir(index_dir.as_ref())
+            .expect("index dir should be created");
 
         let mut schema_builder = Schema::builder();
         schema_builder
@@ -71,7 +73,7 @@ impl SearchEngine for TantivySearchEngine {
         TantivySearchEngine::new(index)
     }
 
-    fn open_index(index_dir: &str) -> Self {
+    fn open_index(index_dir: impl AsRef<Path>) -> Self {
         let index = Index::open_in_dir(index_dir)
             .expect("index should be opened from dir");
 

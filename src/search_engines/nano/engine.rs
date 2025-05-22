@@ -10,7 +10,7 @@ use crate::model::{
     doc::{Doc, DocId},
     engine::SearchEngine,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, path::Path};
 
 pub struct NanoSearchEngine {
     index_type: IndexType,
@@ -23,20 +23,21 @@ impl SearchEngine for NanoSearchEngine {
         "nano"
     }
 
-    fn create_index(index_dir: &str) -> Self {
-        std::fs::remove_dir_all(index_dir)
+    fn create_index(index_dir: impl AsRef<Path>) -> Self {
+        std::fs::remove_dir_all(index_dir.as_ref())
             .expect("existing index dir should be removed");
-        std::fs::create_dir(index_dir).expect("index dir should be created");
+        std::fs::create_dir(index_dir.as_ref())
+            .expect("index dir should be created");
 
         NanoSearchEngine {
-            index_type: IndexType::FsIndex(index_dir.into()),
+            index_type: IndexType::FsIndex(index_dir.as_ref().to_path_buf()),
             index: None,
             stop_words: Some(crate::stop_words::parse_stop_words()),
         }
     }
 
-    fn open_index(index_dir: &str) -> Self {
-        let index_type = IndexType::FsIndex(index_dir.into());
+    fn open_index(index_dir: impl AsRef<Path>) -> Self {
+        let index_type = IndexType::FsIndex(index_dir.as_ref().to_path_buf());
         let index = open_index(&index_type).expect("index should be opened");
 
         NanoSearchEngine {

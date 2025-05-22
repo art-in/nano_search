@@ -1,12 +1,13 @@
 use super::doc::{Doc, DocId};
+use std::path::Path;
 
 pub trait SearchEngine {
     fn get_name(&self) -> &'static str;
 
-    fn create_index(index_dir: &str) -> Self
+    fn create_index(index_dir: impl AsRef<Path>) -> Self
     where
         Self: Sized;
-    fn open_index(index_dir: &str) -> Self
+    fn open_index(index_dir: impl AsRef<Path>) -> Self
     where
         Self: Sized;
 
