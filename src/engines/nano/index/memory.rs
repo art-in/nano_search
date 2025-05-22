@@ -52,7 +52,7 @@ impl Index for MemoryIndex {
 
         if let Some(term_posting_list) = term_posting_list {
             Ok(Some(DocPostingsForTerm {
-                count: term_posting_list.len() as u64,
+                count: term_posting_list.len(),
                 iterator: Box::new(MemoryDocPostingsIterator::new(
                     term_posting_list
                         .iter()

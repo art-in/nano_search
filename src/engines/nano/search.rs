@@ -3,6 +3,7 @@ use crate::model::doc::DocId;
 use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug)]
 struct DocCandidate {
     id: DocId,
     relevance: f64,
@@ -32,7 +33,7 @@ pub fn search(
                 let doc_term_relevance = scoring::calc_bm25(
                     posting.term_count,
                     posting.total_terms_count,
-                    doc_postings_for_term.count,
+                    doc_postings_for_term.count as u64,
                     index.get_index_stats().indexed_docs_count,
                     index.get_index_stats().terms_count_per_doc_avg,
                 );
@@ -59,8 +60,18 @@ pub fn search(
         candidates.push(doc_candidate);
     }
 
-    // sort candidates in descending order of relevance
-    candidates.sort_by(|a, b| b.relevance.total_cmp(&a.relevance));
+    // sort candidates
+    candidates.sort_by(|a, b| {
+        // 1. in descending order of relevance
+        let res = b.relevance.total_cmp(&a.relevance);
+        if res != std::cmp::Ordering::Equal {
+            return res;
+        }
+
+        // 2. in ascending order of document ID
+        // (to stabilize search results for unit tests)
+        a.id.cmp(&b.id)
+    });
 
     let mut res = Vec::with_capacity(candidates.len());
     for candidate in candidates {

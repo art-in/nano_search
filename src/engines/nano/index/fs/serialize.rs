@@ -1,6 +1,6 @@
 use super::fs_index::TermPostingListFileAddress;
 use crate::{
-    model::engine::IndexStats, search_engines::nano::index::model::DocPosting,
+    engines::nano::index::model::DocPosting, model::engine::IndexStats,
 };
 use anyhow::Result;
 use std::{
@@ -119,7 +119,7 @@ impl BinarySerializable for TermPostingListFileAddress {
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         Ok(TermPostingListFileAddress {
-            postings_count: u64::deserialize(read)?,
+            postings_count: usize::deserialize(read)?,
             start: u64::deserialize(read)?,
             end: u64::deserialize(read)?,
         })

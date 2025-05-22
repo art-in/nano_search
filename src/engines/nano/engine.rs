@@ -57,7 +57,6 @@ impl SearchEngine for NanoSearchEngine {
             build_index(&self.index_type, docs)
                 .context("index should be built")?,
         );
-
         Ok(())
     }
 

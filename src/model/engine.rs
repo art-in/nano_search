@@ -16,7 +16,7 @@ pub trait SearchEngine {
     where
         Self: Sized;
 
-    /// Add documents into the index.
+    /// Add documents to the index.
     fn index_docs(
         &mut self,
         // TODO: use iterator over doc reference

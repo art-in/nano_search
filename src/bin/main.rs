@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use nano_search::{
     docs::{self, cisi},
+    engines::{
+        nano::engine::NanoSearchEngine, tantivy::engine::TantivySearchEngine,
+    },
     model::{
         doc::{DocId, DocsSource},
         engine::SearchEngine,
-    },
-    search_engines::{
-        nano::engine::NanoSearchEngine, tantivy::engine::TantivySearchEngine,
     },
     utils::compare_arrays,
 };

@@ -125,7 +125,7 @@ impl SearchEngine for TantivySearchEngine {
                 searcher.doc(doc_address).context("document")?;
             let id = retrieved_doc
                 .get_first(self.id_field)
-                .context("document should have id field")?;
+                .context("should get id from found document")?;
 
             result.push(id.as_u64().context("id should be integer")?);
         }

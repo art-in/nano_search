@@ -1,10 +1,10 @@
 use super::serialize::BinarySerializable;
 use crate::{
-    model::engine::IndexStats,
-    search_engines::nano::index::{
+    engines::nano::index::{
         memory::MemoryIndex,
         model::{DocPosting, DocPostingsForTerm, Index, Term},
     },
+    model::engine::IndexStats,
 };
 use anyhow::{Context, Result};
 use std::{collections::HashMap, fs::File, io::Seek, path::Path};
@@ -17,7 +17,7 @@ pub struct FsIndex {
 
 #[derive(Clone)]
 pub struct TermPostingListFileAddress {
-    pub postings_count: u64,
+    pub postings_count: usize,
     pub start: u64,
     pub end: u64,
 }
@@ -115,12 +115,12 @@ pub fn build_fs_index(
 
     for (term, posting_list) in &memory_index.terms {
         let mut address = TermPostingListFileAddress {
-            postings_count: posting_list.len() as u64,
+            postings_count: posting_list.len(),
             start: 0,
             end: 0,
         };
 
-        address.postings_count = posting_list.len() as u64;
+        address.postings_count = posting_list.len();
         address.start = postings_file.stream_position()?;
         for posting in posting_list.values() {
             posting.serialize(&mut postings_file)?;
@@ -140,7 +140,7 @@ pub fn build_fs_index(
         .context("stats should be serialized to file")?;
 
     Ok(FsIndex {
-        terms,
+        terms: terms.into_iter().collect(),
         postings_file,
         stats: memory_index.stats.clone(),
     })

@@ -9,7 +9,7 @@ pub enum IndexType {
 }
 
 pub struct DocPostingsForTerm {
-    pub count: u64,
+    pub count: usize,
     pub iterator: Box<dyn Iterator<Item = DocPosting>>,
 }
 
