@@ -25,8 +25,10 @@ impl SearchEngine for NanoSearchEngine {
     }
 
     fn create_index(index_dir: impl AsRef<Path>) -> Result<Self> {
-        std::fs::remove_dir_all(index_dir.as_ref())
-            .context("existing index dir should be removed")?;
+        if index_dir.as_ref().exists() {
+            std::fs::remove_dir_all(index_dir.as_ref())
+                .context("existing index dir should be removed")?;
+        }
         std::fs::create_dir(index_dir.as_ref())
             .context("index dir should be created")?;
 

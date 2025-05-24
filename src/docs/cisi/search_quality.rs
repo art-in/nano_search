@@ -1,4 +1,4 @@
-use super::query::get_queries;
+use super::load_queries::load_queries;
 use crate::model::{doc::DocId, engine::SearchEngine};
 use anyhow::Result;
 use std::collections::HashSet;
@@ -22,7 +22,7 @@ pub struct QuerySearchQuality {
 pub fn search_and_calc_quality(
     engine: &dyn SearchEngine,
 ) -> Result<SearchQuality> {
-    let queries = get_queries()?;
+    let queries = load_queries()?;
 
     let mut precision_sum: f64 = 0.0;
     let mut recall_sum: f64 = 0.0;

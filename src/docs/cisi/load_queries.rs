@@ -11,7 +11,7 @@ pub struct Query {
     pub expected_docids: HashSet<u64>,
 }
 
-pub fn get_queries() -> Result<Vec<Query>> {
+pub fn load_queries() -> Result<Vec<Query>> {
     let queries_file = std::fs::File::open("data/cisi/CISI.QRY")
         .context("file should exist")?;
     let query_docids_file = std::fs::File::open("data/cisi/CISI.REL")

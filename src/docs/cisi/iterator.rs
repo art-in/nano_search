@@ -1,6 +1,6 @@
 use crate::model::doc::{Doc, DocsSource};
 
-use super::docs::CisiDocs;
+use super::model::CisiDocs;
 
 pub struct CisiDocsIterator {
     docs: Vec<Doc>,

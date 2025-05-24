@@ -1,4 +1,4 @@
-use super::docs::CisiDocs;
+use super::model::CisiDocs;
 use crate::model::doc::Doc;
 use anyhow::{Context, Result};
 use std::fs::File;
@@ -19,8 +19,11 @@ enum ELineType {
     SectionContent(ESectionType),
 }
 
-// splits CISI.ALL file to separate doc files
-pub fn parse(file_path: PathBuf) -> Result<CisiDocs> {
+pub fn load_docs() -> Result<CisiDocs> {
+    load_from("data/cisi/CISI.ALL".into())
+}
+
+fn load_from(file_path: PathBuf) -> Result<CisiDocs> {
     let source_file =
         File::open(file_path).context("cisi file should exist")?;
     let source_file_reader = std::io::BufReader::new(source_file);

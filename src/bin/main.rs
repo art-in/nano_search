@@ -15,6 +15,7 @@ use std::time::Instant;
 fn main() -> Result<()> {
     let mut engines = init_search_engines()?;
     for engine in &mut engines {
+        // TODO: avoid creating same docs source multiple times
         index(engine.as_mut(), create_docs_source()?)?;
     }
 
@@ -28,7 +29,7 @@ fn main() -> Result<()> {
 fn create_docs_source() -> Result<impl DocsSource> {
     print!("creating docs source... ");
     let now = Instant::now();
-    let res = docs::cisi::parse("data/cisi/CISI.ALL".into())?;
+    let res = docs::cisi::load_docs()?;
     // let res = docs::simplewiki::parse("data/simplewiki/simplewiki.xml".into());
     println!("done in {}ms", now.elapsed().as_millis());
     Ok(res)

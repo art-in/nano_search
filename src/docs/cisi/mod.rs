@@ -1,7 +1,9 @@
-pub mod docs;
 pub mod iterator;
-pub mod query;
+pub mod model;
 pub mod search_quality;
 
-mod parse;
-pub use parse::parse;
+mod load_queries;
+pub use load_queries::load_queries;
+
+mod load_docs;
+pub use load_docs::load_docs;

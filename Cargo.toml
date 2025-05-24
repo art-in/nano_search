@@ -13,6 +13,11 @@ anyhow = "1.0.98"
 [dev-dependencies]
 rusty-hook = "0.11.2"
 tempfile = "3.20.0"
+criterion = { version = "0.6.0", features = ["html_reports"] }
 
 [lints.clippy]
 unwrap_used = "warn"
+
+[[bench]]
+name = "engine"
+harness = false
