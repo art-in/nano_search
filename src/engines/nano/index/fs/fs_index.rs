@@ -7,7 +7,12 @@ use crate::{
     model::engine::IndexStats,
 };
 use anyhow::{Context, Result};
-use std::{collections::HashMap, fs::File, io::Seek, path::Path};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufReader, BufWriter, Seek},
+    path::Path,
+};
 
 pub struct FsIndex {
     terms: HashMap<Term, TermPostingListFileAddress>,
@@ -33,9 +38,7 @@ impl Index for FsIndex {
             Ok(Some(DocPostingsForTerm {
                 count: term_posting_list_addr.postings_count,
                 iterator: Box::new(FsDocPostingsIterator::new(
-                    self.postings_file.try_clone().context(
-                        "posting file handle should be clonned for iterator",
-                    )?,
+                    self.postings_file.try_clone()?,
                     term_posting_list_addr.clone(),
                 )?)
                     as Box<dyn Iterator<Item = DocPosting>>,
@@ -50,21 +53,23 @@ impl Index for FsIndex {
 }
 
 pub struct FsDocPostingsIterator {
-    postings_file: File,
+    postings_file_reader: BufReader<File>,
     end_position: u64,
 }
 
 impl FsDocPostingsIterator {
     fn new(
-        mut postings_file: File,
+        postings_file: File,
         address: TermPostingListFileAddress,
     ) -> Result<Self> {
-        postings_file
+        let mut postings_file_reader = BufReader::new(postings_file);
+
+        postings_file_reader
             .seek(std::io::SeekFrom::Start(address.start))
             .context("postings file position should be moved")?;
 
         Ok(FsDocPostingsIterator {
-            postings_file,
+            postings_file_reader,
             end_position: address.end,
         })
     }
@@ -75,13 +80,14 @@ impl Iterator for FsDocPostingsIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current_position = self
-            .postings_file
+            .postings_file_reader
             .stream_position()
             .expect("current position on postings file should be read");
 
         if current_position < self.end_position {
-            let posting = DocPosting::deserialize(&mut self.postings_file)
-                .expect("posting should be deserialized from file");
+            let posting =
+                DocPosting::deserialize(&mut self.postings_file_reader)
+                    .expect("posting should be deserialized from file");
             Some(posting)
         } else {
             None
@@ -100,16 +106,18 @@ pub fn build_fs_index(
     memory_index: &MemoryIndex,
     index_dir: impl AsRef<Path>,
 ) -> Result<FsIndex> {
-    let mut terms_file = File::create(index_dir.as_ref().join("terms"))
-        .context("terms file should be created")?;
-    let mut postings_file = File::options()
-        .create(true)
-        .append(true)
-        .read(true)
-        .open(index_dir.as_ref().join("postings"))
-        .context("postings file should be created")?;
-    let mut index_stats_file = File::create(index_dir.as_ref().join("stats"))
-        .context("stats file should be created")?;
+    let mut terms_file_writer = BufWriter::new(
+        File::create(index_dir.as_ref().join("terms"))
+            .context("terms file should be created")?,
+    );
+    let mut postings_file_writer = BufWriter::new(
+        File::create(index_dir.as_ref().join("postings"))
+            .context("postings file should be created")?,
+    );
+    let mut index_stats_file_writer = BufWriter::new(
+        File::create(index_dir.as_ref().join("stats"))
+            .context("stats file should be created")?,
+    );
 
     let mut terms = HashMap::new();
 
@@ -121,44 +129,51 @@ pub fn build_fs_index(
         };
 
         address.postings_count = posting_list.len();
-        address.start = postings_file.stream_position()?;
+        address.start = postings_file_writer.stream_position()?;
         for posting in posting_list.values() {
-            posting.serialize(&mut postings_file)?;
+            posting.serialize(&mut postings_file_writer)?;
         }
-        address.end = postings_file.stream_position()?;
+        address.end = postings_file_writer.stream_position()?;
 
         terms.insert(term.clone(), address.clone());
     }
 
     terms
-        .serialize(&mut terms_file)
+        .serialize(&mut terms_file_writer)
         .context("terms should be serialized to file")?;
 
     memory_index
         .stats
-        .serialize(&mut index_stats_file)
+        .serialize(&mut index_stats_file_writer)
         .context("stats should be serialized to file")?;
 
     Ok(FsIndex {
         terms: terms.into_iter().collect(),
-        postings_file,
+        postings_file: File::open(index_dir.as_ref().join("postings"))?,
         stats: memory_index.stats.clone(),
     })
 }
 
 pub fn open_fs_index(index_dir: &Path) -> Result<FsIndex> {
-    let mut terms_file = File::open(index_dir.join("terms"))
-        .context("terms file should be created")?;
+    let mut terms_file_reader = BufReader::new(
+        File::open(index_dir.join("terms"))
+            .context("terms file should be opened")?,
+    );
     let postings_file = File::open(index_dir.join("postings"))
-        .context("postings file should be created")?;
-    let mut index_stats_file = File::open(index_dir.join("stats"))
-        .context("stats file should be created")?;
+        .context("postings file should be opened")?;
+    let mut index_stats_file_reader = BufReader::new(
+        File::open(index_dir.join("stats"))
+            .context("stats file should be opened")?,
+    );
+
+    let terms = HashMap::<String, TermPostingListFileAddress>::deserialize(
+        &mut terms_file_reader,
+    )?;
+    let stats = IndexStats::deserialize(&mut index_stats_file_reader)?;
 
     Ok(FsIndex {
-        terms: HashMap::<String, TermPostingListFileAddress>::deserialize(
-            &mut terms_file,
-        )?,
+        terms,
         postings_file,
-        stats: IndexStats::deserialize(&mut index_stats_file)?,
+        stats,
     })
 }

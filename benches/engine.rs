@@ -69,16 +69,5 @@ fn search(c: &mut Criterion) {
     });
 }
 
-criterion_group! {
-    name = slow_benches;
-    // reduce number of samples to minium, otherwise default 100 samples takes
-    // too long to gather (e.g. ~30 minutes)
-    config = Criterion::default().sample_size(10);
-    targets = create_index
-}
-criterion_group! {
-    name = fast_benches;
-    config = Criterion::default();
-    targets = open_index, search
-}
-criterion_main!(slow_benches, fast_benches);
+criterion_group!(benches, create_index, open_index, search);
+criterion_main!(benches);

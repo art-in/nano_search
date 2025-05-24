@@ -78,9 +78,10 @@ fn search(query: &str, engine: &dyn SearchEngine) -> Result<Vec<DocId>> {
 
 #[allow(dead_code)]
 fn search_and_calc_quality(engine: &dyn SearchEngine) -> Result<()> {
-    println!("searching queries with {} search engine", engine.get_name());
-
+    print!("searching with {} search engine... ", engine.get_name());
+    let now = Instant::now();
     let quality = cisi::search_quality::search_and_calc_quality(engine)?;
+    println!("done in {}ms", now.elapsed().as_millis());
 
     println!("processed {} queries", quality.queries_count);
 
