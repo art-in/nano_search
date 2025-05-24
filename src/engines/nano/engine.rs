@@ -5,6 +5,7 @@ use super::{
         open_index,
     },
     search::search,
+    stop_words::get_stop_words,
 };
 use crate::model::{
     doc::{Doc, DocId},
@@ -16,7 +17,7 @@ use std::{collections::HashSet, path::Path};
 pub struct NanoSearchEngine {
     index_type: IndexType,
     index: Option<Box<dyn Index>>,
-    stop_words: Option<HashSet<String>>,
+    stop_words: HashSet<String>,
 }
 
 impl SearchEngine for NanoSearchEngine {
@@ -35,7 +36,7 @@ impl SearchEngine for NanoSearchEngine {
         Ok(NanoSearchEngine {
             index_type: IndexType::FsIndex(index_dir.as_ref().to_path_buf()),
             index: None,
-            stop_words: Some(crate::utils::parse_stop_words()?),
+            stop_words: get_stop_words(),
         })
     }
 
@@ -47,7 +48,7 @@ impl SearchEngine for NanoSearchEngine {
         Ok(NanoSearchEngine {
             index_type,
             index: Some(index),
-            stop_words: Some(crate::utils::parse_stop_words()?),
+            stop_words: get_stop_words(),
         })
     }
 
@@ -68,11 +69,6 @@ impl SearchEngine for NanoSearchEngine {
             .as_ref()
             .context("index should be initialized before search")?;
 
-        let stop_words = self
-            .stop_words
-            .as_ref()
-            .context("stop words should be initialized before search")?;
-
-        search(query, index.as_ref(), limit, stop_words)
+        search(query, index.as_ref(), limit, &self.stop_words)
     }
 }
