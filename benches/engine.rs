@@ -2,26 +2,18 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use nano_search::{
     docs, engines::nano::engine::NanoSearchEngine, model::engine::SearchEngine,
 };
+use std::time::Duration;
+use tempfile::TempDir;
 
 // TODO: add benchmarks for TantivySearchEngine
-
-// use index dir inside workspace, instead of /tmp dir
-// - performance of indexing is much different:
-//   x130 times slower for workspace dir comparing to /tmp dir
-// - temporarely choosing workspace dir (i.e. slower path), since it should not
-//   be that slow, and I want to fix that (e.g. tantivy is only x1.5 slower)
-// - workspace dir is much slower only in dev docker container.
-//   reason: workspace dir is mounted to host fs, while file access in mounted
-//   volumes is extremely slow in docker containers
-//   https://github.com/docker/for-mac/issues/77
-static INDEX_DIR: &str = "index_nano";
 
 fn create_index(c: &mut Criterion) {
     let docs = docs::cisi::load_docs().expect("cisi docs should be loaded");
 
     c.bench_function("create_index", |bencher| {
         bencher.iter(|| {
-            let mut engine = NanoSearchEngine::create_index(INDEX_DIR)
+            let dir = TempDir::new().expect("temp dir should be created");
+            let mut engine = NanoSearchEngine::create_index(&dir)
                 .expect("index should be created");
 
             // TODO: avoid docs.clone()
@@ -36,24 +28,25 @@ fn create_index(c: &mut Criterion) {
 
 fn open_index(c: &mut Criterion) {
     let docs = docs::cisi::load_docs().expect("cisi docs should be loaded");
-    let mut engine = NanoSearchEngine::create_index(INDEX_DIR)
-        .expect("index should be created");
+    let dir = TempDir::new().expect("temp dir should be created");
+    let mut engine =
+        NanoSearchEngine::create_index(&dir).expect("index should be created");
     engine
         .index_docs(&mut docs.clone().into_iter())
         .expect("docs should be indexed");
 
     c.bench_function("open_index", |bencher| {
         bencher.iter(|| {
-            NanoSearchEngine::open_index(INDEX_DIR)
-                .expect("index should be opened")
+            NanoSearchEngine::open_index(&dir).expect("index should be opened")
         });
     });
 }
 
 fn search(c: &mut Criterion) {
     let docs = docs::cisi::load_docs().expect("cisi docs should be loaded");
-    let mut engine = NanoSearchEngine::create_index(INDEX_DIR)
-        .expect("index should be created");
+    let dir = TempDir::new().expect("temp dir should be created");
+    let mut engine =
+        NanoSearchEngine::create_index(&dir).expect("index should be created");
     engine
         .index_docs(&mut docs.clone().into_iter())
         .expect("docs should be indexed");
@@ -69,5 +62,11 @@ fn search(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, create_index, open_index, search);
+criterion_group! {
+    name = benches;
+    // increase measurement time / iterations count to avoid false positives,
+    // which happens a lot, most likely due to variability of file operations
+    config = Criterion::default().measurement_time(Duration::from_secs(60));
+    targets = create_index, open_index, search
+}
 criterion_main!(benches);
