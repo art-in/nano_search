@@ -9,13 +9,18 @@ pub trait SearchEngine {
         Self: Sized;
     fn get_name(&self) -> &'static str;
 
+    /// Initializes search engine and creates new index in memory.
+    fn create_in_memory() -> Result<Self>
+    where
+        Self: Sized;
+
     /// Initializes search engine and creates new index in target dir.
-    fn create_index(index_dir: impl AsRef<Path>) -> Result<Self>
+    fn create_on_disk(index_dir: impl AsRef<Path>) -> Result<Self>
     where
         Self: Sized;
 
     /// Initializes search engine and opens existing index from target dir.
-    fn open_index(index_dir: impl AsRef<Path>) -> Result<Self>
+    fn open_from_disk(index_dir: impl AsRef<Path>) -> Result<Self>
     where
         Self: Sized;
 

@@ -14,14 +14,22 @@ use nano_search::{
 use std::time::Duration;
 use tempfile::TempDir;
 
+#[derive(Debug)]
+enum IndexType {
+    Memory,
+    Disk,
+}
+
 fn index(c: &mut Criterion) {
     panic_on_error(|| {
         let docs = docs::cisi::load_docs()?;
 
         let mut group = c.benchmark_group("index");
 
-        index_with::<NanoSearchEngine>(&mut group, &docs);
-        index_with::<TantivySearchEngine>(&mut group, &docs);
+        for index_type in &[IndexType::Memory, IndexType::Disk] {
+            index_with::<NanoSearchEngine>(&mut group, &docs, index_type);
+            index_with::<TantivySearchEngine>(&mut group, &docs, index_type);
+        }
 
         group.finish();
 
@@ -32,12 +40,19 @@ fn index(c: &mut Criterion) {
 fn index_with<SE: SearchEngine>(
     group: &mut BenchmarkGroup<WallTime>,
     docs: &impl DocsSource,
+    index_type: &IndexType,
 ) {
-    group.bench_function(SE::name(), |bencher| {
-        bencher.iter(|| {
+    let bench_id = format!("{}/{:?}", SE::name(), index_type).to_lowercase();
+
+    group.bench_function(bench_id, |bencher| {
+        bencher.iter(|| -> Result<()> {
             let dir = TempDir::new()?;
-            let mut engine = SE::create_index(&dir)?;
-            engine.index_docs(&mut docs.clone().into_iter())
+            let mut engine = match index_type {
+                IndexType::Memory => SE::create_in_memory()?,
+                IndexType::Disk => SE::create_on_disk(&dir)?,
+            };
+            engine.index_docs(&mut docs.clone().into_iter())?;
+            Ok(())
         });
     });
 }
@@ -62,11 +77,11 @@ fn open_index_with<SE: SearchEngine>(
     docs: &impl DocsSource,
 ) -> Result<()> {
     let dir = TempDir::new()?;
-    let mut engine = SE::create_index(&dir)?;
+    let mut engine = SE::create_on_disk(&dir)?;
     engine.index_docs(&mut docs.clone().into_iter())?;
 
     group.bench_function(SE::name(), |bencher| {
-        bencher.iter(|| SE::open_index(&dir));
+        bencher.iter(|| SE::open_from_disk(&dir));
     });
 
     Ok(())
@@ -79,8 +94,14 @@ fn search(c: &mut Criterion) {
 
         let mut group = c.benchmark_group("search");
 
-        search_with::<NanoSearchEngine>(&mut group, &docs, &queries)?;
-        search_with::<TantivySearchEngine>(&mut group, &docs, &queries)?;
+        for index_type in &[IndexType::Memory, IndexType::Disk] {
+            search_with::<NanoSearchEngine>(
+                &mut group, &docs, &queries, index_type,
+            )?;
+            search_with::<TantivySearchEngine>(
+                &mut group, &docs, &queries, index_type,
+            )?;
+        }
 
         group.finish();
 
@@ -92,12 +113,18 @@ fn search_with<SE: SearchEngine>(
     group: &mut BenchmarkGroup<WallTime>,
     docs: &impl DocsSource,
     queries: &[Query],
+    index_type: &IndexType,
 ) -> Result<()> {
     let dir = TempDir::new()?;
-    let mut engine = SE::create_index(&dir)?;
+    let mut engine = match index_type {
+        IndexType::Memory => SE::create_in_memory()?,
+        IndexType::Disk => SE::create_on_disk(&dir)?,
+    };
     engine.index_docs(&mut docs.clone().into_iter())?;
 
-    group.bench_function(SE::name(), |bencher| {
+    let bench_id = format!("{}/{:?}", SE::name(), index_type).to_lowercase();
+
+    group.bench_function(bench_id, |bencher| {
         bencher.iter(|| {
             queries
                 .iter()

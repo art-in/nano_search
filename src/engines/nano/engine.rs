@@ -29,7 +29,18 @@ impl SearchEngine for NanoSearchEngine {
         Self::name()
     }
 
-    fn create_index(index_dir: impl AsRef<Path>) -> Result<Self> {
+    fn create_in_memory() -> Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(NanoSearchEngine {
+            index_type: IndexType::MemoryIndex,
+            index: None,
+            stop_words: get_stop_words(),
+        })
+    }
+
+    fn create_on_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
         if index_dir.as_ref().exists() {
             std::fs::remove_dir_all(index_dir.as_ref())
                 .context("existing index dir should be removed")?;
@@ -44,7 +55,7 @@ impl SearchEngine for NanoSearchEngine {
         })
     }
 
-    fn open_index(index_dir: impl AsRef<Path>) -> Result<Self> {
+    fn open_from_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
         let index_type = IndexType::FsIndex(index_dir.as_ref().to_path_buf());
         let index =
             open_index(&index_type).context("index should be opened")?;

@@ -51,6 +51,13 @@ impl TantivySearchEngine {
     }
 }
 
+fn create_schema() -> Schema {
+    let mut schema_builder = Schema::builder();
+    schema_builder.add_u64_field("id", NumericOptions::default().set_stored());
+    schema_builder.add_text_field("text", TEXT);
+    schema_builder.build()
+}
+
 impl SearchEngine for TantivySearchEngine {
     fn name() -> &'static str {
         "tantivy"
@@ -60,7 +67,15 @@ impl SearchEngine for TantivySearchEngine {
         Self::name()
     }
 
-    fn create_index(index_dir: impl AsRef<Path>) -> Result<Self> {
+    fn create_in_memory() -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let index = Index::create_in_ram(create_schema());
+        TantivySearchEngine::new(index)
+    }
+
+    fn create_on_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
         if index_dir.as_ref().exists() {
             std::fs::remove_dir_all(index_dir.as_ref())
                 .context("existing index dir should be removed")?;
@@ -68,19 +83,13 @@ impl SearchEngine for TantivySearchEngine {
         std::fs::create_dir(index_dir.as_ref())
             .context("index dir should be created")?;
 
-        let mut schema_builder = Schema::builder();
-        schema_builder
-            .add_u64_field("id", NumericOptions::default().set_stored());
-        schema_builder.add_text_field("text", TEXT);
-        let schema = schema_builder.build();
-
-        let index = Index::create_in_dir(index_dir, schema.clone())
+        let index = Index::create_in_dir(index_dir, create_schema())
             .context("index should be created in dir")?;
 
         TantivySearchEngine::new(index)
     }
 
-    fn open_index(index_dir: impl AsRef<Path>) -> Result<Self> {
+    fn open_from_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
         let index = Index::open_in_dir(index_dir)
             .context("index should be opened from dir")?;
 

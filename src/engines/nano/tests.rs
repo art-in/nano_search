@@ -1,7 +1,7 @@
 use super::engine::NanoSearchEngine;
 use crate::{
     model::engine::SearchEngine,
-    utils::test_docs::{create_cat_mouse_docs_iterator, ID},
+    utils::test_docs::{ID, create_cat_mouse_docs_iterator},
 };
 use anyhow::Result;
 use tempfile::TempDir;
@@ -10,7 +10,7 @@ use tempfile::TempDir;
 fn test_search_fails_on_uninitialized_index() -> Result<()> {
     // setup
     let dir = TempDir::new()?;
-    let engine = NanoSearchEngine::create_index(dir.as_ref())?;
+    let engine = NanoSearchEngine::create_on_disk(dir.as_ref())?;
 
     // execute
     let res = engine.search("cat", 10);
@@ -27,12 +27,12 @@ fn test_open_index() -> Result<()> {
 
     // 1. create index in dir
     {
-        let mut engine = NanoSearchEngine::create_index(dir.as_ref())?;
+        let mut engine = NanoSearchEngine::create_on_disk(dir.as_ref())?;
         engine.index_docs(&mut create_cat_mouse_docs_iterator())?;
     };
 
     // 2. open index from dir
-    let engine = NanoSearchEngine::open_index(dir.as_ref())?;
+    let engine = NanoSearchEngine::open_from_disk(dir.as_ref())?;
 
     // execute
     let docids = engine.search("cat", 10)?;
@@ -46,7 +46,7 @@ fn test_open_index() -> Result<()> {
 fn test_search_limit() -> Result<()> {
     // setup
     let dir = TempDir::new()?;
-    let mut engine = NanoSearchEngine::create_index(dir.as_ref())?;
+    let mut engine = NanoSearchEngine::create_on_disk(dir.as_ref())?;
     engine.index_docs(&mut create_cat_mouse_docs_iterator())?;
 
     // execute
@@ -61,7 +61,7 @@ fn test_search_limit() -> Result<()> {
 fn test_search_unknown_word() -> Result<()> {
     // setup
     let dir = TempDir::new()?;
-    let mut engine = NanoSearchEngine::create_index(dir.as_ref())?;
+    let mut engine = NanoSearchEngine::create_on_disk(dir.as_ref())?;
     engine.index_docs(&mut create_cat_mouse_docs_iterator())?;
 
     // execute
@@ -76,7 +76,7 @@ fn test_search_unknown_word() -> Result<()> {
 fn test_search() -> Result<()> {
     // setup
     let dir = TempDir::new()?;
-    let mut engine = NanoSearchEngine::create_index(dir.as_ref())?;
+    let mut engine = NanoSearchEngine::create_on_disk(dir.as_ref())?;
     engine.index_docs(&mut create_cat_mouse_docs_iterator())?;
 
     // execute
@@ -99,7 +99,7 @@ fn test_search() -> Result<()> {
 fn test_search_with_multiple_words_query() -> Result<()> {
     // setup
     let dir = TempDir::new()?;
-    let mut engine = NanoSearchEngine::create_index(dir.as_ref())?;
+    let mut engine = NanoSearchEngine::create_on_disk(dir.as_ref())?;
     engine.index_docs(&mut create_cat_mouse_docs_iterator())?;
 
     // execute
