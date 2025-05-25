@@ -65,7 +65,9 @@ criterion_group! {
     name = benches;
     // increase measurement time / iterations count to avoid false positives,
     // which happens a lot, most likely due to variability of file operations
-    config = Criterion::default().measurement_time(Duration::from_secs(60));
+    config = Criterion::default()
+        .measurement_time(Duration::from_secs(60))
+        .noise_threshold(0.05);
     targets = create_index, open_index, search
 }
 criterion_main!(benches);
