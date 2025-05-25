@@ -13,10 +13,11 @@ use nano_search::{
 use std::time::Instant;
 
 fn main() -> Result<()> {
+    let docs_source = create_docs_source()?;
+
     let mut engines = init_search_engines()?;
     for engine in &mut engines {
-        // TODO: avoid creating same docs source multiple times
-        index(engine.as_mut(), create_docs_source()?)?;
+        index(engine.as_mut(), docs_source.clone())?;
     }
 
     for engine in &engines {
@@ -30,7 +31,7 @@ fn create_docs_source() -> Result<impl DocsSource> {
     print!("creating docs source... ");
     let now = Instant::now();
     let res = docs::cisi::load_docs()?;
-    // let res = docs::simplewiki::parse("data/simplewiki/simplewiki.xml".into());
+    // let res = docs::simplewiki::load_docs()?;
     println!("done in {}ms", now.elapsed().as_millis());
     Ok(res)
 }

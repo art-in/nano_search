@@ -16,10 +16,7 @@ fn create_index(c: &mut Criterion) {
             bencher.iter(|| {
                 let dir = TempDir::new()?;
                 let mut engine = NanoSearchEngine::create_index(&dir)?;
-
-                // TODO: avoid docs.clone()
                 let mut docs_iterator = docs.clone().into_iter();
-
                 engine.index_docs(&mut docs_iterator)
             });
         });

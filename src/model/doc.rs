@@ -6,4 +6,4 @@ pub struct Doc {
     pub text: String,
 }
 
-pub trait DocsSource: IntoIterator<Item = Doc> {}
+pub trait DocsSource: IntoIterator<Item = Doc> + Clone {}

@@ -1,5 +1,5 @@
-pub mod docs;
 pub mod iterator;
+pub mod model;
 
-mod parse;
-pub use parse::parse;
+mod load_docs;
+pub use load_docs::load_docs;

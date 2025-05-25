@@ -1,9 +1,11 @@
 use super::model::CisiDocs;
 use crate::model::doc::Doc;
 use anyhow::{Context, Result};
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::BufRead;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 enum ESectionType {
     DocId,
@@ -20,18 +22,18 @@ enum ELineType {
 }
 
 pub fn load_docs() -> Result<CisiDocs> {
-    load_from("data/cisi/CISI.ALL".into())
+    load_docs_from("data/cisi/CISI.ALL".into())
 }
 
-fn load_from(file_path: PathBuf) -> Result<CisiDocs> {
+fn load_docs_from(file_path: PathBuf) -> Result<CisiDocs> {
     let source_file =
         File::open(file_path).context("cisi file should exist")?;
     let source_file_reader = std::io::BufReader::new(source_file);
 
-    let mut current_line_type = ELineType::Unknown;
+    let mut docs = Vec::new();
 
-    let mut cisi_docs: CisiDocs = CisiDocs { docs: Vec::new() };
-    let mut doc: Option<Doc> = None;
+    let mut current_line_type = ELineType::Unknown;
+    let mut current_doc: Option<Doc> = None;
 
     for line in source_file_reader.lines().map_while(Result::ok) {
         if line.starts_with(".I") {
@@ -61,11 +63,11 @@ fn load_from(file_path: PathBuf) -> Result<CisiDocs> {
                             .parse::<u64>()
                             .context("docid in line should be valid integer")?;
 
-                        if let Some(doc) = doc.as_ref() {
-                            cisi_docs.docs.push(doc.clone());
+                        if let Some(doc) = current_doc.as_ref() {
+                            docs.push(doc.clone());
                         }
 
-                        doc = Some(Doc {
+                        current_doc = Some(Doc {
                             id: docid,
                             text: String::new(),
                         });
@@ -81,7 +83,8 @@ fn load_from(file_path: PathBuf) -> Result<CisiDocs> {
                         // skip
                     }
                     _default => {
-                        doc.as_mut()
+                        current_doc
+                            .as_mut()
                             .context("doc should be initialized")?
                             .text += &line;
                     }
@@ -90,5 +93,7 @@ fn load_from(file_path: PathBuf) -> Result<CisiDocs> {
         }
     }
 
-    Ok(cisi_docs)
+    Ok(CisiDocs {
+        docs: Rc::new(RefCell::new(docs)),
+    })
 }
