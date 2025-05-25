@@ -1,6 +1,7 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use nano_search::{
     docs, engines::nano::engine::NanoSearchEngine, model::engine::SearchEngine,
+    utils::panic_on_error,
 };
 use std::time::Duration;
 use tempfile::TempDir;
@@ -8,57 +9,55 @@ use tempfile::TempDir;
 // TODO: add benchmarks for TantivySearchEngine
 
 fn create_index(c: &mut Criterion) {
-    let docs = docs::cisi::load_docs().expect("cisi docs should be loaded");
+    panic_on_error(|| {
+        let docs = docs::cisi::load_docs()?;
 
-    c.bench_function("create_index", |bencher| {
-        bencher.iter(|| {
-            let dir = TempDir::new().expect("temp dir should be created");
-            let mut engine = NanoSearchEngine::create_index(&dir)
-                .expect("index should be created");
+        c.bench_function("create_index", |bencher| {
+            bencher.iter(|| {
+                let dir = TempDir::new()?;
+                let mut engine = NanoSearchEngine::create_index(&dir)?;
 
-            // TODO: avoid docs.clone()
-            let mut docs_iterator = docs.clone().into_iter();
+                // TODO: avoid docs.clone()
+                let mut docs_iterator = docs.clone().into_iter();
 
-            engine
-                .index_docs(&mut docs_iterator)
-                .expect("docs should be indexed")
+                engine.index_docs(&mut docs_iterator)
+            });
         });
+
+        Ok(())
     });
 }
 
 fn open_index(c: &mut Criterion) {
-    let docs = docs::cisi::load_docs().expect("cisi docs should be loaded");
-    let dir = TempDir::new().expect("temp dir should be created");
-    let mut engine =
-        NanoSearchEngine::create_index(&dir).expect("index should be created");
-    engine
-        .index_docs(&mut docs.clone().into_iter())
-        .expect("docs should be indexed");
+    panic_on_error(|| {
+        let docs = docs::cisi::load_docs()?;
+        let dir = TempDir::new()?;
+        let mut engine = NanoSearchEngine::create_index(&dir)?;
+        engine.index_docs(&mut docs.clone().into_iter())?;
 
-    c.bench_function("open_index", |bencher| {
-        bencher.iter(|| {
-            NanoSearchEngine::open_index(&dir).expect("index should be opened")
+        c.bench_function("open_index", |bencher| {
+            bencher.iter(|| NanoSearchEngine::open_index(&dir));
         });
+
+        Ok(())
     });
 }
 
 fn search(c: &mut Criterion) {
-    let docs = docs::cisi::load_docs().expect("cisi docs should be loaded");
-    let dir = TempDir::new().expect("temp dir should be created");
-    let mut engine =
-        NanoSearchEngine::create_index(&dir).expect("index should be created");
-    engine
-        .index_docs(&mut docs.clone().into_iter())
-        .expect("docs should be indexed");
-    let queries =
-        docs::cisi::load_queries().expect("cisi queries should be loaded");
+    panic_on_error(|| {
+        let docs = docs::cisi::load_docs()?;
+        let dir = TempDir::new()?;
+        let mut engine = NanoSearchEngine::create_index(&dir)?;
+        engine.index_docs(&mut docs.clone().into_iter())?;
+        let queries = docs::cisi::load_queries()?;
 
-    c.bench_function("search", |bencher| {
-        bencher.iter(|| {
-            for query in &queries {
-                engine.search(&query.text, 10).expect("should search");
-            }
+        c.bench_function("search", |bencher| {
+            bencher.iter(|| {
+                queries.iter().map(|query| engine.search(&query.text, 10))
+            });
         });
+
+        Ok(())
     });
 }
 

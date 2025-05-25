@@ -23,7 +23,7 @@ pub trait SearchEngine {
         docs: &mut dyn Iterator<Item = Doc>,
     ) -> Result<()>;
 
-    /// Searches for documents relevant for passed query in the index.
+    /// Searches for documents relevant to passed query in the index.
     fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>>;
 }
 
