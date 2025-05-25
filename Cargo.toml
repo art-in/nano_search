@@ -1,8 +1,7 @@
 [package]
 name = "nano_search"
 version = "0.1.0"
-# TODO: change edition to 2024, as it soon will be released
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 wikidump = "0.3.1"
