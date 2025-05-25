@@ -21,8 +21,12 @@ pub struct NanoSearchEngine {
 }
 
 impl SearchEngine for NanoSearchEngine {
-    fn get_name(&self) -> &'static str {
+    fn name() -> &'static str {
         "nano"
+    }
+
+    fn get_name(&self) -> &'static str {
+        Self::name()
     }
 
     fn create_index(index_dir: impl AsRef<Path>) -> Result<Self> {
@@ -69,6 +73,8 @@ impl SearchEngine for NanoSearchEngine {
             .as_ref()
             .context("index should be initialized before search")?;
 
-        search(query, index.as_ref(), limit, &self.stop_words)
+        let res = search(query, index.as_ref(), limit, &self.stop_words);
+
+        res
     }
 }

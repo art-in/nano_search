@@ -1,15 +1,9 @@
+use super::model::Query;
 use anyhow::{Context, Result};
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::BTreeMap,
     io::{BufRead, Read},
 };
-
-#[derive(Default, Clone)]
-pub struct Query {
-    pub id: u64,
-    pub text: String,
-    pub expected_docids: HashSet<u64>,
-}
 
 pub fn load_queries() -> Result<Vec<Query>> {
     let queries_file = std::fs::File::open("data/cisi/CISI.QRY")

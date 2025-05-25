@@ -4,6 +4,9 @@ use std::path::Path;
 
 pub trait SearchEngine {
     /// Gets search engine name for debug logging purposes.
+    fn name() -> &'static str
+    where
+        Self: Sized;
     fn get_name(&self) -> &'static str;
 
     /// Initializes search engine and creates new index in target dir.

@@ -5,10 +5,10 @@ use crate::model::{
 use anyhow::{Context, Result};
 use std::path::Path;
 use tantivy::{
+    Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument,
     collector::TopDocs,
     query::QueryParser,
-    schema::{Field, NumericOptions, Schema, Value, TEXT},
-    Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument,
+    schema::{Field, NumericOptions, Schema, TEXT, Value},
 };
 
 pub struct TantivySearchEngine {
@@ -52,8 +52,12 @@ impl TantivySearchEngine {
 }
 
 impl SearchEngine for TantivySearchEngine {
-    fn get_name(&self) -> &'static str {
+    fn name() -> &'static str {
         "tantivy"
+    }
+
+    fn get_name(&self) -> &'static str {
+        Self::name()
     }
 
     fn create_index(index_dir: impl AsRef<Path>) -> Result<Self> {
