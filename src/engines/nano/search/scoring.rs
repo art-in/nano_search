@@ -1,6 +1,7 @@
 // calculates term frequency – inverse document frequency.
 // using count-idf weighting scheme - tf*log(N/n)
 // https://en.wikipedia.org/wiki/Tf-idf
+#[allow(dead_code)]
 pub fn calc_tfidf(
     doc_term_count: u64,        // number of the term in the doc
     doc_total_terms_count: u64, // total number of terms in the doc

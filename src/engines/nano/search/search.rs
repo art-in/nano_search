@@ -1,0 +1,51 @@
+use super::{model::DocCandidate, scoring, stop_words::STOP_WORDS};
+use crate::{engines::nano::index::model::Index, model::doc::DocId};
+use anyhow::Result;
+use std::collections::HashMap;
+
+pub fn search(query: &str, index: &dyn Index, limit: u64) -> Result<Vec<u64>> {
+    let words: Vec<&str> = query.split_whitespace().collect();
+
+    let mut candidates: HashMap<DocId, DocCandidate> = HashMap::new();
+
+    for word in words {
+        let term = crate::utils::normalize_word(word);
+
+        if STOP_WORDS.contains(&term) {
+            continue;
+        }
+
+        if let Some(postings) = index.get_doc_postings_for_term(&term)? {
+            for posting in postings.iterator {
+                let relevance = scoring::calc_bm25(
+                    posting.term_count,
+                    posting.total_terms_count,
+                    postings.count as u64,
+                    index.get_index_stats().indexed_docs_count,
+                    index.get_index_stats().terms_count_per_doc_avg,
+                );
+
+                candidates
+                    .entry(posting.docid)
+                    .and_modify(|c| c.relevance += relevance)
+                    .or_insert(DocCandidate {
+                        id: posting.docid,
+                        relevance,
+                    });
+            }
+        }
+    }
+
+    let mut candidates: Vec<&DocCandidate> = candidates.values().collect();
+
+    if candidates.len() > limit as usize {
+        candidates.select_nth_unstable(limit as usize);
+        candidates.truncate(limit as usize);
+    }
+
+    candidates.sort();
+
+    let docids = candidates.iter().map(|c| c.id).collect();
+
+    Ok(docids)
+}

@@ -1,6 +1,7 @@
 use std::collections::HashSet;
+use std::sync::LazyLock;
 
-pub fn get_stop_words() -> HashSet<String> {
+pub static STOP_WORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
     // using same stop words as Apache Lucene in
     // https://github.com/apache/lucene/blob/41abd7ad3169fb54a2573341d2ab3fef815758ea/lucene/analysis/common/src/java/org/apache/lucene/analysis/en/EnglishAnalyzer.java#L47
     [
@@ -11,4 +12,4 @@ pub fn get_stop_words() -> HashSet<String> {
     ]
     .map(|s| s.to_string())
     .into()
-}
+});

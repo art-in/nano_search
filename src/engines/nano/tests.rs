@@ -53,7 +53,13 @@ fn test_search_limit() -> Result<()> {
     let docids = engine.search("cat", 2)?;
 
     // assert
-    assert_eq!(docids.len(), 2);
+    assert_eq!(
+        docids,
+        vec![
+            ID.cat,           // 1st - full match with query
+            ID.cat_mouse_cat, // 2nd - contains query term (twice)
+        ]
+    );
     Ok(())
 }
 
