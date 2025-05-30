@@ -3,7 +3,11 @@ use crate::{engines::nano::index::model::Index, model::doc::DocId};
 use anyhow::Result;
 use std::collections::HashMap;
 
-pub fn search(query: &str, index: &dyn Index, limit: u64) -> Result<Vec<u64>> {
+pub fn search(
+    query: &str,
+    index: &dyn Index,
+    limit: u64,
+) -> Result<Vec<DocId>> {
     let words: Vec<&str> = query.split_whitespace().collect();
 
     let mut candidates: HashMap<DocId, DocCandidate> = HashMap::new();
@@ -18,11 +22,13 @@ pub fn search(query: &str, index: &dyn Index, limit: u64) -> Result<Vec<u64>> {
         if let Some(postings) = index.get_doc_postings_for_term(&term)? {
             for posting in postings.iterator {
                 let relevance = scoring::calc_bm25(
-                    posting.term_count,
-                    posting.total_terms_count,
-                    postings.count as u64,
-                    index.get_index_stats().indexed_docs_count,
-                    index.get_index_stats().terms_count_per_doc_avg,
+                    scoring::ScoringParams {
+                        doc_term_count: posting.term_count,
+                        doc_total_terms_count: posting.total_terms_count,
+                        docs_with_term_count: postings.count as u64,
+                        docs_total_count: index.get_stats().indexed_docs_count,
+                    },
+                    index.get_stats().terms_count_per_doc_avg,
                 );
 
                 candidates

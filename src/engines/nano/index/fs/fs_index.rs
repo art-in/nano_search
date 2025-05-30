@@ -47,7 +47,7 @@ impl Index for FsIndex {
             Ok(None)
         }
     }
-    fn get_index_stats(&self) -> &IndexStats {
+    fn get_stats(&self) -> &IndexStats {
         &self.stats
     }
 }

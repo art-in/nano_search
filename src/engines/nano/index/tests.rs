@@ -71,7 +71,7 @@ fn test_build_index(index_type: IndexType) -> Result<()> {
     };
 
     assert_eq!(
-        index.get_index_stats(),
+        index.get_stats(),
         &IndexStats {
             indexed_docs_count: 7,
             posting_lists_count: 3,

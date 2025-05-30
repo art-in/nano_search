@@ -18,7 +18,7 @@ pub trait Index {
         &self,
         term: &Term,
     ) -> Result<Option<DocPostingsForTerm>>;
-    fn get_index_stats(&self) -> &IndexStats;
+    fn get_stats(&self) -> &IndexStats;
 }
 
 pub type Term = String;
