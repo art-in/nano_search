@@ -1,4 +1,7 @@
+use std::time::Instant;
+
 use anyhow::{Context, Result};
+
 use nano_search::{
     docs::{self, cisi},
     engines::{
@@ -10,7 +13,6 @@ use nano_search::{
     },
     utils::compare_arrays,
 };
-use std::time::Instant;
 
 fn main() -> Result<()> {
     let docs_source = create_docs_source()?;

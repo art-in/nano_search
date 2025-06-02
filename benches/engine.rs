@@ -1,8 +1,12 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main,
     measurement::WallTime,
 };
+use tempfile::TempDir;
+
 use nano_search::{
     docs::{self, cisi::model::Query},
     engines::{
@@ -11,8 +15,6 @@ use nano_search::{
     model::{doc::DocsSource, engine::SearchEngine},
     utils::panic_on_error,
 };
-use std::time::Duration;
-use tempfile::TempDir;
 
 #[derive(Debug)]
 enum IndexType {

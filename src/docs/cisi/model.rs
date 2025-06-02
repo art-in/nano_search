@@ -1,5 +1,6 @@
-use crate::model::doc::Doc;
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
+
+use crate::model::doc::Doc;
 
 pub struct CisiDocs {
     pub docs: Rc<RefCell<Vec<Doc>>>,

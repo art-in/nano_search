@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
+use anyhow::Result;
+
 use super::{model::DocCandidate, scoring, stop_words::STOP_WORDS};
 use crate::{engines::nano::index::model::Index, model::doc::DocId};
-use anyhow::Result;
-use std::collections::HashMap;
 
 pub fn search(
     query: &str,

@@ -1,6 +1,8 @@
-use super::doc::{Doc, DocId};
-use anyhow::Result;
 use std::path::Path;
+
+use anyhow::Result;
+
+use super::doc::{Doc, DocId};
 
 pub trait SearchEngine {
     /// Gets search engine name for debug logging purposes.

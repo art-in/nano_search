@@ -1,6 +1,7 @@
+use std::{cell::RefCell, rc::Rc};
+
 use super::model::CisiDocs;
 use crate::model::doc::{Doc, DocsSource};
-use std::{cell::RefCell, rc::Rc};
 
 pub struct CisiDocsIterator {
     docs: Rc<RefCell<Vec<Doc>>>,

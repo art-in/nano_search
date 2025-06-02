@@ -1,10 +1,9 @@
-use super::model::{DocPosting, DocPostingsForTerm, Index, Term};
-use crate::model::{
-    doc::{Doc, DocId},
-    engine::IndexStats,
-};
-use anyhow::Result;
 use std::collections::{BTreeMap, HashMap};
+
+use anyhow::Result;
+
+use super::model::{DocPosting, DocPostingsForTerm, Index, Term};
+use crate::model::{doc::{Doc, DocId}, engine::IndexStats};
 
 type TermPostingList = BTreeMap<DocId, DocPosting>;
 

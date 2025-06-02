@@ -1,11 +1,14 @@
-use super::fs_index::TermPostingListFileAddress;
-use crate::{
-    engines::nano::index::model::DocPosting, model::engine::IndexStats,
-};
-use anyhow::Result;
 use std::{
     collections::HashMap,
     io::{Read, Write},
+};
+
+use anyhow::Result;
+
+use super::fs_index::TermPostingListFileAddress;
+use crate::{
+    engines::nano::index::model::DocPosting,
+    model::engine::IndexStats,
 };
 
 pub trait BinarySerializable: Sized {

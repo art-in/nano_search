@@ -1,11 +1,13 @@
-use super::model::CisiDocs;
-use crate::model::doc::Doc;
-use anyhow::{Context, Result};
 use std::cell::RefCell;
 use std::fs::File;
 use std::io::BufRead;
 use std::path::PathBuf;
 use std::rc::Rc;
+
+use anyhow::{Context, Result};
+
+use super::model::CisiDocs;
+use crate::model::doc::Doc;
 
 enum ESectionType {
     DocId,

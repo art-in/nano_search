@@ -1,3 +1,12 @@
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufReader, BufWriter, Seek},
+    path::Path,
+};
+
+use anyhow::{Context, Result};
+
 use super::serialize::BinarySerializable;
 use crate::{
     engines::nano::index::{
@@ -5,13 +14,6 @@ use crate::{
         model::{DocPosting, DocPostingsForTerm, Index, Term},
     },
     model::engine::IndexStats,
-};
-use anyhow::{Context, Result};
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{BufReader, BufWriter, Seek},
-    path::Path,
 };
 
 pub struct FsIndex {

@@ -1,3 +1,7 @@
+use std::path::Path;
+
+use anyhow::{Context, Result};
+
 use super::{
     index::{
         build_index,
@@ -10,8 +14,6 @@ use crate::model::{
     doc::{Doc, DocId},
     engine::SearchEngine,
 };
-use anyhow::{Context, Result};
-use std::path::Path;
 
 pub struct NanoSearchEngine {
     index_type: IndexType,

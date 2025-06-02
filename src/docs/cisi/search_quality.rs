@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
+use anyhow::Result;
+
 use super::load_queries::load_queries;
 use crate::model::{doc::DocId, engine::SearchEngine};
-use anyhow::Result;
-use std::collections::HashSet;
 
 // TODO: abstract test queries and merge with docs source into model/
 // (e.g. trait DataSource = get_docs + get_queries?)

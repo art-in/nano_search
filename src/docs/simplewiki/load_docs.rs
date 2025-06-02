@@ -1,6 +1,8 @@
-use super::model::WikiDocs;
-use anyhow::Result;
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
+
+use anyhow::Result;
+
+use super::model::WikiDocs;
 
 pub fn load_docs() -> Result<WikiDocs> {
     load_docs_from("data/simplewiki/simplewiki.xml".into())

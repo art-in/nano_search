@@ -1,6 +1,8 @@
-use crate::model::{doc::DocId, engine::IndexStats};
-use anyhow::Result;
 use std::path::PathBuf;
+
+use anyhow::Result;
+
+use crate::model::{doc::DocId, engine::IndexStats};
 
 #[derive(Clone, PartialEq)]
 pub enum IndexType {

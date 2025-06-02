@@ -1,10 +1,11 @@
+use anyhow::Result;
+use tempfile::TempDir;
+
 use super::engine::NanoSearchEngine;
 use crate::{
     model::engine::SearchEngine,
     utils::test_docs::{ID, create_cat_mouse_docs_iterator},
 };
-use anyhow::Result;
-use tempfile::TempDir;
 
 #[test]
 fn test_search_fails_on_uninitialized_index() -> Result<()> {

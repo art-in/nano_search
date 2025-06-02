@@ -1,14 +1,16 @@
-use crate::model::{
-    doc::{Doc, DocId},
-    engine::SearchEngine,
-};
-use anyhow::{Context, Result};
 use std::path::Path;
+
+use anyhow::{Context, Result};
 use tantivy::{
     Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument,
     collector::TopDocs,
     query::QueryParser,
     schema::{Field, NumericOptions, Schema, TEXT, Value},
+};
+
+use crate::model::{
+    doc::{Doc, DocId},
+    engine::SearchEngine,
 };
 
 pub struct TantivySearchEngine {

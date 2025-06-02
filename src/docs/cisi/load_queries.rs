@@ -1,9 +1,11 @@
-use super::model::Query;
-use anyhow::{Context, Result};
 use std::{
     collections::BTreeMap,
     io::{BufRead, Read},
 };
+
+use anyhow::{Context, Result};
+
+use super::model::Query;
 
 pub fn load_queries() -> Result<Vec<Query>> {
     let queries_file = std::fs::File::open("data/cisi/CISI.QRY")

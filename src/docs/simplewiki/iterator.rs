@@ -1,6 +1,7 @@
+use std::{cell::RefCell, rc::Rc};
+
 use super::model::WikiDocs;
 use crate::model::doc::{Doc, DocsSource};
-use std::{cell::RefCell, rc::Rc};
 
 // TODO: stream docs from data file instead of loading all of them into memory
 pub struct WikiDocsIterator {
