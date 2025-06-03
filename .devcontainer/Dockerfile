@@ -1,4 +1,9 @@
-FROM rust:1.85
+FROM rust:latest
+
+# install rust nightly toolchain:
+# - few useful unstable rustfmt options work in nightly only (see rustfmt.toml)
+RUN rustup toolchain install nightly
+RUN rustup override set nightly
 
 # install rust components
-RUN rustup component add rustfmt clippy
+RUN rustup component add --toolchain nightly rustfmt clippy
