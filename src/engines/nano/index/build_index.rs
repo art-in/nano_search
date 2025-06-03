@@ -1,10 +1,8 @@
 use anyhow::Result;
 
-use super::{
-    fs::{build_fs_index, open_fs_index},
-    memory::build_memory_index,
-    model::{Index, IndexType},
-};
+use super::fs::{build_fs_index, open_fs_index};
+use super::memory::build_memory_index;
+use super::model::{Index, IndexType};
 use crate::model::doc::Doc;
 
 pub fn build_index(

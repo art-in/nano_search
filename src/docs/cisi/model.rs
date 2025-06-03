@@ -1,4 +1,6 @@
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::cell::RefCell;
+use std::collections::HashSet;
+use std::rc::Rc;
 
 use crate::model::doc::Doc;
 

@@ -1,15 +1,11 @@
-use std::{
-    collections::HashMap,
-    io::{Read, Write},
-};
+use std::collections::HashMap;
+use std::io::{Read, Write};
 
 use anyhow::Result;
 
 use super::fs_index::TermPostingListFileAddress;
-use crate::{
-    engines::nano::index::model::DocPosting,
-    model::engine::IndexStats,
-};
+use crate::engines::nano::index::model::DocPosting;
+use crate::model::engine::IndexStats;
 
 pub trait BinarySerializable: Sized {
     fn serialize(&self, write: &mut dyn Write) -> Result<()>;

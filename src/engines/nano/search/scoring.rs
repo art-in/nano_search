@@ -1,4 +1,5 @@
-//! Scoring module implements various document scoring algorithms for search relevance.
+//! Scoring module implements various document scoring algorithms for search
+//! relevance.
 
 /// Common parameters used across scoring algorithms
 #[derive(Debug, Clone, Copy)]
@@ -43,7 +44,8 @@ pub fn calc_tfidf(p: ScoringParams) -> f64 {
 ///
 /// # Arguments
 /// * `params` - Common scoring parameters
-/// * `terms_count_per_doc_avg` - Average number of terms across all documents in the index
+/// * `terms_count_per_doc_avg` - Average number of terms across all documents
+///   in the index
 ///
 /// # References
 /// - [Okapi BM25 on Wikipedia](https://en.wikipedia.org/wiki/Okapi_BM25)

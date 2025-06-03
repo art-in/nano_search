@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-// compares two arrays with distinct numbers by comparing set of windows on both arrays.
-// where window is a slice of elements starting from the begging of array.
-// each window equality is calculated by counting same elements in both arrays.
-// this approach naturally prioritize elements at the begging.
+// compares two arrays with distinct numbers by comparing set of windows on both
+// arrays. where window is a slice of elements starting from the begging of
+// array. each window equality is calculated by counting same elements in both
+// arrays. this approach naturally prioritize elements at the begging.
 pub fn compare_arrays(first_array: &[u64], second_array: &[u64]) -> f64 {
     if first_array.is_empty() ^ second_array.is_empty() {
         return 0.0;

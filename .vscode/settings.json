@@ -13,6 +13,5 @@
     },
     "resmon.show.cpufreq": false,
     "rust-analyzer.showUnlinkedFileNotification": false,
-    "rust-analyzer.rustfmt.extraArgs": ["--config", "max_width=80"],
     "rust-analyzer.check.command": "clippy"
 }

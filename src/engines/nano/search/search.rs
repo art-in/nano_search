@@ -2,8 +2,11 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use super::{model::DocCandidate, scoring, stop_words::STOP_WORDS};
-use crate::{engines::nano::index::model::Index, model::doc::DocId};
+use super::model::DocCandidate;
+use super::scoring;
+use super::stop_words::STOP_WORDS;
+use crate::engines::nano::index::model::Index;
+use crate::model::doc::DocId;
 
 pub fn search(
     query: &str,

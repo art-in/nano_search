@@ -1,7 +1,5 @@
-use std::{
-    collections::BTreeMap,
-    io::{BufRead, Read},
-};
+use std::collections::BTreeMap;
+use std::io::{BufRead, Read};
 
 use anyhow::{Context, Result};
 
@@ -38,7 +36,8 @@ enum ESectionType {
 
 // parses query contents from CISI.QRY file
 //
-// each query in CISI.QRY is defined in sequence of text lines, grouped by sections.
+// each query in CISI.QRY is defined in sequence of text lines, grouped by
+// sections.
 //
 // each section has following format:
 //  required section header :  .SECTION_TYPE <data>

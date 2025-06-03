@@ -1,4 +1,5 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use super::model::CisiDocs;
 use crate::model::doc::{Doc, DocsSource};

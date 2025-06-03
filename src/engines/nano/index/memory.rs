@@ -3,7 +3,8 @@ use std::collections::{BTreeMap, HashMap};
 use anyhow::Result;
 
 use super::model::{DocPosting, DocPostingsForTerm, Index, Term};
-use crate::model::{doc::{Doc, DocId}, engine::IndexStats};
+use crate::model::doc::{Doc, DocId};
+use crate::model::engine::IndexStats;
 
 type TermPostingList = BTreeMap<DocId, DocPosting>;
 
@@ -53,10 +54,7 @@ impl Index for MemoryIndex {
             Ok(Some(DocPostingsForTerm {
                 count: term_posting_list.len(),
                 iterator: Box::new(MemoryDocPostingsIterator::new(
-                    term_posting_list
-                        .iter()
-                        .map(|(_docid, posting)| posting.clone())
-                        .collect(),
+                    term_posting_list.values().cloned().collect(),
                 ))
                     as Box<dyn Iterator<Item = DocPosting>>,
             }))
@@ -82,11 +80,7 @@ pub fn build_memory_index(docs: &mut dyn Iterator<Item = Doc>) -> MemoryIndex {
             .iter()
             .filter_map(|word| {
                 let term = crate::utils::normalize_word(word);
-                if term.is_empty() {
-                    None
-                } else {
-                    Some(term)
-                }
+                if term.is_empty() { None } else { Some(term) }
             })
             .collect();
 

@@ -1,12 +1,11 @@
 use anyhow::{Context, Result};
 use tempfile::TempDir;
 
-use super::{model::IndexType, *};
-use crate::{
-    engines::nano::index::model::{DocPosting, Index},
-    model::engine::IndexStats,
-    utils::test_docs::{create_cat_mouse_docs_iterator, ID},
-};
+use super::model::IndexType;
+use super::*;
+use crate::engines::nano::index::model::{DocPosting, Index};
+use crate::model::engine::IndexStats;
+use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
 
 #[test]
 fn test_build_memory_index() -> Result<()> {

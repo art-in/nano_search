@@ -1,17 +1,13 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use tantivy::{
-    Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument,
-    collector::TopDocs,
-    query::QueryParser,
-    schema::{Field, NumericOptions, Schema, TEXT, Value},
-};
+use tantivy::collector::TopDocs;
+use tantivy::query::QueryParser;
+use tantivy::schema::{Field, NumericOptions, Schema, TEXT, Value};
+use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
 
-use crate::model::{
-    doc::{Doc, DocId},
-    engine::SearchEngine,
-};
+use crate::model::doc::{Doc, DocId};
+use crate::model::engine::SearchEngine;
 
 pub struct TantivySearchEngine {
     index: Index,

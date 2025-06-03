@@ -1,20 +1,16 @@
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{BufReader, BufWriter, Seek},
-    path::Path,
-};
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::{BufReader, BufWriter, Seek};
+use std::path::Path;
 
 use anyhow::{Context, Result};
 
 use super::serialize::BinarySerializable;
-use crate::{
-    engines::nano::index::{
-        memory::MemoryIndex,
-        model::{DocPosting, DocPostingsForTerm, Index, Term},
-    },
-    model::engine::IndexStats,
+use crate::engines::nano::index::memory::MemoryIndex;
+use crate::engines::nano::index::model::{
+    DocPosting, DocPostingsForTerm, Index, Term,
 };
+use crate::model::engine::IndexStats;
 
 pub struct FsIndex {
     terms: HashMap<Term, TermPostingListFileAddress>,

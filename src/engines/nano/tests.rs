@@ -2,10 +2,8 @@ use anyhow::Result;
 use tempfile::TempDir;
 
 use super::engine::NanoSearchEngine;
-use crate::{
-    model::engine::SearchEngine,
-    utils::test_docs::{ID, create_cat_mouse_docs_iterator},
-};
+use crate::model::engine::SearchEngine;
+use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
 
 #[test]
 fn test_search_fails_on_uninitialized_index() -> Result<()> {
@@ -116,7 +114,7 @@ fn test_search_with_multiple_words_query() -> Result<()> {
     assert_eq!(
         docids,
         vec![
-            ID.cat_mouse_cat, // 1st - full match with query (one term occures twice)
+            ID.cat_mouse_cat, // 1st - full match with query (one term twice)
             ID.cat_mouse,     // 2nd - full match with query
             ID.cat,           // 3rd - match with one of query terms
             ID.mouse,         // 4th - match with one of query terms

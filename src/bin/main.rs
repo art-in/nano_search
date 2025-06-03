@@ -1,18 +1,12 @@
 use std::time::Instant;
 
 use anyhow::{Context, Result};
-
-use nano_search::{
-    docs::{self, cisi},
-    engines::{
-        nano::engine::NanoSearchEngine, tantivy::engine::TantivySearchEngine,
-    },
-    model::{
-        doc::{DocId, DocsSource},
-        engine::SearchEngine,
-    },
-    utils::compare_arrays,
-};
+use nano_search::docs::{self, cisi};
+use nano_search::engines::nano::engine::NanoSearchEngine;
+use nano_search::engines::tantivy::engine::TantivySearchEngine;
+use nano_search::model::doc::{DocId, DocsSource};
+use nano_search::model::engine::SearchEngine;
+use nano_search::utils::compare_arrays;
 
 fn main() -> Result<()> {
     let docs_source = create_docs_source()?;
@@ -72,7 +66,7 @@ fn search(query: &str, engine: &dyn SearchEngine) -> Result<Vec<DocId>> {
 
     print!("found doc IDs: ");
     for docid in &found_docids {
-        print!("{} ", docid);
+        print!("{docid} ");
     }
     println!();
 
@@ -124,6 +118,6 @@ fn compare_search_results(search_results: &[Vec<DocId>]) {
     if search_results.len() >= 2 {
         let compare_result =
             compare_arrays(&search_results[0], &search_results[1]);
-        println!("comparing search results: {}", compare_result);
+        println!("comparing search results: {compare_result}");
     }
 }

@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use crate::model::{doc::DocId, engine::IndexStats};
+use crate::model::doc::DocId;
+use crate::model::engine::IndexStats;
 
 #[derive(Clone, PartialEq)]
 pub enum IndexType {
@@ -35,16 +36,17 @@ pub struct DocPosting {
     pub term_count: u64,
 
     /// Total number of terms in this document, i.e. document length.
-    /// Used in scoring functions like Tf-Idf/BM25 to normalize term frequencies
+    /// Used in scoring functions like Tf-Idf/BM25 to normalize term
+    /// frequencies
     ///
     /// Implementation Note:
-    /// This value is currently duplicated across all postings for the same document
-    /// in different term posting lists. A potential optimization would be to store
-    /// it separately, in some per-document structure
+    /// This value is currently duplicated across all postings for the same
+    /// document in different term posting lists. A potential optimization
+    /// would be to store it separately, in some per-document structure
     ///
-    /// For example, Tantivy uses a separate '.fieldnorm' file to store document lengths.
-    /// They use log-scaled approximations for better compression and search performance,
-    /// trading some precision for efficiency.
-    /// See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs#L18
+    /// For example, Tantivy uses a separate '.fieldnorm' file to store
+    /// document lengths. They use log-scaled approximations for better
+    /// compression and search performance, trading some precision for
+    /// efficiency. See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs#L18
     pub total_terms_count: u64,
 }

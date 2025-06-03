@@ -1,0 +1,10 @@
+max_width = 80
+comment_width = 80
+
+wrap_comments = true
+normalize_comments = true
+
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+
+format_strings = true

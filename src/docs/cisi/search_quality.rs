@@ -3,11 +3,13 @@ use std::collections::HashSet;
 use anyhow::Result;
 
 use super::load_queries::load_queries;
-use crate::model::{doc::DocId, engine::SearchEngine};
+use crate::model::doc::DocId;
+use crate::model::engine::SearchEngine;
 
 // TODO: abstract test queries and merge with docs source into model/
 // (e.g. trait DataSource = get_docs + get_queries?)
-// storing this code in cisi/ for now, since simplewiki/ does not have test queries
+// storing this code in cisi/ for now, since simplewiki/ does not have test
+// queries
 pub struct SearchQuality {
     pub queries_count: u64,
     pub precision_avg: f64,
