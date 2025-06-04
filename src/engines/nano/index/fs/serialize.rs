@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 
 use anyhow::Result;
 
-use super::fs_index::TermPostingListFileAddress;
+use super::model::TermPostingListFileAddress;
 use crate::engines::nano::index::model::DocPosting;
 use crate::model::engine::IndexStats;
 
@@ -112,15 +112,15 @@ impl BinarySerializable for DocPosting {
 impl BinarySerializable for TermPostingListFileAddress {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         self.postings_count.serialize(write)?;
-        self.start.serialize(write)?;
-        self.end.serialize(write)?;
+        self.start_byte.serialize(write)?;
+        self.end_byte.serialize(write)?;
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         Ok(TermPostingListFileAddress {
             postings_count: usize::deserialize(read)?,
-            start: u64::deserialize(read)?,
-            end: u64::deserialize(read)?,
+            start_byte: u64::deserialize(read)?,
+            end_byte: u64::deserialize(read)?,
         })
     }
 }

@@ -47,6 +47,6 @@ pub struct DocPosting {
     /// For example, Tantivy uses a separate '.fieldnorm' file to store
     /// document lengths. They use log-scaled approximations for better
     /// compression and search performance, trading some precision for
-    /// efficiency. See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs#L18
+    /// efficiency. See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs
     pub total_terms_count: u64,
 }
