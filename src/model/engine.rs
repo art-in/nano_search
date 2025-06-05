@@ -40,7 +40,6 @@ pub trait SearchEngine {
 #[derive(Default, PartialEq, Debug, Clone)]
 pub struct IndexStats {
     pub indexed_docs_count: u64,
-    pub posting_lists_count: u64,
     pub max_posting_list_size: u64,
     pub terms_count_per_doc_avg: f64,
 }

@@ -74,7 +74,6 @@ fn test_build_index(index_type: IndexType) -> Result<()> {
         index.get_stats(),
         &IndexStats {
             indexed_docs_count: 7,
-            posting_lists_count: 3,
             max_posting_list_size: 4,
             terms_count_per_doc_avg: 1.7142857142857142,
         }

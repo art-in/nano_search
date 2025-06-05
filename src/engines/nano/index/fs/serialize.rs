@@ -78,7 +78,6 @@ impl BinarySerializable for String {
 impl BinarySerializable for IndexStats {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         self.indexed_docs_count.serialize(write)?;
-        self.posting_lists_count.serialize(write)?;
         self.max_posting_list_size.serialize(write)?;
         self.terms_count_per_doc_avg.serialize(write)?;
         Ok(())
@@ -86,7 +85,6 @@ impl BinarySerializable for IndexStats {
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         Ok(IndexStats {
             indexed_docs_count: u64::deserialize(read)?,
-            posting_lists_count: u64::deserialize(read)?,
             max_posting_list_size: u64::deserialize(read)?,
             terms_count_per_doc_avg: f64::deserialize(read)?,
         })
