@@ -15,6 +15,22 @@ pub struct FsIndex {
     pub stats: IndexStats,
 }
 
+pub enum IndexFile {
+    Terms,
+    Postings,
+    Stats,
+}
+
+impl IndexFile {
+    pub fn name(&self) -> &'static str {
+        match self {
+            IndexFile::Terms => "terms",
+            IndexFile::Postings => "postings",
+            IndexFile::Stats => "stats",
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct TermPostingListFileAddress {
     pub postings_count: usize,
