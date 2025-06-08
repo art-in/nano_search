@@ -4,10 +4,9 @@ use anyhow::Result;
 
 use super::iterator::MemoryDocPostingsIterator;
 use crate::engines::nano::index::model::{
-    DocPosting, DocPostingsForTerm, Index, Term,
+    DocPosting, DocPostingsForTerm, Index, IndexStats, Term,
 };
 use crate::model::doc::DocId;
-use crate::model::engine::IndexStats;
 
 #[derive(Default)]
 pub struct MemoryIndex {

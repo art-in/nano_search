@@ -3,8 +3,7 @@ use tempfile::TempDir;
 
 use super::model::IndexType;
 use super::*;
-use crate::engines::nano::index::model::{DocPosting, Index};
-use crate::model::engine::IndexStats;
+use crate::engines::nano::index::model::{DocPosting, Index, IndexStats};
 use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
 
 #[test]

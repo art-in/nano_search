@@ -5,9 +5,8 @@ use anyhow::Result;
 
 use super::iterator::FsDocPostingsIterator;
 use crate::engines::nano::index::model::{
-    DocPosting, DocPostingsForTerm, Index, Term,
+    DocPosting, DocPostingsForTerm, Index, IndexStats, Term,
 };
-use crate::model::engine::IndexStats;
 
 pub struct FsIndex {
     pub terms: HashMap<Term, TermPostingListFileAddress>,

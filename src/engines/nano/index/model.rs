@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 
 use crate::model::doc::DocId;
-use crate::model::engine::IndexStats;
 
 #[derive(Clone, PartialEq)]
 pub enum IndexType {
@@ -22,6 +21,13 @@ pub trait Index {
         term: &Term,
     ) -> Result<Option<DocPostingsForTerm>>;
     fn get_stats(&self) -> &IndexStats;
+}
+
+#[derive(Default, PartialEq, Debug, Clone)]
+pub struct IndexStats {
+    pub indexed_docs_count: u64,
+    pub max_posting_list_size: u64,
+    pub terms_count_per_doc_avg: f64,
 }
 
 pub type Term = String;

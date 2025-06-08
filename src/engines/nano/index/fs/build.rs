@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use super::model::{FsIndex, IndexFile, TermPostingListFileAddress};
 use super::serialize::BinarySerializable;
 use crate::engines::nano::index::memory::MemoryIndex;
-use crate::model::engine::IndexStats;
+use crate::engines::nano::index::model::IndexStats;
 
 // fs index is built basically by serializing memory index into files,
 // since it's currently easier to reuse index building logic this way.

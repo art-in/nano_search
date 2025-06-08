@@ -4,8 +4,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use super::model::TermPostingListFileAddress;
-use crate::engines::nano::index::model::DocPosting;
-use crate::model::engine::IndexStats;
+use crate::engines::nano::index::model::{DocPosting, IndexStats};
 
 pub trait BinarySerializable: Sized {
     fn serialize(&self, write: &mut dyn Write) -> Result<()>;

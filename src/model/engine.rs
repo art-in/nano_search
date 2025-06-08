@@ -36,10 +36,3 @@ pub trait SearchEngine {
     /// Searches for documents relevant to passed query in the index.
     fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>>;
 }
-
-#[derive(Default, PartialEq, Debug, Clone)]
-pub struct IndexStats {
-    pub indexed_docs_count: u64,
-    pub max_posting_list_size: u64,
-    pub terms_count_per_doc_avg: f64,
-}
