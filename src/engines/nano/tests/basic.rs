@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tempfile::TempDir;
 
-use super::engine::NanoSearchEngine;
+use crate::engines::nano::engine::NanoSearchEngine;
 use crate::model::engine::SearchEngine;
 use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
 
