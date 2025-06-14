@@ -1,3 +1,5 @@
+pub mod wikidump;
+
 mod compare_arrays;
 pub use compare_arrays::*;
 

@@ -27,7 +27,7 @@ fn create_docs_source() -> Result<impl DocsSource> {
     print!("creating docs source... ");
     let now = Instant::now();
     let res = docs::cisi::load_docs()?;
-    // let res = docs::simplewiki::load_docs()?;
+    // let res = docs::wiki::WikiDocs::new("data/simplewiki/dump.xml.bz2")?;
     println!("done in {}ms", now.elapsed().as_millis());
     Ok(res)
 }

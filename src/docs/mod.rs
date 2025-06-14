@@ -1,2 +1,2 @@
 pub mod cisi;
-pub mod simplewiki;
+pub mod wiki;

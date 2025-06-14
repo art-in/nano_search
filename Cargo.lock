@@ -144,12 +144,11 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "bzip2"
-version = "0.4.4"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdb116a6ef3f6c3698828873ad02c3014b3c85cadb88496095628e3ef1e347f8"
+checksum = "49ecfb22d906f800d4fe833b6282cf4dc1c298f5057ca0b5445e5c209735ca47"
 dependencies = [
  "bzip2-sys",
- "libc",
 ]
 
 [[package]]
@@ -753,12 +752,14 @@ name = "nano_search"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bzip2",
  "criterion",
+ "parse_wiki_text",
+ "quick-xml",
  "rusty-hook",
  "stats-cli",
  "tantivy",
  "tempfile",
- "wikidump",
 ]
 
 [[package]]
@@ -908,9 +909,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.36.2"
+version = "0.37.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7649a7b4df05aed9ea7ec6f628c67c9953a43869b8bc50929569b2999d443fe"
+checksum = "331e97a1af0bf59823e6eadffe373d7b27f485be8748f71471c662c1f269b7fb"
 dependencies = [
  "memchr",
 ]
@@ -1558,18 +1559,6 @@ checksum = "33b6dd2ef9186f1f2072e409e99cd22a975331a6b3591b12c764e0e55c60d5d2"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "wikidump"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dca6e4e26a02cee78163ea093e33738b4dcdecb1c13ca34c49981ea645e255c7"
-dependencies = [
- "bzip2",
- "parse_wiki_text",
- "quick-xml",
- "rayon",
 ]
 
 [[package]]
