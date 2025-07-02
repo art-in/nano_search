@@ -14,8 +14,8 @@ pub struct SearchQuality {
     pub queries_count: u64,
     pub precision_avg: f64,
     pub recall_avg: f64,
-    pub precision_percs: inc_stats::Percentiles<f64>,
-    pub recall_percs: inc_stats::Percentiles<f64>,
+    pub precisions: inc_stats::Percentiles<f64>,
+    pub recalls: inc_stats::Percentiles<f64>,
 }
 
 pub struct QuerySearchQuality {
@@ -31,8 +31,8 @@ pub fn search_and_calc_quality(
     let mut precision_sum: f64 = 0.0;
     let mut recall_sum: f64 = 0.0;
 
-    let mut precision_percs = inc_stats::Percentiles::new();
-    let mut recall_percs = inc_stats::Percentiles::new();
+    let mut precisions = inc_stats::Percentiles::new();
+    let mut recalls = inc_stats::Percentiles::new();
 
     for query in &queries {
         let found_docids = engine.search(&query.text, 10)?;
@@ -43,8 +43,8 @@ pub fn search_and_calc_quality(
         precision_sum += quality.precision;
         recall_sum += quality.recall;
 
-        precision_percs.add(quality.precision);
-        recall_percs.add(quality.recall);
+        precisions.add(quality.precision);
+        recalls.add(quality.recall);
     }
 
     let precision_avg = precision_sum / queries.len() as f64;
@@ -54,8 +54,8 @@ pub fn search_and_calc_quality(
         queries_count: queries.len() as u64,
         precision_avg,
         recall_avg,
-        precision_percs,
-        recall_percs,
+        precisions,
+        recalls,
     })
 }
 

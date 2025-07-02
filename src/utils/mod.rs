@@ -3,6 +3,9 @@ pub mod wikidump;
 mod compare_arrays;
 pub use compare_arrays::*;
 
+mod percentile;
+pub use percentile::GetPercentile;
+
 mod normalize;
 pub use normalize::*;
 

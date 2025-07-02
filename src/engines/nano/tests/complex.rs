@@ -1,9 +1,10 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use tempfile::TempDir;
 
 use crate::docs;
 use crate::engines::nano::engine::NanoSearchEngine;
 use crate::model::engine::SearchEngine;
+use crate::utils::GetPercentile;
 
 #[test]
 fn test_cisi_create_in_memory() -> Result<()> {
@@ -53,22 +54,16 @@ fn assert_search_quality(engine: &NanoSearchEngine) -> Result<()> {
     assert_eq!(quality.queries_count, 112);
 
     // assert precision
-    let precision_percs = quality
-        .precision_percs
-        .percentiles([0.5, 0.9, 1.0])?
-        .context("percentiles should exist in result")?;
-
     assert_eq!(quality.precision_avg, 0.18839285714285722);
-    assert_eq!(precision_percs, [0.1, 0.5900000000000005, 0.9]);
+    assert_eq!(quality.precisions.perc(0.5)?, 0.1);
+    assert_eq!(quality.precisions.perc(0.9)?, 0.5900000000000005);
+    assert_eq!(quality.precisions.perc(1.0)?, 0.9);
 
     // assert recall
-    let recall_percs = quality
-        .recall_percs
-        .percentiles([0.5, 0.9, 1.0])?
-        .context("percentiles should exist in result")?;
-
     assert_eq!(quality.recall_avg, 0.3950924054027019);
-    assert_eq!(recall_percs, [0.11596638655462185, 1.0, 1.0]);
+    assert_eq!(quality.recalls.perc(0.5)?, 0.11596638655462185);
+    assert_eq!(quality.recalls.perc(0.9)?, 1.0);
+    assert_eq!(quality.recalls.perc(1.0)?, 1.0);
 
     Ok(())
 }
