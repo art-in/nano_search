@@ -1,8 +1,8 @@
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use bzip2::read::MultiBzDecoder;
 use quick_xml::reader::Reader;
 
@@ -23,21 +23,7 @@ pub struct WikiDump {
 impl WikiDump {
     pub fn new<P: AsRef<Path>>(file_path: P) -> Result<Self> {
         let file_path = file_path.as_ref().to_path_buf();
-
-        if !Self::is_bz_compressed_file(&file_path)? {
-            bail!("input file should be bzip2 compressed");
-        }
-
         Ok(Self { file_path })
-    }
-
-    fn is_bz_compressed_file<P: AsRef<Path>>(file_path: &P) -> Result<bool> {
-        const MAGIC_BYTES: [u8; 3] = *b"BZh";
-        let mut buf = [0u8; 3];
-
-        File::open(file_path)?.read_exact(&mut buf)?;
-
-        Ok(buf == MAGIC_BYTES)
     }
 
     fn create_xml_reader(&self) -> Result<XmlReader> {

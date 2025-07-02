@@ -1,5 +1,5 @@
 use super::model::WikiDocs;
-use crate::model::doc::{Doc, DocsSource};
+use crate::model::doc::Doc;
 use crate::utils::wikidump::WikiPagesIterator;
 
 pub struct WikiDocsIterator {
@@ -39,5 +39,3 @@ impl Iterator for WikiDocsIterator {
         doc
     }
 }
-
-impl DocsSource for WikiDocs {}

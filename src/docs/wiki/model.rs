@@ -2,6 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
+use crate::model::doc::DocsSource;
 use crate::utils::wikidump::WikiDump;
 
 #[derive(Clone)]
@@ -16,3 +17,5 @@ impl WikiDocs {
         })
     }
 }
+
+impl DocsSource for WikiDocs {}
