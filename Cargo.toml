@@ -10,6 +10,8 @@ anyhow = "1.0.98"
 bzip2 = "0.5.2"
 parse_wiki_text = "0.1.5"
 quick-xml = "0.37.5"
+itertools = "0.14.0"
+uuid = { version = "1.17.0", features = ["v4"] }
 serde_json = "1.0"
 human_format = "1.1.0"
 

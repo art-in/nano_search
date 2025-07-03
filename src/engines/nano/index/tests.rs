@@ -3,7 +3,9 @@ use tempfile::TempDir;
 
 use super::model::IndexType;
 use super::*;
-use crate::engines::nano::index::model::{DocPosting, Index, IndexStats};
+use crate::engines::nano::index::model::{
+    DocPosting, Index, IndexSegmentStats,
+};
 use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
 
 #[test]
@@ -21,10 +23,12 @@ fn test_build_index(index_type: IndexType) -> Result<()> {
     // setup
     let index: Box<dyn Index + 'static> =
         build_index(&index_type, &mut create_cat_mouse_docs_iterator())?;
+    let segments = index.get_segments();
+    let segment = segments[0];
 
     {
         // execute
-        let res = index.get_doc_postings_for_term(&"xxx".to_string())?;
+        let res = segment.get_doc_postings_for_term(&"xxx".to_string())?;
 
         // assert
         assert!(res.is_none(), "postings for term 'xxx' should not be found");
@@ -32,7 +36,7 @@ fn test_build_index(index_type: IndexType) -> Result<()> {
 
     {
         // execute
-        let doc_postings_for_term = index
+        let doc_postings_for_term = segment
             .get_doc_postings_for_term(&"cat".to_string())?
             .context("postings for term 'cat' should be found")?;
 
@@ -70,8 +74,8 @@ fn test_build_index(index_type: IndexType) -> Result<()> {
     };
 
     assert_eq!(
-        index.get_stats(),
-        &IndexStats {
+        segment.get_stats(),
+        &IndexSegmentStats {
             indexed_docs_count: 7,
             max_posting_list_size: 4,
             terms_count_per_doc_avg: 1.7142857142857142,

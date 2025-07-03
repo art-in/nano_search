@@ -4,33 +4,53 @@ use anyhow::Result;
 
 use crate::model::doc::DocId;
 
+pub type Term = String;
+
 #[derive(Clone, PartialEq)]
 pub enum IndexType {
+    // Index which is build fully in memory.
+    // Can be used to hold small, non-persistent and fast index.
     MemoryIndex,
+
+    // Index which is persisted to file system on disk.
+    // It holds dictionary part in memory, but main part with postings is read
+    // from disk.
     FsIndex(PathBuf),
 }
 
-pub struct DocPostingsForTerm {
-    pub count: usize,
-    pub iterator: Box<dyn Iterator<Item = DocPosting>>,
+pub trait Index {
+    fn get_segments(&self) -> Vec<&dyn IndexSegment>;
 }
 
-pub trait Index {
+/// Segment is an independent, self sufficient part of index,
+/// meaning that it can be build and searched upone separately
+/// from other parts
+pub trait IndexSegment {
     fn get_doc_postings_for_term(
         &self,
         term: &Term,
     ) -> Result<Option<DocPostingsForTerm>>;
-    fn get_stats(&self) -> &IndexStats;
+    fn get_stats(&self) -> &IndexSegmentStats;
 }
 
+/// Some useful statistics for search candidates scoring and debugging
 #[derive(Default, PartialEq, Debug, Clone)]
-pub struct IndexStats {
+pub struct IndexSegmentStats {
     pub indexed_docs_count: u64,
     pub max_posting_list_size: u64,
     pub terms_count_per_doc_avg: f64,
 }
 
-pub type Term = String;
+/// Represents so called posting list (or inverted list) - list of references to
+/// documents, which contain specific term.
+///
+/// This iterator abstracts the way reading is implemented for memory and fs
+/// index types. I.e. memory index just reads postings from in-memory structure,
+/// while fs index reads them from disk
+pub struct DocPostingsForTerm {
+    pub count: usize,
+    pub iterator: Box<dyn Iterator<Item = DocPosting>>,
+}
 
 /// Represents a document posting entry in the index for a specific term
 #[derive(Clone, PartialEq, Debug)]

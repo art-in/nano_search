@@ -5,13 +5,18 @@ use anyhow::Result;
 
 use super::iterator::FsDocPostingsIterator;
 use crate::engines::nano::index::model::{
-    DocPosting, DocPostingsForTerm, Index, IndexStats, Term,
+    DocPosting, DocPostingsForTerm, Index, IndexSegment, IndexSegmentStats,
+    Term,
 };
 
 pub struct FsIndex {
+    pub segments: Vec<FsIndexSegment>,
+}
+
+pub struct FsIndexSegment {
     pub terms: HashMap<Term, TermPostingListFileAddress>,
     pub postings_file: File,
-    pub stats: IndexStats,
+    pub stats: IndexSegmentStats,
 }
 
 pub enum IndexFile {
@@ -38,6 +43,18 @@ pub struct TermPostingListFileAddress {
 }
 
 impl Index for FsIndex {
+    fn get_segments(&self) -> Vec<&dyn IndexSegment> {
+        let mut res: Vec<&dyn IndexSegment> = Vec::new();
+
+        for segment in &self.segments {
+            res.push(segment);
+        }
+
+        res
+    }
+}
+
+impl IndexSegment for FsIndexSegment {
     fn get_doc_postings_for_term(
         &self,
         term: &Term,
@@ -57,7 +74,7 @@ impl Index for FsIndex {
             Ok(None)
         }
     }
-    fn get_stats(&self) -> &IndexStats {
+    fn get_stats(&self) -> &IndexSegmentStats {
         &self.stats
     }
 }

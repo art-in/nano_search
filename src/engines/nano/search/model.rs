@@ -1,6 +1,6 @@
 use crate::model::doc::DocId;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DocCandidate {
     pub id: DocId,
     pub relevance: f64,

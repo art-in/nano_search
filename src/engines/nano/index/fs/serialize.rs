@@ -4,7 +4,7 @@ use std::io::{Read, Write};
 use anyhow::Result;
 
 use super::model::TermPostingListFileAddress;
-use crate::engines::nano::index::model::{DocPosting, IndexStats};
+use crate::engines::nano::index::model::{DocPosting, IndexSegmentStats};
 
 pub trait BinarySerializable: Sized {
     fn serialize(&self, write: &mut dyn Write) -> Result<()>;
@@ -74,7 +74,7 @@ impl BinarySerializable for String {
     }
 }
 
-impl BinarySerializable for IndexStats {
+impl BinarySerializable for IndexSegmentStats {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         self.indexed_docs_count.serialize(write)?;
         self.max_posting_list_size.serialize(write)?;
@@ -82,7 +82,7 @@ impl BinarySerializable for IndexStats {
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        Ok(IndexStats {
+        Ok(IndexSegmentStats {
             indexed_docs_count: u64::deserialize(read)?,
             max_posting_list_size: u64::deserialize(read)?,
             terms_count_per_doc_avg: f64::deserialize(read)?,
