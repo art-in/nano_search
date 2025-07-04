@@ -7,3 +7,6 @@ RUN rustup override set nightly
 
 # install rust components
 RUN rustup component add --toolchain nightly rustfmt clippy
+
+# install tools
+RUN cargo install --locked samply

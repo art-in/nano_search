@@ -14,5 +14,13 @@
 				"ms-vscode.hexeditor"
 			]
 		}
+	},
+	"runArgs": [
+		// allow to use sysctl inside container
+		"--privileged=true"
+	],
+	"postCreateCommand": {
+		// allow to collect perf events for CPU profiling via samply
+		"allowPerf": "sysctl kernel.perf_event_paranoid=1"
 	}
-  }
+}

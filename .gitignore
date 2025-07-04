@@ -3,3 +3,6 @@
 
 # search index artifacts
 /index_*
+
+# samply's CPU profiling artifacts
+profile.json.gz
