@@ -29,12 +29,10 @@ fn init_search_engines() -> Result<Vec<Box<dyn SearchEngine>>> {
 fn create_docs_source() -> Result<impl DocsSource> {
     print!("creating docs source... ");
     let now = Instant::now();
-    // let res = docs::cisi::load_docs()?;
+    let res = docs::cisi::load_docs()?;
     // let res = docs::wiki::WikiDocs::new("data/simplewiki/dump.xml.bz2")?;
-    // let res = docs::wiki::WikiDocs::new("data/enwiki/dump.xml.bz2")?;
-    let res = docs::wiki_parsed::WikiDocs::new(
-        "data/enwiki_parsed/wiki-articles.json",
-    );
+    // let res = docs::json::JsonDocs::new("data/enwiki_json/wiki-articles.json"
+    // );
     println!("done in {}ms", now.elapsed().as_millis());
     Ok(res)
 }
@@ -46,7 +44,7 @@ fn index(
     println!("indexing docs with {} search engine... ", engine.get_name());
     let now = Instant::now();
     engine.index_docs(&mut log_progress(docs_source.into_iter()))?;
-    println!("done in {}ms", now.elapsed().as_millis());
+    println!("done in {:.1} seconds", now.elapsed().as_secs_f32());
 
     Ok(())
 }

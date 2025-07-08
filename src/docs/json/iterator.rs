@@ -3,30 +3,30 @@ use std::io::{BufRead, BufReader, Lines};
 
 use serde_json::{Map, Value};
 
-use super::model::WikiDocs;
+use super::model::JsonDocs;
 use crate::model::doc::{Doc, DocId};
 
-pub struct WikiDocsIterator {
+pub struct JsonDocsIterator {
     lines: Lines<BufReader<File>>,
     docid: DocId,
 }
 
-impl IntoIterator for WikiDocs {
+impl IntoIterator for JsonDocs {
     type Item = Doc;
-    type IntoIter = WikiDocsIterator;
+    type IntoIter = JsonDocsIterator;
 
     fn into_iter(self) -> Self::IntoIter {
         let file = File::open(self.file_path).expect("file should exist");
         let reader = BufReader::new(file);
 
-        WikiDocsIterator {
+        JsonDocsIterator {
             lines: reader.lines(),
             docid: 0,
         }
     }
 }
 
-impl Iterator for WikiDocsIterator {
+impl Iterator for JsonDocsIterator {
     type Item = Doc;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -35,7 +35,7 @@ impl Iterator for WikiDocsIterator {
             .next()
             .map(|line| line.expect("should read line"))
             .map(|line| {
-                parse_json_doc(&line, self.docid)
+                parse_doc_from_json(&line, self.docid)
                     .expect("doc should be parsed from json string")
             });
 
@@ -45,9 +45,8 @@ impl Iterator for WikiDocsIterator {
     }
 }
 
-fn parse_json_doc(json_string: &str, docid: DocId) -> Option<Doc> {
-    let json_obj: Map<String, Value> =
-        serde_json::from_str(json_string).ok()?;
+fn parse_doc_from_json(json: &str, docid: DocId) -> Option<Doc> {
+    let json_obj: Map<String, Value> = serde_json::from_str(json).ok()?;
 
     let body = json_obj.get("body")?.as_str()?.to_string();
 

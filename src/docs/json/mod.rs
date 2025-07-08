@@ -1,4 +1,4 @@
 mod iterator;
 
 mod model;
-pub use model::WikiDocs;
+pub use model::JsonDocs;

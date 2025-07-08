@@ -3,16 +3,16 @@ use std::path::{Path, PathBuf};
 use crate::model::doc::DocsSource;
 
 #[derive(Clone)]
-pub struct WikiDocs {
+pub struct JsonDocs {
     pub file_path: PathBuf,
 }
 
-impl WikiDocs {
+impl JsonDocs {
     pub fn new(file_path: impl AsRef<Path>) -> Self {
-        WikiDocs {
+        JsonDocs {
             file_path: file_path.as_ref().to_path_buf(),
         }
     }
 }
 
-impl DocsSource for WikiDocs {}
+impl DocsSource for JsonDocs {}

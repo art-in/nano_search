@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::model::CisiDocs;
-use crate::model::doc::{Doc, DocsSource};
+use crate::model::doc::Doc;
 
 pub struct CisiDocsIterator {
     docs: Rc<RefCell<Vec<Doc>>>,
@@ -34,5 +34,3 @@ impl Iterator for CisiDocsIterator {
         }
     }
 }
-
-impl DocsSource for CisiDocs {}

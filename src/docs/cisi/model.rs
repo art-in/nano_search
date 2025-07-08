@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use crate::model::doc::Doc;
+use crate::model::doc::{Doc, DocsSource};
 
 pub struct CisiDocs {
     pub docs: Rc<RefCell<Vec<Doc>>>,
@@ -15,6 +15,8 @@ impl Clone for CisiDocs {
         }
     }
 }
+
+impl DocsSource for CisiDocs {}
 
 #[derive(Default, Clone)]
 pub struct Query {
