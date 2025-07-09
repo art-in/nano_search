@@ -7,24 +7,29 @@ use crate::model::doc::DocId;
 pub type Term = String;
 
 #[derive(Clone, PartialEq)]
-pub enum IndexType {
-    // Index which is build fully in memory.
-    // Can be used to hold small, non-persistent and fast index.
-    MemoryIndex,
+pub enum IndexMedium {
+    /// Index built and used entirely in RAM.
+    /// - Suitable for small indices that fit in memory
+    /// - Fast indexing and searching (no file I/O)
+    /// - Non-persistent: lost on shutdown
+    /// - Used for building disk segments and in unit tests
+    Memory,
 
-    // Index which is persisted to file system on disk.
-    // It holds dictionary part in memory, but main part with postings is read
-    // from disk.
-    FsIndex(PathBuf),
+    /// Index persisted to the file system on the disk.
+    /// - Supports large indices by splitting into segments
+    /// - Total size limited mainly by disk space
+    /// - Most data is on disk; term dictionary is memory-resident
+    Disk(PathBuf),
 }
 
+/// An index is composed of one or more segments.
+/// Each segment can be built and searched independently.
 pub trait Index {
     fn get_segments(&self) -> Vec<&dyn IndexSegment>;
 }
 
-/// Segment is an independent, self sufficient part of index,
-/// meaning that it can be build and searched upone separately
-/// from other parts
+/// A segment is a self-contained part of the index.
+/// Segments can be built and searched independently from each other.
 pub trait IndexSegment {
     fn get_doc_postings_for_term(
         &self,
@@ -33,37 +38,43 @@ pub trait IndexSegment {
     fn get_stats(&self) -> &IndexSegmentStats;
 }
 
-/// Some useful statistics for search candidates scoring and debugging
+/// Useful statistics for search results scoring and debugging.
 #[derive(Default, PartialEq, Debug, Clone)]
 pub struct IndexSegmentStats {
+    /// Number of documents indexed in this segment
     pub indexed_docs_count: u64,
+
+    /// Largest posting list size in this segment
     pub max_posting_list_size: u64,
+    
+    /// Average number of terms per document
     pub terms_count_per_doc_avg: f64,
 }
 
-/// Represents so called posting list (or inverted list) - list of references to
-/// documents, which contain specific term.
+/// Posting list (inverted list): references to documents containing a term.
 ///
-/// This iterator abstracts the way reading is implemented for memory and fs
-/// index types. I.e. memory index just reads postings from in-memory structure,
-/// while fs index reads them from disk
+/// Abstracts over memory and disk index implementations:
+/// - Memory: reads from in-memory structures
+/// - Disk: reads from on-disk segment files
 pub struct DocPostingsForTerm {
+    /// Total number of postings, that can be read through the iterator
     pub count: usize,
+    
+    /// Iterator over postings
     pub iterator: Box<dyn Iterator<Item = DocPosting>>,
 }
 
-/// Represents a document posting entry in the index for a specific term
+/// Reference to document containing specific term.
 #[derive(Clone, PartialEq, Debug)]
 pub struct DocPosting {
-    /// Unique identifier for the document
+    /// Unique document identifier
     pub docid: DocId,
 
-    /// Number of times this term appears in the document, i.e. term frequency
+    /// Number of times the term appears in the document (term frequency)
     pub term_count: u64,
 
-    /// Total number of terms in this document, i.e. document length.
-    /// Used in scoring functions like Tf-Idf/BM25 to normalize term
-    /// frequencies
+    /// Total number of terms in the document (document length).
+    /// Used for scoring (e.g., Tf-Idf, BM25) to normalize term frequencies.
     ///
     /// Implementation Note:
     /// This value is currently duplicated across all postings for the same
@@ -73,6 +84,7 @@ pub struct DocPosting {
     /// For example, Tantivy uses a separate '.fieldnorm' file to store
     /// document lengths. They use log-scaled approximations for better
     /// compression and search performance, trading some precision for
-    /// efficiency. See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs
+    /// efficiency.
+    /// See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs
     pub total_terms_count: u64,
 }

@@ -14,7 +14,7 @@ fn main() -> Result<()> {
     let mut results = Vec::new();
 
     for engine in &engines {
-        let res = search("needle", engine.as_ref())?;
+        let res = search("good egg", engine.as_ref())?;
         results.push(res);
     }
 

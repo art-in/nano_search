@@ -7,12 +7,12 @@ use super::model::TermPostingListFileAddress;
 use super::serialize::BinarySerializable;
 use crate::engines::nano::index::model::DocPosting;
 
-pub struct FsDocPostingsIterator {
+pub struct DiskDocPostingsIterator {
     postings_file_reader: BufReader<File>,
     end_position: u64,
 }
 
-impl FsDocPostingsIterator {
+impl DiskDocPostingsIterator {
     pub fn new(
         postings_file: File,
         address: TermPostingListFileAddress,
@@ -23,14 +23,14 @@ impl FsDocPostingsIterator {
             .seek(std::io::SeekFrom::Start(address.start_byte))
             .context("postings file position should be moved")?;
 
-        Ok(FsDocPostingsIterator {
+        Ok(DiskDocPostingsIterator {
             postings_file_reader,
             end_position: address.end_byte,
         })
     }
 }
 
-impl Iterator for FsDocPostingsIterator {
+impl Iterator for DiskDocPostingsIterator {
     type Item = DocPosting;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -2,14 +2,14 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 
-use super::index::model::{Index, IndexType};
+use super::index::model::{Index, IndexMedium};
 use super::index::{build_index, open_index};
 use super::search::search;
 use crate::model::doc::{Doc, DocId};
 use crate::model::engine::SearchEngine;
 
 pub struct NanoSearchEngine {
-    index_type: IndexType,
+    index_medium: IndexMedium,
     index: Option<Box<dyn Index>>,
 }
 
@@ -27,7 +27,7 @@ impl SearchEngine for NanoSearchEngine {
         Self: Sized,
     {
         Ok(NanoSearchEngine {
-            index_type: IndexType::MemoryIndex,
+            index_medium: IndexMedium::Memory,
             index: None,
         })
     }
@@ -41,18 +41,18 @@ impl SearchEngine for NanoSearchEngine {
             .context("index dir should be created")?;
 
         Ok(NanoSearchEngine {
-            index_type: IndexType::FsIndex(index_dir.as_ref().to_path_buf()),
+            index_medium: IndexMedium::Disk(index_dir.as_ref().to_path_buf()),
             index: None,
         })
     }
 
     fn open_from_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
-        let index_type = IndexType::FsIndex(index_dir.as_ref().to_path_buf());
+        let index_medium = IndexMedium::Disk(index_dir.as_ref().to_path_buf());
         let index =
-            open_index(&index_type).context("index should be opened")?;
+            open_index(&index_medium).context("index should be opened")?;
 
         Ok(NanoSearchEngine {
-            index_type,
+            index_medium,
             index: Some(index),
         })
     }
@@ -62,7 +62,7 @@ impl SearchEngine for NanoSearchEngine {
         docs: &mut dyn Iterator<Item = Doc>,
     ) -> Result<()> {
         self.index = Some(
-            build_index(&self.index_type, docs)
+            build_index(&self.index_medium, docs)
                 .context("index should be built")?,
         );
         Ok(())

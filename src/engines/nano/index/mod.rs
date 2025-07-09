@@ -1,5 +1,5 @@
 mod build;
-mod fs;
+mod disk;
 mod memory;
 
 pub mod model;

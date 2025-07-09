@@ -3,4 +3,4 @@ mod iterator;
 mod model;
 mod serialize;
 
-pub use build::{build_fs_index, open_fs_index};
+pub use build::{build_disk_index, open_disk_index};

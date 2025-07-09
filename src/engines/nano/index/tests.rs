@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use tempfile::TempDir;
 
-use super::model::IndexType;
+use super::model::IndexMedium;
 use super::*;
 use crate::engines::nano::index::model::{
     DocPosting, Index, IndexSegmentStats,
@@ -10,19 +10,19 @@ use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
 
 #[test]
 fn test_build_memory_index() -> Result<()> {
-    test_build_index(model::IndexType::MemoryIndex)
+    test_build_index(IndexMedium::Memory)
 }
 
 #[test]
-fn test_build_fs_index() -> Result<()> {
+fn test_build_disk_index() -> Result<()> {
     let dir = TempDir::new()?;
-    test_build_index(model::IndexType::FsIndex(dir.path().to_path_buf()))
+    test_build_index(IndexMedium::Disk(dir.path().to_path_buf()))
 }
 
-fn test_build_index(index_type: IndexType) -> Result<()> {
+fn test_build_index(index_medium: IndexMedium) -> Result<()> {
     // setup
     let index: Box<dyn Index + 'static> =
-        build_index(&index_type, &mut create_cat_mouse_docs_iterator())?;
+        build_index(&index_medium, &mut create_cat_mouse_docs_iterator())?;
     let segments = index.get_segments();
     let segment = segments[0];
 

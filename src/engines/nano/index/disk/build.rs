@@ -6,9 +6,10 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use itertools::Itertools;
 
-use super::model::{FsIndex, IndexFile, TermPostingListFileAddress};
+use super::model::{
+    DiskIndex, DiskIndexSegment, IndexFile, TermPostingListFileAddress,
+};
 use super::serialize::BinarySerializable;
-use crate::engines::nano::index::fs::model::FsIndexSegment;
 use crate::engines::nano::index::memory::{MemoryIndex, build_memory_index};
 use crate::engines::nano::index::model::IndexSegmentStats;
 use crate::model::doc::Doc;
@@ -16,25 +17,25 @@ use crate::model::doc::Doc;
 const SEGMENT_DIR_PREFIX: &str = "segment-";
 const SEGMENT_MAX_DOCS: usize = 250000;
 
-pub fn build_fs_index(
+pub fn build_disk_index(
     docs: &mut dyn Iterator<Item = Doc>,
     index_dir: impl AsRef<Path>,
-) -> Result<FsIndex> {
+) -> Result<DiskIndex> {
     let mut segments = Vec::new();
 
     for docs_chunk in &docs.chunks(SEGMENT_MAX_DOCS) {
         let memory_index = build_memory_index(&mut docs_chunk.into_iter());
-        let segment = create_fs_index_segment(&memory_index, &index_dir)?;
+        let segment = build_disk_index_segment(&memory_index, &index_dir)?;
         segments.push(segment);
     }
 
-    Ok(FsIndex { segments })
+    Ok(DiskIndex { segments })
 }
 
-fn create_fs_index_segment(
+fn build_disk_index_segment(
     memory_index: &MemoryIndex,
     index_dir: impl AsRef<Path>,
-) -> Result<FsIndexSegment> {
+) -> Result<DiskIndexSegment> {
     let segment_id = uuid::Uuid::new_v4().as_simple().to_string();
     let segment_dir_name = SEGMENT_DIR_PREFIX.to_string() + &segment_id;
     let segment_dir = index_dir.as_ref().join(segment_dir_name);
@@ -71,7 +72,7 @@ fn create_fs_index_segment(
         .serialize(&mut stats_file)
         .context("stats should be serialized to file")?;
 
-    Ok(FsIndexSegment {
+    Ok(DiskIndexSegment {
         terms,
         postings_file: File::open(
             segment_dir.join(IndexFile::Postings.name()),
@@ -80,21 +81,21 @@ fn create_fs_index_segment(
     })
 }
 
-pub fn open_fs_index(index_dir: &Path) -> Result<FsIndex> {
+pub fn open_disk_index(index_dir: &Path) -> Result<DiskIndex> {
     let mut segments = Vec::new();
 
     for entry in fs::read_dir(index_dir)? {
         let entry = entry?;
         if entry.path().is_dir() {
-            let segment = open_fs_index_segment(&entry.path())?;
+            let segment = open_disk_index_segment(&entry.path())?;
             segments.push(segment);
         }
     }
 
-    Ok(FsIndex { segments })
+    Ok(DiskIndex { segments })
 }
 
-fn open_fs_index_segment(segment_dir: &Path) -> Result<FsIndexSegment> {
+fn open_disk_index_segment(segment_dir: &Path) -> Result<DiskIndexSegment> {
     let mut terms_file = open_reader(segment_dir, IndexFile::Terms)?;
     let mut stats_file = open_reader(segment_dir, IndexFile::Stats)?;
 
@@ -103,7 +104,7 @@ fn open_fs_index_segment(segment_dir: &Path) -> Result<FsIndexSegment> {
     )?;
     let stats = IndexSegmentStats::deserialize(&mut stats_file)?;
 
-    Ok(FsIndexSegment {
+    Ok(DiskIndexSegment {
         terms,
         postings_file: File::open(
             segment_dir.join(IndexFile::Postings.name()),
