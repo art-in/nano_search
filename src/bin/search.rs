@@ -58,7 +58,10 @@ fn compare_search_results(results: &[Vec<DocId>]) -> Result<()> {
 
         let similarity = compare_ranked_arrays(a, b)?;
 
-        println!("results similarity ({idx_a}-{idx_b}): {similarity}");
+        println!(
+            "results similarity ({idx_a}-{idx_b}): {:.2}%",
+            similarity * 100.0
+        );
     }
     Ok(())
 }

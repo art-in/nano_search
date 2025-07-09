@@ -1,14 +1,14 @@
 use anyhow::Result;
 use tempfile::TempDir;
 
-use crate::docs;
+use crate::data;
 use crate::engines::nano::engine::NanoSearchEngine;
 use crate::model::engine::SearchEngine;
 use crate::utils::GetPercentile;
 
 #[test]
 fn test_cisi_create_in_memory() -> Result<()> {
-    let docs = docs::cisi::load_docs()?;
+    let docs = data::cisi::load_docs()?;
 
     let mut engine = NanoSearchEngine::create_in_memory()?;
     engine.index_docs(&mut docs.into_iter())?;
@@ -20,7 +20,7 @@ fn test_cisi_create_in_memory() -> Result<()> {
 
 #[test]
 fn test_cisi_create_on_disk() -> Result<()> {
-    let docs = docs::cisi::load_docs()?;
+    let docs = data::cisi::load_docs()?;
     let dir = TempDir::new()?;
 
     let mut engine = NanoSearchEngine::create_on_disk(&dir)?;
@@ -33,7 +33,7 @@ fn test_cisi_create_on_disk() -> Result<()> {
 
 #[test]
 fn test_cisi_create_on_disk_and_open() -> Result<()> {
-    let docs = docs::cisi::load_docs()?;
+    let docs = data::cisi::load_docs()?;
     let dir = TempDir::new()?;
 
     {
@@ -49,7 +49,7 @@ fn test_cisi_create_on_disk_and_open() -> Result<()> {
 }
 
 fn assert_search_quality(engine: &NanoSearchEngine) -> Result<()> {
-    let quality = docs::cisi::search_quality::search_and_calc_quality(engine)?;
+    let quality = data::cisi::search_quality::search_and_calc_quality(engine)?;
 
     assert_eq!(quality.queries_count, 112);
 

@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Result;
-use nano_search::docs;
+use nano_search::data;
 use nano_search::engines::nano::engine::NanoSearchEngine;
 use nano_search::engines::tantivy::engine::TantivySearchEngine;
 use nano_search::model::doc::{Doc, DocsSource};
@@ -29,9 +29,9 @@ fn init_search_engines() -> Result<Vec<Box<dyn SearchEngine>>> {
 fn create_docs_source() -> Result<impl DocsSource> {
     print!("creating docs source... ");
     let now = Instant::now();
-    let res = docs::cisi::load_docs()?;
-    // let res = docs::wiki::WikiDocs::new("data/simplewiki/dump.xml.bz2")?;
-    // let res = docs::json::JsonDocs::new("data/enwiki_json/wiki-articles.json"
+    let res = data::cisi::load_docs()?;
+    // let res = data::wiki::WikiDocs::new("data/simplewiki/dump.xml.bz2")?;
+    // let res = data::json::JsonDocs::new("data/enwiki_json/wiki-articles.json"
     // );
     println!("done in {}ms", now.elapsed().as_millis());
     Ok(res)
