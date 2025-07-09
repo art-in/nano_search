@@ -1,12 +1,10 @@
-use std::path::PathBuf;
-
 use anyhow::Result;
 
+use super::disk::DiskIndexOptions;
 use crate::model::doc::DocId;
 
 pub type Term = String;
 
-#[derive(Clone, PartialEq)]
 pub enum IndexMedium {
     /// Index built and used entirely in RAM.
     /// - Suitable for small indices that fit in memory
@@ -19,7 +17,7 @@ pub enum IndexMedium {
     /// - Supports large indices by splitting into segments
     /// - Total size limited mainly by disk space
     /// - Most data is on disk; term dictionary is memory-resident
-    Disk(PathBuf),
+    Disk(DiskIndexOptions),
 }
 
 /// An index is composed of one or more segments.
@@ -46,7 +44,7 @@ pub struct IndexSegmentStats {
 
     /// Largest posting list size in this segment
     pub max_posting_list_size: u64,
-    
+
     /// Average number of terms per document
     pub terms_count_per_doc_avg: f64,
 }
@@ -59,7 +57,7 @@ pub struct IndexSegmentStats {
 pub struct DocPostingsForTerm {
     /// Total number of postings, that can be read through the iterator
     pub count: usize,
-    
+
     /// Iterator over postings
     pub iterator: Box<dyn Iterator<Item = DocPosting>>,
 }

@@ -11,8 +11,8 @@ pub fn build_index(
 ) -> Result<Box<dyn Index>> {
     match index_medium {
         IndexMedium::Memory => Ok(Box::new(build_memory_index(docs))),
-        IndexMedium::Disk(index_dir) => {
-            Ok(Box::new(build_disk_index(docs, index_dir)?))
+        IndexMedium::Disk(options) => {
+            Ok(Box::new(build_disk_index(docs, options)?))
         }
     }
 }
@@ -20,8 +20,6 @@ pub fn build_index(
 pub fn open_index(index_medium: &IndexMedium) -> Result<Box<dyn Index>> {
     match index_medium {
         IndexMedium::Memory => bail!("memory index cannot be opened"),
-        IndexMedium::Disk(index_dir) => {
-            Ok(Box::new(open_disk_index(index_dir)?))
-        }
+        IndexMedium::Disk(options) => Ok(Box::new(open_disk_index(options)?)),
     }
 }

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
@@ -8,6 +9,36 @@ use crate::engines::nano::index::model::{
     DocPosting, DocPostingsForTerm, Index, IndexSegment, IndexSegmentStats,
     Term,
 };
+
+pub struct DiskIndexOptions {
+    // Path to directory where index files is stored
+    index_dir: PathBuf,
+
+    // Maximum number of documents new segment is allowed to collect before
+    // dumping to disk and starting next segment
+    max_segment_docs: usize,
+}
+
+impl DiskIndexOptions {
+    pub fn new(index_dir: impl AsRef<Path>) -> Self {
+        DiskIndexOptions {
+            index_dir: index_dir.as_ref().to_path_buf(),
+            max_segment_docs: 250000,
+        }
+    }
+
+    pub fn get_index_dir(&self) -> &PathBuf {
+        &self.index_dir
+    }
+
+    pub fn set_max_segment_docs(&mut self, value: usize) -> &Self {
+        self.max_segment_docs = value;
+        self
+    }
+    pub fn get_max_segment_docs(&self) -> usize {
+        self.max_segment_docs
+    }
+}
 
 pub struct DiskIndex {
     pub segments: Vec<DiskIndexSegment>,
@@ -22,8 +53,10 @@ pub struct DiskIndexSegment {
 pub enum IndexFile {
     // Maps terms to offsets of corresponding posting lists in postings file
     Terms,
+
     // Posting lists for terms from Terms file
     Postings,
+
     // Statistics gathered while building index, which is used later by search
     // routine (e.g. for candidates scoring) and debugging
     Stats,
@@ -49,11 +82,9 @@ pub struct TermPostingListFileAddress {
 impl Index for DiskIndex {
     fn get_segments(&self) -> Vec<&dyn IndexSegment> {
         let mut res: Vec<&dyn IndexSegment> = Vec::new();
-
         for segment in &self.segments {
             res.push(segment);
         }
-
         res
     }
 }

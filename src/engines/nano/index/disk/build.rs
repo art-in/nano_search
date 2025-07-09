@@ -10,22 +10,23 @@ use super::model::{
     DiskIndex, DiskIndexSegment, IndexFile, TermPostingListFileAddress,
 };
 use super::serialize::BinarySerializable;
+use crate::engines::nano::index::disk::DiskIndexOptions;
 use crate::engines::nano::index::memory::{MemoryIndex, build_memory_index};
 use crate::engines::nano::index::model::IndexSegmentStats;
 use crate::model::doc::Doc;
 
 const SEGMENT_DIR_PREFIX: &str = "segment-";
-const SEGMENT_MAX_DOCS: usize = 250000;
 
 pub fn build_disk_index(
     docs: &mut dyn Iterator<Item = Doc>,
-    index_dir: impl AsRef<Path>,
+    options: &DiskIndexOptions,
 ) -> Result<DiskIndex> {
     let mut segments = Vec::new();
 
-    for docs_chunk in &docs.chunks(SEGMENT_MAX_DOCS) {
+    for docs_chunk in &docs.chunks(options.get_max_segment_docs()) {
         let memory_index = build_memory_index(&mut docs_chunk.into_iter());
-        let segment = build_disk_index_segment(&memory_index, &index_dir)?;
+        let segment =
+            build_disk_index_segment(&memory_index, options.get_index_dir())?;
         segments.push(segment);
     }
 
@@ -81,10 +82,10 @@ fn build_disk_index_segment(
     })
 }
 
-pub fn open_disk_index(index_dir: &Path) -> Result<DiskIndex> {
+pub fn open_disk_index(options: &DiskIndexOptions) -> Result<DiskIndex> {
     let mut segments = Vec::new();
 
-    for entry in fs::read_dir(index_dir)? {
+    for entry in fs::read_dir(options.get_index_dir())? {
         let entry = entry?;
         if entry.path().is_dir() {
             let segment = open_disk_index_segment(&entry.path())?;

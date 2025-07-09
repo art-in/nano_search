@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use tempfile::TempDir;
 
+use super::disk::DiskIndexOptions;
 use super::model::IndexMedium;
 use super::*;
 use crate::engines::nano::index::model::{
@@ -16,7 +17,7 @@ fn test_build_memory_index() -> Result<()> {
 #[test]
 fn test_build_disk_index() -> Result<()> {
     let dir = TempDir::new()?;
-    test_build_index(IndexMedium::Disk(dir.path().to_path_buf()))
+    test_build_index(IndexMedium::Disk(DiskIndexOptions::new(&dir)))
 }
 
 fn test_build_index(index_medium: IndexMedium) -> Result<()> {
