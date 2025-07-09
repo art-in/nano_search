@@ -6,7 +6,7 @@ use nano_search::engines::nano::engine::NanoSearchEngine;
 use nano_search::engines::tantivy::engine::TantivySearchEngine;
 use nano_search::model::doc::DocId;
 use nano_search::model::engine::SearchEngine;
-use nano_search::utils::compare_arrays;
+use nano_search::utils::compare_ranked_arrays;
 
 fn main() -> Result<()> {
     let engines = init_search_engines()?;
@@ -18,7 +18,7 @@ fn main() -> Result<()> {
         results.push(res);
     }
 
-    compare_search_results(&results);
+    compare_search_results(&results)?;
 
     Ok(())
 }
@@ -51,13 +51,14 @@ fn search(query: &str, engine: &dyn SearchEngine) -> Result<Vec<DocId>> {
     Ok(found_docids)
 }
 
-fn compare_search_results(results: &[Vec<DocId>]) {
+fn compare_search_results(results: &[Vec<DocId>]) -> Result<()> {
     for (idx_a, idx_b) in (0..results.len()).tuple_combinations() {
         let a = &results[idx_a];
         let b = &results[idx_b];
 
-        let similarity = compare_arrays(a, b);
+        let similarity = compare_ranked_arrays(a, b)?;
 
         println!("results similarity ({idx_a}-{idx_b}): {similarity}");
     }
+    Ok(())
 }
