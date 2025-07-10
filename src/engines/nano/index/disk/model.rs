@@ -31,7 +31,7 @@ impl DiskIndexOptions {
         &self.index_dir
     }
 
-    pub fn set_max_segment_docs(&mut self, value: usize) -> &Self {
+    pub fn set_max_segment_docs(mut self, value: usize) -> Self {
         self.max_segment_docs = value;
         self
     }
@@ -51,7 +51,7 @@ pub struct DiskIndexSegment {
 }
 
 pub enum IndexFile {
-    // Maps terms to offsets of corresponding posting lists in postings file
+    // Maps terms to offsets of corresponding posting lists in Postings file
     Terms,
 
     // Posting lists for terms from Terms file

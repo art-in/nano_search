@@ -40,8 +40,10 @@ impl SearchEngine for NanoSearchEngine {
         std::fs::create_dir(index_dir.as_ref())
             .context("index dir should be created")?;
 
+        let index_medium = IndexMedium::Disk(DiskIndexOptions::new(index_dir));
+
         Ok(NanoSearchEngine {
-            index_medium: IndexMedium::Disk(DiskIndexOptions::new(index_dir)),
+            index_medium,
             index: None,
         })
     }
