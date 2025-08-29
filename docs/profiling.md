@@ -14,6 +14,7 @@ CPU profiling
     ```
 
 Limitations:
+
 - symbolication doesn't work (i.e. profiler shows addressed instead of function names) when recording/serving profile from inside dev container, but works ok when profiling from host macos
 - off-cpu samples are not collected when profiling insided dev container (which is Linux) or host Linux:
     > On macOS and Windows, both on- and off-cpu samples are collected (so you can see under which stack you were blocking on a lock, for example). On Linux, only on-cpu samples are collected at the moment.
