@@ -1,34 +1,54 @@
 use std::time::Instant;
 
 use anyhow::Result;
-use itertools::Itertools;
 use nano_search::engines::nano::engine::NanoSearchEngine;
 use nano_search::engines::tantivy::engine::TantivySearchEngine;
 use nano_search::model::doc::DocId;
 use nano_search::model::engine::SearchEngine;
-use nano_search::utils::compare_ranked_arrays;
+use nano_search::utils::{GetPercentile, compare_ranked_arrays};
+
+const TOP_K: u64 = 10;
+const QUERIES: [&str; 10] = [
+    "Solar eclipse",
+    "Great Wall of China",
+    "Albert Einstein",
+    "Machine learning",
+    "Leonardo da Vinci",
+    "Photosynthesis",
+    "Olympic Games",
+    "Internet Protocol",
+    "Mount Kilimanjaro",
+    "Taj Mahal",
+];
 
 fn main() -> Result<()> {
     let engines = init_search_engines()?;
 
-    let mut results = Vec::new();
+    let mut similarities = inc_stats::Percentiles::new();
 
-    for engine in &engines {
-        let res = search("good egg", engine.as_ref())?;
-        results.push(res);
+    for query in QUERIES {
+        let a = search(query, engines.0.as_ref())?;
+        let b = search(query, engines.1.as_ref())?;
+
+        let similarity = compare_ranked_arrays(&a, &b)?;
+        println!("similarity: {:.2}%", similarity * 100.0);
+
+        similarities.add(similarity);
     }
 
-    compare_search_results(&results)?;
+    println!("similarity (p50): {:.2}%", similarities.perc(0.5)? * 100.0);
+    println!("similarity (p90): {:.2}%", similarities.perc(0.9)? * 100.0);
 
     Ok(())
 }
 
-fn init_search_engines() -> Result<Vec<Box<dyn SearchEngine>>> {
+fn init_search_engines()
+-> Result<(Box<dyn SearchEngine>, Box<dyn SearchEngine>)> {
     println!("initializing search engines");
-    Ok(vec![
+    Ok((
         Box::new(TantivySearchEngine::open_from_disk("index_tantivy")?),
         Box::new(NanoSearchEngine::open_from_disk("index_nano")?),
-    ])
+    ))
 }
 
 fn search(query: &str, engine: &dyn SearchEngine) -> Result<Vec<DocId>> {
@@ -39,29 +59,17 @@ fn search(query: &str, engine: &dyn SearchEngine) -> Result<Vec<DocId>> {
     );
 
     let now = Instant::now();
-    let found_docids = engine.search(query, 10)?;
+    let found_docids = engine.search(query, TOP_K)?;
     println!("done in {}ms", now.elapsed().as_millis());
 
-    print!("found doc IDs: ");
-    for docid in &found_docids {
-        print!("{docid} ");
-    }
-    println!();
+    println!(
+        "found doc IDs: {}",
+        found_docids
+            .iter()
+            .map(|doc_id| doc_id.to_string())
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
 
     Ok(found_docids)
-}
-
-fn compare_search_results(results: &[Vec<DocId>]) -> Result<()> {
-    for (idx_a, idx_b) in (0..results.len()).tuple_combinations() {
-        let a = &results[idx_a];
-        let b = &results[idx_b];
-
-        let similarity = compare_ranked_arrays(a, b)?;
-
-        println!(
-            "results similarity ({idx_a}-{idx_b}): {:.2}%",
-            similarity * 100.0
-        );
-    }
-    Ok(())
 }
