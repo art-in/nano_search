@@ -1,3 +1,4 @@
+pub mod commands;
 pub mod dataset_readers;
 pub mod engines;
 pub mod eval;
