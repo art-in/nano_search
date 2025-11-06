@@ -159,7 +159,7 @@ fn parse_query_docids<R: Read>(
         queries
             .get_mut(&query_id)
             .context("query should exist")?
-            .expected_docids
+            .relevant_docids
             .insert(docid);
     }
 

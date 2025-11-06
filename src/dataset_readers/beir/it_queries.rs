@@ -42,7 +42,7 @@ impl Iterator for BeirQueriesIterator {
             let line = line.expect("line should be read");
             let query = parse_query_from_json(&line, &mut self.qrels)
                 .expect("query should be parsed");
-            if !query.expected_docids.is_empty() {
+            if !query.relevant_docids.is_empty() {
                 return Some(query);
             }
         }
@@ -76,7 +76,7 @@ fn parse_query_from_json(
     Ok(Query {
         id: query_id,
         text,
-        expected_docids,
+        relevant_docids: expected_docids,
     })
 }
 
