@@ -1,6 +1,5 @@
-pub mod iterator;
+pub mod it_docs;
 pub mod model;
-pub mod search_quality;
 
 mod load_queries;
 pub use load_queries::load_queries;

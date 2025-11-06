@@ -2,20 +2,17 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::model::doc::DocsSource;
 use crate::utils::wikidump::WikiDump;
 
 #[derive(Clone)]
-pub struct WikiDocs {
+pub struct WikiDatasetReader {
     pub wikidump: WikiDump,
 }
 
-impl WikiDocs {
+impl WikiDatasetReader {
     pub fn new<P: AsRef<Path>>(file_path: P) -> Result<Self> {
-        Ok(WikiDocs {
+        Ok(WikiDatasetReader {
             wikidump: WikiDump::new(file_path)?,
         })
     }
 }
-
-impl DocsSource for WikiDocs {}

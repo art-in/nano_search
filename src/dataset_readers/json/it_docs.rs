@@ -3,20 +3,19 @@ use std::io::{BufRead, BufReader, Lines};
 
 use serde_json::{Map, Value};
 
-use super::model::JsonDocs;
-use crate::model::doc::{Doc, DocId};
+use super::model::JsonDatasetReader;
+use crate::model::doc::{Doc, DocId, DocsSource};
 
 pub struct JsonDocsIterator {
     lines: Lines<BufReader<File>>,
     docid: DocId,
 }
 
-impl IntoIterator for JsonDocs {
-    type Item = Doc;
-    type IntoIter = JsonDocsIterator;
+impl DocsSource for JsonDatasetReader {
+    type Iter = JsonDocsIterator;
 
-    fn into_iter(self) -> Self::IntoIter {
-        let file = File::open(self.file_path).expect("file should exist");
+    fn docs(&self) -> Self::Iter {
+        let file = File::open(&self.file_path).expect("file should exist");
         let reader = BufReader::new(file);
 
         JsonDocsIterator {

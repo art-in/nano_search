@@ -3,12 +3,12 @@ use std::io::{BufRead, Read};
 
 use anyhow::{Context, Result};
 
-use super::model::Query;
+use crate::eval::model::Query;
 
 pub fn load_queries() -> Result<Vec<Query>> {
-    let queries_file = std::fs::File::open("data/cisi/CISI.QRY")
+    let queries_file = std::fs::File::open("datasets/cisi/CISI.QRY")
         .context("file should exist")?;
-    let query_docids_file = std::fs::File::open("data/cisi/CISI.REL")
+    let query_docids_file = std::fs::File::open("datasets/cisi/CISI.REL")
         .context("file should exist")?;
 
     let mut queries = parse_queries(queries_file)?;

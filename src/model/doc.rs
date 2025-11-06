@@ -6,4 +6,7 @@ pub struct Doc {
     pub text: String,
 }
 
-pub trait DocsSource: IntoIterator<Item = Doc> + Clone {}
+pub trait DocsSource {
+    type Iter: Iterator<Item = Doc>;
+    fn docs(&self) -> Self::Iter;
+}

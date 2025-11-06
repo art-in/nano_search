@@ -3,10 +3,10 @@ use std::time::Duration;
 use anyhow::Result;
 use criterion::measurement::WallTime;
 use criterion::{BenchmarkGroup, Criterion, criterion_group, criterion_main};
-use nano_search::data::cisi::model::Query;
-use nano_search::data::{self};
+use nano_search::dataset_readers::cisi;
 use nano_search::engines::nano::engine::NanoSearchEngine;
 use nano_search::engines::tantivy::engine::TantivySearchEngine;
+use nano_search::eval::model::Query;
 use nano_search::model::doc::DocsSource;
 use nano_search::model::engine::SearchEngine;
 use nano_search::utils::panic_on_error;
@@ -20,7 +20,7 @@ enum IndexType {
 
 fn index(c: &mut Criterion) {
     panic_on_error(|| {
-        let docs = data::cisi::load_docs()?;
+        let docs = cisi::load_docs()?;
 
         let mut group = c.benchmark_group("index");
 
@@ -49,7 +49,7 @@ fn index_with<SE: SearchEngine>(
                 IndexType::Memory => SE::create_in_memory()?,
                 IndexType::Disk => SE::create_on_disk(&dir)?,
             };
-            engine.index_docs(&mut docs.clone().into_iter())?;
+            engine.index_docs(&mut docs.docs())?;
             Ok(())
         });
     });
@@ -57,7 +57,7 @@ fn index_with<SE: SearchEngine>(
 
 fn open_index(c: &mut Criterion) {
     panic_on_error(|| {
-        let docs = data::cisi::load_docs()?;
+        let docs = cisi::load_docs()?;
 
         let mut group = c.benchmark_group("open_index");
 
@@ -76,7 +76,7 @@ fn open_index_with<SE: SearchEngine>(
 ) -> Result<()> {
     let dir = TempDir::new()?;
     let mut engine = SE::create_on_disk(&dir)?;
-    engine.index_docs(&mut docs.clone().into_iter())?;
+    engine.index_docs(&mut docs.docs())?;
 
     group.bench_function(SE::name(), |bencher| {
         bencher.iter(|| SE::open_from_disk(&dir));
@@ -87,8 +87,8 @@ fn open_index_with<SE: SearchEngine>(
 
 fn search(c: &mut Criterion) {
     panic_on_error(|| {
-        let docs = data::cisi::load_docs()?;
-        let queries = data::cisi::load_queries()?;
+        let docs = cisi::load_docs()?;
+        let queries = cisi::load_queries()?;
 
         let mut group = c.benchmark_group("search");
 
@@ -118,7 +118,7 @@ fn search_with<SE: SearchEngine>(
         IndexType::Memory => SE::create_in_memory()?,
         IndexType::Disk => SE::create_on_disk(&dir)?,
     };
-    engine.index_docs(&mut docs.clone().into_iter())?;
+    engine.index_docs(&mut docs.docs())?;
 
     let bench_id = format!("{}/{:?}", SE::name(), index_type).to_lowercase();
 

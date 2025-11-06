@@ -1,5 +1,5 @@
-use super::model::WikiDocs;
-use crate::model::doc::Doc;
+use super::model::WikiDatasetReader;
+use crate::model::doc::{Doc, DocsSource};
 use crate::utils::wikidump::WikiPagesIterator;
 
 pub struct WikiDocsIterator {
@@ -7,13 +7,12 @@ pub struct WikiDocsIterator {
     docid: u64,
 }
 
-impl IntoIterator for WikiDocs {
-    type Item = Doc;
-    type IntoIter = WikiDocsIterator;
+impl DocsSource for WikiDatasetReader {
+    type Iter = WikiDocsIterator;
 
-    fn into_iter(self) -> Self::IntoIter {
+    fn docs(&self) -> Self::Iter {
         WikiDocsIterator {
-            it: self.wikidump.into_iter(),
+            it: self.wikidump.clone().into_iter(),
             docid: 0,
         }
     }

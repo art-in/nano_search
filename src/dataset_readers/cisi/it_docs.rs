@@ -2,18 +2,17 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::model::CisiDocs;
-use crate::model::doc::Doc;
+use crate::model::doc::{Doc, DocsSource};
 
 pub struct CisiDocsIterator {
     docs: Rc<RefCell<Vec<Doc>>>,
     doc_index: usize,
 }
 
-impl IntoIterator for CisiDocs {
-    type Item = Doc;
-    type IntoIter = CisiDocsIterator;
+impl DocsSource for CisiDocs {
+    type Iter = CisiDocsIterator;
 
-    fn into_iter(self) -> Self::IntoIter {
+    fn docs(&self) -> Self::Iter {
         CisiDocsIterator {
             docs: Rc::clone(&self.docs),
             doc_index: 0,

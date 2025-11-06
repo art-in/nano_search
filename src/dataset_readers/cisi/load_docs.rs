@@ -24,7 +24,7 @@ enum ELineType {
 }
 
 pub fn load_docs() -> Result<CisiDocs> {
-    load_docs_from("data/cisi/CISI.ALL".into())
+    load_docs_from("datasets/cisi/CISI.ALL".into())
 }
 
 fn load_docs_from(file_path: PathBuf) -> Result<CisiDocs> {
