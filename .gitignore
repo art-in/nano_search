@@ -1,8 +1,11 @@
 # rust build artifacts
 /target
 
-# search index artifacts
+# search engine indices
 /index_*
 
 # samply's CPU profiling artifacts
 profile.json.gz
+
+# fastembed's downloaded models
+.fastembed_cache

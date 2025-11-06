@@ -14,6 +14,13 @@ itertools = "0.14.0"
 uuid = { version = "1.17.0", features = ["v4"] }
 serde_json = "1.0"
 human_format = "1.1.0"
+tokio = { version = "1.48.0", features = ["rt"] }
+qdrant-client = "1.15.0"
+fastembed = "5.2.0"
+ort = { version = "=2.0.0-rc.10", features = ["coreml"] }
+sqlite-vec = "0.1.6"
+rusqlite = { version = "0.37.0", features = ["bundled"] }
+zerocopy = "0.8.27"
 
 [dev-dependencies]
 rusty-hook = "0.11.2"
