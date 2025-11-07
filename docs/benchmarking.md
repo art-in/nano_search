@@ -1,7 +1,9 @@
 Benchmarking
 ---
 
-For benchmarking indexing/search routines we use [criterion.rs](https://github.com/bheisler/criterion.rs).
+For benchmarking index/search routines we use [criterion.rs](https://github.com/bheisler/criterion.rs).
+
+Benchmarks are located in [benches/](../benches).
 
 Run all benchmarks:
 
@@ -9,7 +11,7 @@ Run all benchmarks:
 cargo bench
 ```
 
-Run benchmark, which ID contrains substring
+Run benchmarks whose ID contains a substring:
 
 ```sh
 cargo bench -- <substring_regexp>
@@ -17,5 +19,4 @@ cargo bench -- <substring_regexp>
 
 Limitations:
 
-- results are highly unstable, for both memory and disk indexing/searching, inside container and in host system
-
+- Results can be unstable (for both memory and disk indexing/searching), in a dev container and on the host system.
