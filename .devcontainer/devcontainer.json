@@ -1,5 +1,5 @@
 {
-	"name": "nano-search",
+	"name": "nano_search",
 	"build": {
 	  "dockerfile": "Dockerfile"
 	},
