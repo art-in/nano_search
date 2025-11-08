@@ -1,6 +1,5 @@
 use std::path::{Path, PathBuf};
 
-#[derive(Clone)]
 pub struct JsonDatasetReader {
     pub file_path: PathBuf,
 }

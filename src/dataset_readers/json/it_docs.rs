@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
+use std::path::Path;
 
 use serde_json::{Map, Value};
 
@@ -15,14 +16,21 @@ impl DocsSource for JsonDatasetReader {
     type Iter = JsonDocsIterator;
 
     fn docs(&self) -> Self::Iter {
-        let file = File::open(&self.file_path).expect("file should exist");
-        let reader = BufReader::new(file);
-
         JsonDocsIterator {
-            lines: reader.lines(),
+            lines: get_doc_lines(&self.file_path),
             docid: 0,
         }
     }
+
+    fn docs_count(&self) -> Option<usize> {
+        Some(get_doc_lines(&self.file_path).count())
+    }
+}
+
+fn get_doc_lines(file_path: &Path) -> Lines<BufReader<File>> {
+    let file = File::open(file_path).expect("file should exist");
+    let reader = BufReader::new(file);
+    reader.lines()
 }
 
 impl Iterator for JsonDocsIterator {

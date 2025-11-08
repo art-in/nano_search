@@ -18,6 +18,10 @@ impl DocsSource for CisiDocs {
             doc_index: 0,
         }
     }
+
+    fn docs_count(&self) -> Option<usize> {
+        Some(self.docs.borrow().len())
+    }
 }
 
 impl Iterator for CisiDocsIterator {

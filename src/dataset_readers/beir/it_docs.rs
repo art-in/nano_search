@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
+use std::path::Path;
 
 use serde_json::{Map, Value};
 
@@ -15,12 +16,20 @@ impl DocsSource for BeirDatasetReader {
     type Iter = BeirDocsIterator;
 
     fn docs(&self) -> Self::Iter {
-        let file = File::open(self.dir.join("corpus.jsonl"))
-            .expect("file should exist");
-        let reader = BufReader::new(file);
-        let lines = reader.lines();
-        BeirDocsIterator { lines }
+        BeirDocsIterator {
+            lines: get_doc_lines(&self.dir),
+        }
     }
+
+    fn docs_count(&self) -> Option<usize> {
+        Some(get_doc_lines(&self.dir).count())
+    }
+}
+
+fn get_doc_lines(dir: &Path) -> Lines<BufReader<File>> {
+    let file = File::open(dir.join("corpus.jsonl")).expect("file should exist");
+    let reader = BufReader::new(file);
+    reader.lines()
 }
 
 impl Iterator for BeirDocsIterator {
