@@ -2,11 +2,8 @@ use std::cell::RefCell;
 use std::time::Instant;
 
 use anyhow::{Context, Result};
-use fastembed::{
-    EmbeddingModel, ExecutionProviderDispatch, InitOptions, TextEmbedding,
-};
+use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 use itertools::Itertools;
-use ort::execution_providers::{CoreMLExecutionProvider, ExecutionProvider};
 use rusqlite::Connection;
 use rusqlite::ffi::sqlite3_auto_extension;
 use sqlite_vec::sqlite3_vec_init;
@@ -154,7 +151,10 @@ impl VectorSearchEngine {
     fn create_model() -> Result<RefCell<TextEmbedding>> {
         // setup ONNX runtime execution providers. if none of them is supported
         // by current platform, then CPU provider will be used as a fallback
-        let providers = vec![init_coreml_provider()];
+        let providers = vec![
+            #[cfg(feature = "coreml")]
+            super::coreml::init_coreml_provider(),
+        ];
 
         Ok(RefCell::new(TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::AllMiniLML6V2)
@@ -164,34 +164,7 @@ impl VectorSearchEngine {
     }
 }
 
-fn init_coreml_provider() -> ExecutionProviderDispatch {
-    // Trying to speedup inference by using CoreML provider on macbook pro m2
-    //
-    // CoreML able to execute only part of model or nothing at all:
-    // - with MiniLM models only 231/323 model nodes supported, rest is on CPU.
-    //   and it is 7x slower than CPU-only, probably due to lots of CPU-GPU
-    //   memory transfers
-    // - with BGE models 0 nodes are supported, so it is CPU-only
-    //
-    // Debug log says that "CoreML does not support input dim > 16384", which
-    // looks like compatibility issue between model and CoreML/Apple hardware
-    //
-    // Debug: `RUST_LOG="ort=debug" cargo run`
-    //
-    // Related issue: https://github.com/microsoft/onnxruntime/issues/19543
-    //
-    // Keeping it for now, as it may work better with other models
-    let corelm_provider = CoreMLExecutionProvider::default();
-
-    println!(
-        "CoreLM enabled: {}",
-        corelm_provider.supported_by_platform()
-    );
-
-    corelm_provider.build()
-}
-
-fn embed(
+pub fn embed(
     model: &RefCell<TextEmbedding>,
     texts: Vec<&str>,
 ) -> Result<Vec<Vec<f32>>> {

@@ -39,3 +39,7 @@ unwrap_used = "warn"
 [[bench]]
 name = "engine"
 harness = false
+
+[features]
+# try to enable CoreML for hardware acceleration of embeddings
+coreml = []
