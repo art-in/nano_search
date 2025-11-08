@@ -9,6 +9,8 @@ fn main() -> Result<()> {
         bail!("no command specified");
     }
 
+    tracing_subscriber::fmt::init();
+
     match args[1].as_str() {
         "--index" => commands::index_command()?,
         "--eval" => commands::eval_command()?,

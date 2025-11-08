@@ -21,6 +21,8 @@ ort = { version = "=2.0.0-rc.10", features = ["coreml"] }
 sqlite-vec = "0.1.6"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 zerocopy = "0.8.27"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
 [dev-dependencies]
 rusty-hook = "0.11.2"

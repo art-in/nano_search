@@ -1,14 +1,19 @@
 use std::cell::RefCell;
+use std::time::Instant;
 
 use anyhow::{Context, Result};
-use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
+use fastembed::{
+    EmbeddingModel, ExecutionProviderDispatch, InitOptions, TextEmbedding,
+};
+use itertools::Itertools;
 use ort::execution_providers::{CoreMLExecutionProvider, ExecutionProvider};
 use rusqlite::Connection;
 use rusqlite::ffi::sqlite3_auto_extension;
 use sqlite_vec::sqlite3_vec_init;
+use tracing::debug;
 use zerocopy::IntoBytes;
 
-use crate::model::doc::DocId;
+use crate::model::doc::{Doc, DocId};
 use crate::model::engine::SearchEngine;
 
 pub struct VectorSearchEngine {
@@ -74,15 +79,30 @@ impl SearchEngine for VectorSearchEngine {
         &mut self,
         docs: &mut dyn Iterator<Item = crate::model::doc::Doc>,
     ) -> Result<()> {
-        let mut model = self.model.borrow_mut();
         let tx = self.db.transaction()?;
         let mut stmt =
             tx.prepare("INSERT INTO docs(rowid, embedding) VALUES (?, ?)")?;
 
-        for doc in docs {
-            let vectors = model.embed(vec![doc.text], None)?;
-            let vector = &vectors[0];
-            stmt.execute(rusqlite::params![doc.id, vector.as_bytes()])?;
+        // experimenting with batched embedding. noticed slow down compared to
+        // sequential embedding. should work better with hardware acceleration
+        const EMBED_DOCS_BATCH_SIZE: usize = 1;
+
+        for docs_batch in &docs.chunks(EMBED_DOCS_BATCH_SIZE) {
+            let docs_batch = docs_batch.collect::<Vec<Doc>>();
+
+            let texts_batch = docs_batch
+                .iter()
+                .map(|d| d.text.as_str())
+                .collect::<Vec<&str>>();
+
+            let vectors = embed(&self.model, texts_batch)?;
+
+            for (idx, doc) in docs_batch.iter().enumerate() {
+                stmt.execute(rusqlite::params![
+                    doc.id,
+                    vectors[idx].as_bytes()
+                ])?;
+            }
         }
 
         drop(stmt);
@@ -91,9 +111,7 @@ impl SearchEngine for VectorSearchEngine {
     }
 
     fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>> {
-        let mut model = self.model.borrow_mut();
-
-        let vectors = model.embed(vec![query], None)?;
+        let vectors = embed(&self.model, vec![query])?;
         let vector = &vectors[0];
 
         let result: Vec<u64> = self
@@ -134,31 +152,9 @@ impl VectorSearchEngine {
     }
 
     fn create_model() -> Result<RefCell<TextEmbedding>> {
-        // trying to speedup inference by using CoreML execution provider on
-        // macbook pro m2. by default it greatly slows down inference (x7).
-        // tried togging all the available options, and noticed no
-        // effect, except with_static_input_shapes(true), which makes
-        // inference as fast as with default CPU provider.
-        //
-        // provider is not supported within docker container, have to run on
-        // macos directly, otherwise default CPU provider will be used.
-        //
-        // keeping it for now, as it may improve perf with other models.
-        //
-        // CoreML options doc:
-        // https://onnxruntime.ai/docs/execution-providers/CoreML-ExecutionProvider.html
-        let corelm_provider = CoreMLExecutionProvider::default()
-            .with_subgraphs(true) // no effect on performance
-            .with_static_input_shapes(true); // x7 speedup
-
-        println!(
-            "CoreLM enabled: {}",
-            corelm_provider.supported_by_platform()
-        );
-
         // setup ONNX runtime execution providers. if none of them is supported
         // by current platform, then CPU provider will be used as a fallback
-        let providers = vec![corelm_provider.build()];
+        let providers = vec![init_coreml_provider()];
 
         Ok(RefCell::new(TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::AllMiniLML6V2)
@@ -166,4 +162,56 @@ impl VectorSearchEngine {
                 .with_show_download_progress(true),
         )?))
     }
+}
+
+fn init_coreml_provider() -> ExecutionProviderDispatch {
+    // Trying to speedup inference by using CoreML provider on macbook pro m2
+    //
+    // CoreML able to execute only part of model or nothing at all:
+    // - with MiniLM models only 231/323 model nodes supported, rest is on CPU.
+    //   and it is 7x slower than CPU-only, probably due to lots of CPU-GPU
+    //   memory transfers
+    // - with BGE models 0 nodes are supported, so it is CPU-only
+    //
+    // Debug log says that "CoreML does not support input dim > 16384", which
+    // looks like compatibility issue between model and CoreML/Apple hardware
+    //
+    // Debug: `RUST_LOG="ort=debug" cargo run`
+    //
+    // Related issue: https://github.com/microsoft/onnxruntime/issues/19543
+    //
+    // Keeping it for now, as it may work better with other models
+    let corelm_provider = CoreMLExecutionProvider::default();
+
+    println!(
+        "CoreLM enabled: {}",
+        corelm_provider.supported_by_platform()
+    );
+
+    corelm_provider.build()
+}
+
+fn embed(
+    model: &RefCell<TextEmbedding>,
+    texts: Vec<&str>,
+) -> Result<Vec<Vec<f32>>> {
+    let mut model = model.borrow_mut();
+
+    let texts_count = texts.len();
+    let texts_size_kb =
+        texts.iter().fold(0.0, |acc, e| acc + e.len() as f64) / 1000.0;
+
+    let now = Instant::now();
+
+    let vectors = model.embed(texts, None)?;
+
+    let elapsed = now.elapsed();
+    debug!(
+        "embed: {:>4} ms/text, {:>6.0} ms/1KB, {:>6.2} KB/sec",
+        elapsed.as_millis() as usize / texts_count,
+        elapsed.as_millis() as f64 / texts_size_kb,
+        texts_size_kb / elapsed.as_secs_f64()
+    );
+
+    Ok(vectors)
 }
