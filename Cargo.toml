@@ -43,3 +43,5 @@ harness = false
 [features]
 # try to enable CoreML for hardware acceleration of embeddings
 coreml = []
+# use qdrant search engine for indexing/evaluation comparisons
+qdrant = []
