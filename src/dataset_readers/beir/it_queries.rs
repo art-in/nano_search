@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 use std::path::Path;
@@ -8,12 +8,12 @@ use serde_json::{Map, Value};
 
 use crate::dataset_readers::beir::BeirDatasetReader;
 use crate::dataset_readers::beir::utils::parse_id;
-use crate::eval::model::{QueriesSource, Query};
+use crate::eval::model::{QueriesSource, Query, Relevance};
 use crate::model::doc::DocId;
 
 pub struct BeirQueriesIterator {
     lines: Lines<BufReader<File>>,
-    qrels: HashMap<u64, HashSet<DocId>>,
+    qrels: HashMap<u64, HashMap<DocId, Relevance>>,
 }
 
 impl QueriesSource for BeirDatasetReader {
@@ -36,13 +36,13 @@ impl Iterator for BeirQueriesIterator {
     type Item = Query;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // skip queries lacking qrels to ensure evaluation has expected docids.
-        // reduced qrels, like test.tsv, may not have lines for each query
+        // skip queries lacking qrels to ensure evaluation has expected docids,
+        // since reduced qrels, like test.tsv, may not have lines for each query
         for line in self.lines.by_ref() {
             let line = line.expect("line should be read");
             let query = parse_query_from_json(&line, &mut self.qrels)
                 .expect("query should be parsed");
-            if !query.relevant_docids.is_empty() {
+            if !query.relevant_docs.is_empty() {
                 return Some(query);
             }
         }
@@ -53,7 +53,7 @@ impl Iterator for BeirQueriesIterator {
 
 fn parse_query_from_json(
     line: &str,
-    qrels: &mut HashMap<u64, HashSet<DocId>>,
+    qrels: &mut HashMap<u64, HashMap<DocId, Relevance>>,
 ) -> Result<Query> {
     let json: Map<String, Value> = serde_json::from_str(line)?;
 
@@ -71,22 +71,22 @@ fn parse_query_from_json(
         .context("text should be a string")?
         .to_string();
 
-    let expected_docids = qrels.remove(&query_id).unwrap_or_default();
+    let relevant_docs = qrels.remove(&query_id).unwrap_or_default();
 
     Ok(Query {
         id: query_id,
         text,
-        relevant_docids: expected_docids,
+        relevant_docs,
     })
 }
 
 fn load_qrels(
     file_path: impl AsRef<Path>,
-) -> Result<HashMap<u64, HashSet<DocId>>> {
+) -> Result<HashMap<u64, HashMap<DocId, Relevance>>> {
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
 
-    let mut map: HashMap<u64, HashSet<DocId>> = HashMap::new();
+    let mut map: HashMap<u64, HashMap<DocId, Relevance>> = HashMap::new();
 
     let lines = reader.lines().skip(1); // skip header
 
@@ -96,8 +96,13 @@ fn load_qrels(
 
         let query_id = parse_id(parts.next().context("should read query ID")?)?;
         let doc_id = parse_id(parts.next().context("should read doc ID")?)?;
+        let relevance: Relevance =
+            parts.next().context("should read relevance")?.parse()?;
 
-        map.entry(query_id).or_default().insert(doc_id);
+        // skip not relevant docs. they may appear in qrels/train.tsv
+        if relevance > 0.0 {
+            map.entry(query_id).or_default().insert(doc_id, relevance);
+        }
     }
 
     Ok(map)

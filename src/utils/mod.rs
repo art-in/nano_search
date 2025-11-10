@@ -1,8 +1,5 @@
 pub mod wikidump;
 
-mod compare_ranked_arrays;
-pub use compare_ranked_arrays::*;
-
 mod percentile;
 pub use percentile::GetPercentile;
 

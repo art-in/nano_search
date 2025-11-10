@@ -159,8 +159,9 @@ fn parse_query_docids<R: Read>(
         queries
             .get_mut(&query_id)
             .context("query should exist")?
-            .relevant_docids
-            .insert(docid);
+            .relevant_docs
+            // relevance is not provided in dataset, so default to 1.0
+            .insert(docid, 1.0);
     }
 
     Ok(())

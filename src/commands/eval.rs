@@ -40,6 +40,7 @@ fn evaluate(
 
 fn print_quality(quality: &SearchQuality) -> Result<()> {
     println!("queries count: {}", quality.queries_count);
+    println!("search limit: {}", quality.search_limit);
 
     println!(
         "{:<10}: avg={:^6.1}%  p50={:^6.1}%  p90={:^6.1}%  p100={:^6.1}%",
@@ -58,6 +59,8 @@ fn print_quality(quality: &SearchQuality) -> Result<()> {
         quality.recalls.perc(0.9)? * 100.0,
         quality.recalls.perc(1.0)? * 100.0
     );
+
+    println!("{:<10}: avg={:^6.1}%", "NDCG", quality.ndcg_avg * 100.0,);
 
     Ok(())
 }
