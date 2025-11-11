@@ -67,7 +67,7 @@ fn compute_ndcg(
     if ideal_dcg == 0.0 {
         bail!(
             "Ideal DCG should not equal zero. This happens if there are no \
-             relevant documents for a query."
+             relevant documents for a query or search limit is zero."
         );
     }
 
@@ -131,6 +131,41 @@ mod test {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn test_ndcg_empty_found_returns_zero() -> Result<()> {
+        let found_docids: Vec<DocId> = vec![];
+        let relevant_docs = HashMap::from([(1, 1.0)]);
+        let search_limit = 10;
+
+        let val = ndcg(&found_docids, &relevant_docs, search_limit)?;
+        assert_eq!(val, 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ndcg_no_relevant_docs_is_error() {
+        let found_docids = vec![1, 2, 3];
+        let relevant_docs: HashMap<DocId, Relevance> = HashMap::new();
+        let search_limit = 10;
+
+        let res = ndcg(&found_docids, &relevant_docs, search_limit);
+        assert!(
+            res.is_err(),
+            "expected error when there are no relevant docs"
+        );
+    }
+
+    #[test]
+    fn test_ndcg_search_limit_zero_is_error() {
+        let found_docids = vec![1, 2];
+        let relevant_docs = HashMap::from([(1, 1.0)]);
+        let search_limit = 0;
+
+        let res = ndcg(&found_docids, &relevant_docs, search_limit);
+        assert!(res.is_err(), "expected error when search_limit is zero");
     }
 
     #[test]

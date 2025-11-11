@@ -13,7 +13,7 @@ pub fn search_command() -> Result<()> {
     let query = dataset.queries().nth(10).context("should get query")?;
 
     println!("query (id={}): {}", query.id, query.text);
-    println!("relevant docids: {:?}", query.relevant_docs);
+    println!("relevant docs: {:?}", query.relevant_docs);
 
     for engine in engines {
         println!("searching with {} engine", engine.get_name());

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::eval::metrics::hits::hits;
 use crate::eval::model::Relevance;
 use crate::model::doc::DocId;
 
@@ -7,10 +8,7 @@ pub fn recall(
     found_docids: &[DocId],
     relevant_docs: &HashMap<DocId, Relevance>,
 ) -> f64 {
-    let found_relevant_docids_count: usize = found_docids
-        .iter()
-        .filter(|docid| relevant_docs.contains_key(*docid))
-        .count();
+    let found_relevant_docids_count = hits(found_docids, relevant_docs);
 
     if relevant_docs.is_empty() {
         1.0

@@ -9,3 +9,5 @@ pub use precision::precision;
 
 mod recall;
 pub use recall::recall;
+
+mod hits;
