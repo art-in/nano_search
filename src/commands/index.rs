@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Result;
+use colored::Colorize;
 
 use super::common::{init_dataset, init_search_engines_create};
 use crate::model::doc::{Doc, DocsSource};
@@ -18,11 +19,11 @@ pub fn index_command() -> Result<()> {
 }
 
 fn index(engine: &mut dyn SearchEngine, docs: &impl DocsSource) -> Result<()> {
-    println!("indexing docs with {} search engine... ", engine.get_name());
+    println!("indexing docs with {} engine... ", engine.get_name().red());
     let now = Instant::now();
     engine.index_docs(&mut log_progress(docs.docs(), docs.docs_count()))?;
     println!(
-        "indexing docs with {} search engine... done in {:.1} seconds",
+        "indexing docs with {} engine... done in {:.1} seconds",
         engine.get_name(),
         now.elapsed().as_secs_f32()
     );

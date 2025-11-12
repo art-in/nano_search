@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Result;
+use colored::Colorize;
 
 use super::common::{init_dataset, init_search_engines_open};
 use crate::eval::evaluate_search_quality;
@@ -24,7 +25,7 @@ fn evaluate(
     queries: &mut dyn Iterator<Item = Query>,
 ) -> Result<()> {
     let now = Instant::now();
-    println!("evaluating {} engine...", engine.get_name());
+    println!("evaluating {} engine...", engine.get_name().red());
     let quality = evaluate_search_quality(queries, engine, 10)?;
     println!(
         "evaluating {} engine... done in {:.1} seconds",

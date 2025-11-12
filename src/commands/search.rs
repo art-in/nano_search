@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use colored::Colorize;
 
 use super::common::{init_dataset, init_search_engines_open};
 use crate::eval::evaluate_search_quality_for_query;
@@ -16,7 +17,7 @@ pub fn search_command() -> Result<()> {
     println!("relevant docs: {:?}", query.relevant_docs);
 
     for engine in engines {
-        println!("searching with {} engine", engine.get_name());
+        println!("searching with {} engine", engine.get_name().red());
         let found_docids = engine.search(&query.text, SEARCH_LIMIT)?;
 
         println!("found docids: {:?}", found_docids);
