@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
 use super::BeirDatasetReader;
-use super::utils::parse_id;
+use super::utils::{extract_string, parse_id};
 use crate::eval::model::{QueriesSource, Query, Relevance};
 use crate::model::doc::DocId;
 use crate::utils::get_file_lines;
@@ -50,20 +50,8 @@ fn parse_query_from_json(
 ) -> Result<Query> {
     let json: Map<String, Value> = serde_json::from_str(line)?;
 
-    let query_id = parse_id(
-        json.get("_id")
-            .context("json should have _id field")?
-            .as_str()
-            .context("ID should be a string")?,
-    )?;
-
-    let text = json
-        .get("text")
-        .context("json should have text field")?
-        .as_str()
-        .context("text should be a string")?
-        .to_string();
-
+    let query_id = parse_id(extract_string(&json, "_id")?)?;
+    let text = extract_string(&json, "text")?.to_string();
     let relevant_docs = qrels.remove(&query_id).unwrap_or_default();
 
     Ok(Query {

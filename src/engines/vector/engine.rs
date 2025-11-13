@@ -79,7 +79,7 @@ impl SearchEngine for VectorSearchEngine {
     ) -> Result<()> {
         let tx = self.db.transaction()?;
         let mut stmt =
-            tx.prepare("INSERT INTO docs(rowid, embedding) VALUES (?, ?)")?;
+            tx.prepare("INSERT INTO docs(docid, embedding) VALUES (?, ?)")?;
 
         // experimenting with batched embedding. noticed slow down compared to
         // sequential embedding. should work better with hardware acceleration
@@ -97,7 +97,7 @@ impl SearchEngine for VectorSearchEngine {
 
             for (idx, doc) in docs_batch.iter().enumerate() {
                 stmt.execute(rusqlite::params![
-                    doc.id,
+                    &doc.id.to_string(),
                     vectors[idx].as_bytes()
                 ])?;
             }
@@ -116,15 +116,26 @@ impl SearchEngine for VectorSearchEngine {
             .db
             .prepare_cached(
                 r"
-                SELECT rowid
+                SELECT docid
                 FROM docs
                 WHERE embedding MATCH ?1
                 ORDER BY distance
                 LIMIT ?2
                 ",
             )?
-            .query_map((vector.as_bytes(), limit), |r| r.get(0))?
-            .collect::<Result<Vec<_>, _>>()?;
+            .query_map((vector.as_bytes(), limit), |row| {
+                let docid: String = row.get(0)?;
+                Ok(docid)
+            })?
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .map(|docid_str| {
+                docid_str.parse::<u64>().context(format!(
+                    "numeric docid should be parsed from {}",
+                    docid_str
+                ))
+            })
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(result)
     }
@@ -142,8 +153,10 @@ impl VectorSearchEngine {
 
     fn create_with_connection(db: Connection) -> Result<Self> {
         let model = Self::create_model()?;
+        // sqlite does not support u64 type, so store docids as text
         db.execute(
-            "CREATE VIRTUAL TABLE docs USING vec0(embedding float[384])",
+            "CREATE VIRTUAL TABLE docs USING vec0(docid TEXT PRIMARY KEY, \
+             embedding float[384])",
             [],
         )?;
         Ok(Self { db, model })
