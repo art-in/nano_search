@@ -44,5 +44,8 @@ fn assert_search_quality(engine: &dyn SearchEngine) -> Result<()> {
     assert_eq!(quality.recalls.perc(0.9)?, 1.0);
     assert_eq!(quality.recalls.perc(1.0)?, 1.0);
 
+    // assert NDCG
+    assert_eq!(quality.ndcg_avg, 0.28298675475553986);
+
     Ok(())
 }

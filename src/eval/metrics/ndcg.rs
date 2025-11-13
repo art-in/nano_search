@@ -19,6 +19,10 @@ pub fn ndcg(
     relevant_docs: &HashMap<DocId, Relevance>,
     search_limit: u64,
 ) -> Result<f64> {
+    if relevant_docs.is_empty() {
+        return Ok(if found_docids.is_empty() { 1.0 } else { 0.0 });
+    }
+
     let retrieved_relevances =
         extract_relevances(found_docids, relevant_docs, search_limit);
     let ideal_relevances =
@@ -134,7 +138,7 @@ mod test {
     }
 
     #[test]
-    fn test_ndcg_empty_found_returns_zero() -> Result<()> {
+    fn test_ndcg_zero_found_docs_returns_zero() -> Result<()> {
         let found_docids: Vec<DocId> = vec![];
         let relevant_docs = HashMap::from([(1, 1.0)]);
         let search_limit = 10;
@@ -146,20 +150,45 @@ mod test {
     }
 
     #[test]
-    fn test_ndcg_no_relevant_docs_is_error() {
+    fn test_ndcg_no_found_and_no_relevant_docs_returns_one() -> Result<()> {
+        let found_docids: Vec<DocId> = vec![];
+        let relevant_docs = HashMap::new();
+        let search_limit = 10;
+
+        let val = ndcg(&found_docids, &relevant_docs, search_limit)?;
+        assert_eq!(val, 1.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ndcg_some_found_and_no_relevant_docs_returns_zero() -> Result<()> {
+        let found_docids: Vec<DocId> = vec![1, 2, 3];
+        let relevant_docs = HashMap::new();
+        let search_limit = 10;
+
+        let val = ndcg(&found_docids, &relevant_docs, search_limit)?;
+        assert_eq!(val, 0.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ndcg_zero_relevant_docs_is_error() {
         let found_docids = vec![1, 2, 3];
-        let relevant_docs: HashMap<DocId, Relevance> = HashMap::new();
+        let relevant_docs: HashMap<DocId, Relevance> =
+            HashMap::from([(1, 0.0), (2, 0.0), (3, 0.0)]);
         let search_limit = 10;
 
         let res = ndcg(&found_docids, &relevant_docs, search_limit);
         assert!(
             res.is_err(),
-            "expected error when there are no relevant docs"
+            "expected error when all docs have zero relevance"
         );
     }
 
     #[test]
-    fn test_ndcg_search_limit_zero_is_error() {
+    fn test_ndcg_zero_search_limit_is_error() {
         let found_docids = vec![1, 2];
         let relevant_docs = HashMap::from([(1, 1.0)]);
         let search_limit = 0;
