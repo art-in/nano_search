@@ -41,27 +41,33 @@ fn evaluate(
 
 fn print_quality(quality: &SearchQuality) -> Result<()> {
     println!("queries count: {}", quality.queries_count);
-    println!("search limit: {}", quality.search_limit);
 
     println!(
-        "{:<10}: avg={:^6.1}%  p50={:^6.1}%  p90={:^6.1}%  p100={:^6.1}%",
-        "precision",
-        quality.precision_avg * 100.0,
-        quality.precisions.perc(0.5)? * 100.0,
-        quality.precisions.perc(0.9)? * 100.0,
-        quality.precisions.perc(1.0)? * 100.0
+        "{:<10}{:<3}:  avg={:<6.3} p50={:<6.2} p90={:<6.2} p100={:<6.2}",
+        "Precision",
+        format!("@{}", quality.search_limit),
+        quality.precision_avg,
+        quality.precisions.perc(0.5)?,
+        quality.precisions.perc(0.9)?,
+        quality.precisions.perc(1.0)?
     );
 
     println!(
-        "{:<10}: avg={:^6.1}%  p50={:^6.1}%  p90={:^6.1}%  p100={:^6.1}%",
-        "recall",
-        quality.recall_avg * 100.0,
-        quality.recalls.perc(0.5)? * 100.0,
-        quality.recalls.perc(0.9)? * 100.0,
-        quality.recalls.perc(1.0)? * 100.0
+        "{:<10}{:<3}:  avg={:<6.3} p50={:<6.2} p90={:<6.2} p100={:<6.2}",
+        "Recall",
+        format!("@{}", quality.search_limit),
+        quality.recall_avg,
+        quality.recalls.perc(0.5)?,
+        quality.recalls.perc(0.9)?,
+        quality.recalls.perc(1.0)?
     );
 
-    println!("{:<10}: avg={:^6.1}%", "NDCG", quality.ndcg_avg * 100.0,);
+    println!(
+        "{:<10}{:<3}:  avg={}",
+        "nDCG",
+        format!("@{}", quality.search_limit),
+        format!("{:<6.3}", quality.ndcg_avg).cyan()
+    );
 
     Ok(())
 }
