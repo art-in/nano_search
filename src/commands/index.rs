@@ -9,7 +9,7 @@ use crate::model::engine::SearchEngine;
 
 pub fn index_command() -> Result<()> {
     let mut engines = init_search_engines_create()?;
-    let dataset = init_dataset();
+    let dataset = init_dataset()?;
 
     for engine in &mut engines {
         index(engine.as_mut(), &dataset)?;
@@ -21,7 +21,7 @@ pub fn index_command() -> Result<()> {
 fn index(engine: &mut dyn SearchEngine, docs: &impl DocsSource) -> Result<()> {
     println!("indexing docs with {} engine... ", engine.get_name().red());
     let now = Instant::now();
-    engine.index_docs(&mut log_progress(docs.docs(), docs.docs_count()))?;
+    engine.index_docs(&mut log_progress(docs.docs()?, docs.docs_count()?))?;
     println!(
         "indexing docs with {} engine... done in {:.1} seconds",
         engine.get_name(),

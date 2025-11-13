@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use super::model::WikiDatasetReader;
 use crate::model::doc::{Doc, DocsSource};
 use crate::utils::wikidump::WikiPagesIterator;
@@ -10,18 +12,18 @@ pub struct WikiDocsIterator {
 impl DocsSource for WikiDatasetReader {
     type Iter = WikiDocsIterator;
 
-    fn docs(&self) -> Self::Iter {
-        WikiDocsIterator {
+    fn docs(&self) -> Result<Self::Iter> {
+        Ok(WikiDocsIterator {
             it: self.wikidump.clone().into_iter(),
             docid: 0,
-        }
+        })
     }
 
-    fn docs_count(&self) -> Option<usize> {
+    fn docs_count(&self) -> Result<Option<usize>> {
         // TODO: not implemented yet. it's bit more complex with wiki dump,
-        // since it is compressed XML file, so we need to decompress it fully
-        // in order to get number of doc elements. skip it for now
-        None
+        // since it is big compressed XML file, so we need to decompress it
+        // fully in order to get number of doc elements. skip it for now
+        Ok(None)
     }
 }
 

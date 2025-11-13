@@ -1,34 +1,27 @@
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Lines};
 use std::path::Path;
 
 use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
-use crate::dataset_readers::beir::BeirDatasetReader;
-use crate::dataset_readers::beir::utils::parse_id;
+use super::BeirDatasetReader;
+use super::utils::parse_id;
 use crate::eval::model::{QueriesSource, Query, Relevance};
 use crate::model::doc::DocId;
+use crate::utils::get_file_lines;
 
 pub struct BeirQueriesIterator {
-    lines: Lines<BufReader<File>>,
+    lines: Box<dyn Iterator<Item = std::io::Result<String>>>,
     qrels: HashMap<u64, HashMap<DocId, Relevance>>,
 }
 
 impl QueriesSource for BeirDatasetReader {
     type Iter = BeirQueriesIterator;
 
-    fn queries(&self) -> Self::Iter {
-        let qrels_path = self.dir.join("qrels/test.tsv");
-        let qrels = load_qrels(&qrels_path).expect("qrels should be loaded");
-
-        let file = File::open(self.dir.join("queries.jsonl"))
-            .expect("file should exist");
-        let reader = BufReader::new(file);
-        let lines = reader.lines();
-
-        BeirQueriesIterator { lines, qrels }
+    fn queries(&self) -> Result<Self::Iter> {
+        let qrels = load_qrels(&self.qrels_file)?;
+        let lines = get_file_lines(&self.queries_file)?;
+        Ok(BeirQueriesIterator { lines, qrels })
     }
 }
 
@@ -36,7 +29,7 @@ impl Iterator for BeirQueriesIterator {
     type Item = Query;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // skip queries lacking qrels to ensure evaluation has expected docids,
+        // skip queries lacking relevant docs to ensure evaluation is possible.
         // since reduced qrels, like test.tsv, may not have lines for each query
         for line in self.lines.by_ref() {
             let line = line.expect("line should be read");
@@ -81,14 +74,12 @@ fn parse_query_from_json(
 }
 
 fn load_qrels(
-    file_path: impl AsRef<Path>,
+    file_path: &Path,
 ) -> Result<HashMap<u64, HashMap<DocId, Relevance>>> {
-    let file = File::open(file_path)?;
-    let reader = BufReader::new(file);
+    let lines = get_file_lines(file_path)?;
+    let lines = lines.skip(1); // skip header line
 
     let mut map: HashMap<u64, HashMap<DocId, Relevance>> = HashMap::new();
-
-    let lines = reader.lines().skip(1); // skip header
 
     for line in lines {
         let line = line?;
@@ -99,10 +90,13 @@ fn load_qrels(
         let relevance: Relevance =
             parts.next().context("should read relevance")?.parse()?;
 
-        // skip not relevant docs. they may appear in qrels/train.tsv
-        if relevance > 0.0 {
-            map.entry(query_id).or_default().insert(doc_id, relevance);
+        // skip not relevant docs. they may appear in qrels/train.tsv for
+        // contrast model training, and don't matter for evaluation
+        if relevance <= 0.0 {
+            continue;
         }
+
+        map.entry(query_id).or_default().insert(doc_id, relevance);
     }
 
     Ok(map)

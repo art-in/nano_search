@@ -16,7 +16,7 @@ pub type Relevance = f64;
 
 pub trait QueriesSource {
     type Iter: Iterator<Item = Query>;
-    fn queries(&self) -> Self::Iter;
+    fn queries(&self) -> anyhow::Result<Self::Iter>;
 }
 
 // Search quality evaluation results summarized for entire query set

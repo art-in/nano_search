@@ -12,6 +12,7 @@ use zerocopy::IntoBytes;
 
 use crate::model::doc::{Doc, DocId};
 use crate::model::engine::SearchEngine;
+use crate::utils::HF_CACHE_DIR;
 
 pub struct VectorSearchEngine {
     db: Connection,
@@ -159,7 +160,8 @@ impl VectorSearchEngine {
         Ok(RefCell::new(TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::AllMiniLML6V2)
                 .with_execution_providers(providers)
-                .with_show_download_progress(true),
+                .with_show_download_progress(true)
+                .with_cache_dir(HF_CACHE_DIR.into()),
         )?))
     }
 }

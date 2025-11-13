@@ -25,6 +25,8 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 assert_float_eq = "1.2.0"
 colored = "3.0.0"
+hf-hub = "0.4.3"
+flate2 = "1.1.5"
 
 [dev-dependencies]
 rusty-hook = "0.11.2"

@@ -8,6 +8,6 @@ pub struct Doc {
 
 pub trait DocsSource {
     type Iter: Iterator<Item = Doc>;
-    fn docs(&self) -> Self::Iter;
-    fn docs_count(&self) -> Option<usize>;
+    fn docs(&self) -> anyhow::Result<Self::Iter>;
+    fn docs_count(&self) -> anyhow::Result<Option<usize>>;
 }

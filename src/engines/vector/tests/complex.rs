@@ -15,7 +15,7 @@ fn test_eval_create_on_disk_and_open() -> Result<()> {
 
     {
         let mut engine = VectorSearchEngine::create_on_disk(&dir)?;
-        engine.index_docs(&mut docs.docs())?;
+        engine.index_docs(&mut docs.docs()?)?;
     }
 
     let engine = VectorSearchEngine::open_from_disk(&dir)?;

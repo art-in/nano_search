@@ -36,6 +36,6 @@ pub fn init_search_engines_open() -> Result<Vec<Box<dyn SearchEngine>>> {
     ])
 }
 
-pub fn init_dataset() -> impl DocsSource + QueriesSource {
-    BeirDatasetReader::new("datasets/nfcorpus")
+pub fn init_dataset() -> Result<impl DocsSource + QueriesSource> {
+    BeirDatasetReader::from_hf("scifact")
 }

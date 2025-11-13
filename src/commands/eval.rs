@@ -11,10 +11,10 @@ use crate::utils::GetPercentile;
 
 pub fn eval_command() -> Result<()> {
     let engines = init_search_engines_open()?;
-    let dataset = init_dataset();
+    let dataset = init_dataset()?;
 
     for engine in engines {
-        evaluate(engine.as_ref(), &mut dataset.queries())?;
+        evaluate(engine.as_ref(), &mut dataset.queries()?)?;
     }
 
     Ok(())

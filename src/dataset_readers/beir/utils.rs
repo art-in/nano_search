@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 
-// parses document/query ID strings to integer.
-//
-// different BEIR datasets have different ID formats, e.g.:
-// - as numeric string ("1045")
-// - as numeric string with prefix ("MED-911")
+/// Parses document/query ID strings to integer.
+///
+/// Different BEIR datasets have different ID formats, e.g.:
+/// - as numeric string ("1045")
+/// - as numeric string with prefix ("MED-911")
 pub fn parse_id(input: &str) -> Result<u64> {
     if input.contains("-") {
         Ok(input

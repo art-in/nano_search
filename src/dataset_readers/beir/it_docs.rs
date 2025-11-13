@@ -1,35 +1,27 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader, Lines};
-use std::path::Path;
-
+use anyhow::Result;
 use serde_json::{Map, Value};
 
 use super::model::BeirDatasetReader;
 use super::utils::parse_id;
 use crate::model::doc::{Doc, DocsSource};
+use crate::utils::get_file_lines;
 
 pub struct BeirDocsIterator {
-    lines: Lines<BufReader<File>>,
+    lines: Box<dyn Iterator<Item = std::io::Result<String>>>,
 }
 
 impl DocsSource for BeirDatasetReader {
     type Iter = BeirDocsIterator;
 
-    fn docs(&self) -> Self::Iter {
-        BeirDocsIterator {
-            lines: get_doc_lines(&self.dir),
-        }
+    fn docs(&self) -> Result<Self::Iter> {
+        Ok(BeirDocsIterator {
+            lines: get_file_lines(&self.docs_file)?,
+        })
     }
 
-    fn docs_count(&self) -> Option<usize> {
-        Some(get_doc_lines(&self.dir).count())
+    fn docs_count(&self) -> Result<Option<usize>> {
+        Ok(Some(get_file_lines(&self.docs_file)?.count()))
     }
-}
-
-fn get_doc_lines(dir: &Path) -> Lines<BufReader<File>> {
-    let file = File::open(dir.join("corpus.jsonl")).expect("file should exist");
-    let reader = BufReader::new(file);
-    reader.lines()
 }
 
 impl Iterator for BeirDocsIterator {

@@ -7,5 +7,6 @@
 # samply's CPU profiling artifacts
 profile.json.gz
 
-# fastembed's downloaded models
-.fastembed_cache
+# cache for models/datasets downloaded from huggingface.co
+# used by fastembed crate and utils/download_hf_file.rs
+.hf_cache

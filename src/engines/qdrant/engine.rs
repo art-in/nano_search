@@ -11,6 +11,7 @@ use qdrant_client::qdrant::{
 
 use crate::model::doc::DocId;
 use crate::model::engine::SearchEngine;
+use crate::utils::HF_CACHE_DIR;
 
 const VECTOR_SIZE: u64 = 384;
 
@@ -81,7 +82,8 @@ impl SearchEngine for QdrantSearchEngine {
 
         let model = TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::AllMiniLML6V2)
-                .with_show_download_progress(true),
+                .with_show_download_progress(true)
+                .with_cache_dir(HF_CACHE_DIR.into()),
         )?;
 
         Ok(Self {

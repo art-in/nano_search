@@ -13,7 +13,7 @@ fn test_eval_create_in_memory() -> Result<()> {
     let docs = cisi::load_docs()?;
 
     let mut engine = TantivySearchEngine::create_in_memory()?;
-    engine.index_docs(&mut docs.docs())?;
+    engine.index_docs(&mut docs.docs()?)?;
 
     assert_search_quality(&engine)?;
 
@@ -26,7 +26,7 @@ fn test_eval_create_on_disk() -> Result<()> {
     let dir = TempDir::new()?;
 
     let mut engine = TantivySearchEngine::create_on_disk(&dir)?;
-    engine.index_docs(&mut docs.docs())?;
+    engine.index_docs(&mut docs.docs()?)?;
 
     assert_search_quality(&engine)?;
 
@@ -40,7 +40,7 @@ fn test_eval_create_on_disk_and_open() -> Result<()> {
 
     {
         let mut engine = TantivySearchEngine::create_on_disk(&dir)?;
-        engine.index_docs(&mut docs.docs())?;
+        engine.index_docs(&mut docs.docs()?)?;
     }
 
     let engine = TantivySearchEngine::open_from_disk(&dir)?;

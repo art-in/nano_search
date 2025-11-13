@@ -49,7 +49,7 @@ fn index_with<SE: SearchEngine>(
                 IndexType::Memory => SE::create_in_memory()?,
                 IndexType::Disk => SE::create_on_disk(&dir)?,
             };
-            engine.index_docs(&mut docs.docs())?;
+            engine.index_docs(&mut docs.docs()?)?;
             Ok(())
         });
     });
@@ -76,7 +76,7 @@ fn open_index_with<SE: SearchEngine>(
 ) -> Result<()> {
     let dir = TempDir::new()?;
     let mut engine = SE::create_on_disk(&dir)?;
-    engine.index_docs(&mut docs.docs())?;
+    engine.index_docs(&mut docs.docs()?)?;
 
     group.bench_function(SE::name(), |bencher| {
         bencher.iter(|| SE::open_from_disk(&dir));
@@ -118,7 +118,7 @@ fn search_with<SE: SearchEngine>(
         IndexType::Memory => SE::create_in_memory()?,
         IndexType::Disk => SE::create_on_disk(&dir)?,
     };
-    engine.index_docs(&mut docs.docs())?;
+    engine.index_docs(&mut docs.docs()?)?;
 
     let bench_id = format!("{}/{:?}", SE::name(), index_type).to_lowercase();
 

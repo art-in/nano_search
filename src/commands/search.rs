@@ -9,9 +9,9 @@ const SEARCH_LIMIT: u64 = 10;
 
 pub fn search_command() -> Result<()> {
     let engines = init_search_engines_open()?;
-    let dataset = init_dataset();
+    let dataset = init_dataset()?;
 
-    let query = dataset.queries().nth(10).context("should get query")?;
+    let query = dataset.queries()?.nth(10).context("should get query")?;
 
     println!("query (id={}): {}", query.id, query.text);
     println!("relevant docs: {:?}", query.relevant_docs);
