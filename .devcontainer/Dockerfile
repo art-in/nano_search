@@ -6,7 +6,7 @@ RUN rustup toolchain install nightly
 RUN rustup override set nightly
 
 # install rust components
-RUN rustup component add --toolchain nightly rustfmt clippy
+RUN rustup component add --toolchain nightly rustfmt clippy rust-analyzer
 
 # install tools
 RUN cargo install --locked samply
