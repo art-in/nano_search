@@ -1,12 +1,10 @@
-use std::path::Path;
-
 use anyhow::{Context, Result};
 
 use super::index::model::{Index, IndexMedium};
 use super::index::{DiskIndexOptions, build_index, open_index};
 use super::search::search;
 use crate::model::doc::{Doc, DocId};
-use crate::model::engine::SearchEngine;
+use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 
 pub struct NanoSearchEngine {
     index_medium: IndexMedium,
@@ -32,15 +30,20 @@ impl SearchEngine for NanoSearchEngine {
         })
     }
 
-    fn create_on_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
-        if index_dir.as_ref().exists() {
-            std::fs::remove_dir_all(index_dir.as_ref())
+    fn create_on_disk(opts: CreateOnDiskOptions) -> Result<Self> {
+        if opts.index_dir.exists() {
+            std::fs::remove_dir_all(&opts.index_dir)
                 .context("existing index dir should be removed")?;
         }
-        std::fs::create_dir(index_dir.as_ref())
+        std::fs::create_dir(&opts.index_dir)
             .context("index dir should be created")?;
 
-        let index_medium = IndexMedium::Disk(DiskIndexOptions::new(index_dir));
+        let index_medium = IndexMedium::Disk(
+            DiskIndexOptions::builder()
+                .index_dir(opts.index_dir.clone())
+                .maybe_index_threads(opts.index_threads)
+                .build(),
+        );
 
         Ok(NanoSearchEngine {
             index_medium,
@@ -48,8 +51,12 @@ impl SearchEngine for NanoSearchEngine {
         })
     }
 
-    fn open_from_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
-        let index_medium = IndexMedium::Disk(DiskIndexOptions::new(index_dir));
+    fn open_from_disk(index_dir: impl AsRef<std::path::Path>) -> Result<Self> {
+        let index_medium = IndexMedium::Disk(
+            DiskIndexOptions::builder()
+                .index_dir(index_dir.as_ref())
+                .build(),
+        );
         let index =
             open_index(&index_medium).context("index should be opened")?;
 

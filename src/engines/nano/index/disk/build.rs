@@ -3,7 +3,7 @@ use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Seek};
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use itertools::Itertools;
 
 use super::model::{
@@ -17,17 +17,58 @@ use crate::model::doc::Doc;
 
 const SEGMENT_DIR_PREFIX: &str = "segment-";
 
+// Limit number of index threads to not create too much segments
+const MAX_INDEX_THREADS: usize = 10;
+
 pub fn build_disk_index(
     docs: &mut dyn Iterator<Item = Doc>,
-    options: &DiskIndexOptions,
+    opts: &DiskIndexOptions,
 ) -> Result<DiskIndex> {
+    let (docs_sender, docs_receiver) = crossbeam_channel::bounded(10_000);
+
+    let mut threads_handles = Vec::new();
+    let threads_count = opts
+        .index_threads
+        .unwrap_or(std::thread::available_parallelism()?.get())
+        .min(MAX_INDEX_THREADS);
+
+    for _ in 0..threads_count {
+        let docs_receiver = docs_receiver.clone();
+        let max_segment_docs = opts.max_segment_docs;
+        let index_dir = opts.index_dir.clone();
+
+        let handle = std::thread::spawn(move || -> Result<_> {
+            let mut segments = Vec::new();
+
+            let docs_chunks =
+                docs_receiver.into_iter().chunks(max_segment_docs);
+
+            for docs_chunk in &docs_chunks {
+                let mem_idx = build_memory_index(&mut docs_chunk.into_iter());
+                let segment = build_disk_index_segment(&mem_idx, &index_dir)?;
+                segments.push(segment);
+            }
+
+            Ok(segments)
+        });
+
+        threads_handles.push(handle);
+    }
+
+    for doc in docs {
+        docs_sender.send(doc)?;
+    }
+
+    // drop sender, so threads may exit from iteration loop
+    drop(docs_sender);
+
     let mut segments = Vec::new();
 
-    for docs_chunk in &docs.chunks(options.get_max_segment_docs()) {
-        let memory_index = build_memory_index(&mut docs_chunk.into_iter());
-        let segment =
-            build_disk_index_segment(&memory_index, options.get_index_dir())?;
-        segments.push(segment);
+    for handle in threads_handles {
+        let thread_segments = handle
+            .join()
+            .map_err(|_| anyhow!("index thread should be joined"))??;
+        segments.extend(thread_segments);
     }
 
     Ok(DiskIndex { segments })
@@ -85,7 +126,7 @@ fn build_disk_index_segment(
 pub fn open_disk_index(options: &DiskIndexOptions) -> Result<DiskIndex> {
     let mut segments = Vec::new();
 
-    for entry in fs::read_dir(options.get_index_dir())? {
+    for entry in fs::read_dir(&options.index_dir)? {
         let entry = entry?;
         if entry.path().is_dir() {
             let segment = open_disk_index_segment(&entry.path())?;

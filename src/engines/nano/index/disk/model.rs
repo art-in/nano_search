@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
 
@@ -10,34 +10,28 @@ use crate::engines::nano::index::model::{
     Term,
 };
 
+#[derive(bon::Builder)]
 pub struct DiskIndexOptions {
-    // Path to directory where index files is stored
-    index_dir: PathBuf,
+    /// Path to directory where index should be stored
+    #[builder(into)]
+    pub index_dir: PathBuf,
 
-    // Maximum number of documents new segment is allowed to collect before
-    // dumping to disk and starting next segment
-    max_segment_docs: usize,
-}
+    /// Number of indexing threads.
+    ///
+    /// Each thread builds its own segments.
+    ///
+    /// Input documents are distributed randomly across threads and segments,
+    /// introducing non-determinism to the indexing and search processes.
+    /// Since a segment's specific document set determines its internal
+    /// statistics - such as term IDF and average document length - this
+    /// distribution directly impacts final relevance scoring.
+    pub index_threads: Option<usize>,
 
-impl DiskIndexOptions {
-    pub fn new(index_dir: impl AsRef<Path>) -> Self {
-        DiskIndexOptions {
-            index_dir: index_dir.as_ref().to_path_buf(),
-            max_segment_docs: 250000,
-        }
-    }
-
-    pub fn get_index_dir(&self) -> &PathBuf {
-        &self.index_dir
-    }
-
-    pub fn set_max_segment_docs(mut self, value: usize) -> Self {
-        self.max_segment_docs = value;
-        self
-    }
-    pub fn get_max_segment_docs(&self) -> usize {
-        self.max_segment_docs
-    }
+    /// Maximum number of documents new segment is allowed to collect in memory
+    /// before dumping to disk and starting next segment. Higher the number -
+    /// higher the memory consumption by indexer
+    #[builder(default = 25_000)]
+    pub max_segment_docs: usize,
 }
 
 pub struct DiskIndex {

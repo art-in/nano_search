@@ -11,7 +11,7 @@ use tracing::debug;
 use zerocopy::IntoBytes;
 
 use crate::model::doc::{Doc, DocId};
-use crate::model::engine::SearchEngine;
+use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 use crate::utils::HF_CACHE_DIR;
 
 pub struct VectorSearchEngine {
@@ -44,20 +44,20 @@ impl SearchEngine for VectorSearchEngine {
         Self::create_with_connection(db)
     }
 
-    fn create_on_disk(index_dir: impl AsRef<std::path::Path>) -> Result<Self>
+    fn create_on_disk(opts: CreateOnDiskOptions) -> Result<Self>
     where
         Self: Sized,
     {
-        if std::fs::exists(&index_dir)? {
-            std::fs::remove_dir_all(&index_dir)?;
+        if std::fs::exists(&opts.index_dir)? {
+            std::fs::remove_dir_all(&opts.index_dir)?;
         }
 
-        std::fs::create_dir(&index_dir)
+        std::fs::create_dir(&opts.index_dir)
             .context("index dir should be created")?;
 
         Self::init_vector_extension();
 
-        let db = Connection::open(index_dir.as_ref().join("index"))?;
+        let db = Connection::open(opts.index_dir.join("index"))?;
         Self::create_with_connection(db)
     }
 

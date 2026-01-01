@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
@@ -17,7 +17,7 @@ pub trait SearchEngine {
         Self: Sized;
 
     /// Initializes search engine and creates new index in target dir.
-    fn create_on_disk(index_dir: impl AsRef<Path>) -> Result<Self>
+    fn create_on_disk(options: CreateOnDiskOptions) -> Result<Self>
     where
         Self: Sized;
 
@@ -35,4 +35,14 @@ pub trait SearchEngine {
 
     /// Searches for documents relevant to passed query in the index.
     fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>>;
+}
+
+#[derive(bon::Builder)]
+pub struct CreateOnDiskOptions {
+    /// Path to directory where index should be stored.
+    #[builder(into)]
+    pub index_dir: PathBuf,
+
+    /// Number of indexing threads to start.
+    pub index_threads: Option<usize>,
 }

@@ -1,34 +1,41 @@
 use anyhow::Result;
 use tempfile::TempDir;
 
-use crate::dataset_readers::cisi;
+use crate::dataset_readers::cisi::CisiDatasetReader;
 use crate::engines::vector::engine::VectorSearchEngine;
 use crate::eval::evaluate_search_quality;
+use crate::eval::model::QueriesSource;
 use crate::model::doc::DocsSource;
-use crate::model::engine::SearchEngine;
+use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 use crate::utils::GetPercentile;
 
 #[test]
 fn test_eval_create_on_disk_and_open() -> Result<()> {
-    let docs = cisi::load_docs()?;
+    let dataset = CisiDatasetReader::new("datasets/cisi");
     let dir = TempDir::new()?;
 
     {
-        let mut engine = VectorSearchEngine::create_on_disk(&dir)?;
-        engine.index_docs(&mut docs.docs()?)?;
+        let mut engine = VectorSearchEngine::create_on_disk(
+            CreateOnDiskOptions::builder()
+                .index_dir(dir.path())
+                .index_threads(1)
+                .build(),
+        )?;
+        engine.index_docs(&mut dataset.docs()?)?;
     }
 
     let engine = VectorSearchEngine::open_from_disk(&dir)?;
 
-    assert_search_quality(&engine)?;
+    assert_search_quality(&engine, &dataset)?;
 
     Ok(())
 }
 
-fn assert_search_quality(engine: &dyn SearchEngine) -> Result<()> {
-    let queries = cisi::load_queries()?;
-    let quality =
-        evaluate_search_quality(&mut queries.iter().cloned(), engine, 10)?;
+fn assert_search_quality(
+    engine: &dyn SearchEngine,
+    dataset: &CisiDatasetReader,
+) -> Result<()> {
+    let quality = evaluate_search_quality(&mut dataset.queries()?, engine, 10)?;
 
     assert_eq!(quality.queries_count, 112);
 

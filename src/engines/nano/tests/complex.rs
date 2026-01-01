@@ -1,19 +1,20 @@
 use anyhow::Result;
 use tempfile::TempDir;
 
-use crate::dataset_readers::cisi;
+use crate::dataset_readers::cisi::CisiDatasetReader;
 use crate::engines::nano::engine::NanoSearchEngine;
 use crate::eval::evaluate_search_quality;
+use crate::eval::model::QueriesSource;
 use crate::model::doc::DocsSource;
-use crate::model::engine::SearchEngine;
+use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 use crate::utils::GetPercentile;
 
 #[test]
 fn test_eval_create_in_memory() -> Result<()> {
-    let docs = cisi::load_docs()?;
+    let dataset = CisiDatasetReader::new("datasets/cisi");
 
     let mut engine = NanoSearchEngine::create_in_memory()?;
-    engine.index_docs(&mut docs.docs()?)?;
+    engine.index_docs(&mut dataset.docs()?)?;
 
     assert_search_quality(&engine)?;
 
@@ -22,11 +23,16 @@ fn test_eval_create_in_memory() -> Result<()> {
 
 #[test]
 fn test_eval_create_on_disk() -> Result<()> {
-    let docs = cisi::load_docs()?;
+    let dataset = CisiDatasetReader::new("datasets/cisi");
     let dir = TempDir::new()?;
 
-    let mut engine = NanoSearchEngine::create_on_disk(&dir)?;
-    engine.index_docs(&mut docs.docs()?)?;
+    let mut engine = NanoSearchEngine::create_on_disk(
+        CreateOnDiskOptions::builder()
+            .index_dir(dir.path())
+            .index_threads(1)
+            .build(),
+    )?;
+    engine.index_docs(&mut dataset.docs()?)?;
 
     assert_search_quality(&engine)?;
 
@@ -35,12 +41,17 @@ fn test_eval_create_on_disk() -> Result<()> {
 
 #[test]
 fn test_eval_create_on_disk_and_open() -> Result<()> {
-    let docs = cisi::load_docs()?;
+    let dataset = CisiDatasetReader::new("datasets/cisi");
     let dir = TempDir::new()?;
 
     {
-        let mut engine = NanoSearchEngine::create_on_disk(&dir)?;
-        engine.index_docs(&mut docs.docs()?)?;
+        let mut engine = NanoSearchEngine::create_on_disk(
+            CreateOnDiskOptions::builder()
+                .index_dir(dir.path())
+                .index_threads(1)
+                .build(),
+        )?;
+        engine.index_docs(&mut dataset.docs()?)?;
     }
 
     let engine = NanoSearchEngine::open_from_disk(&dir)?;
@@ -51,9 +62,8 @@ fn test_eval_create_on_disk_and_open() -> Result<()> {
 }
 
 fn assert_search_quality(engine: &impl SearchEngine) -> Result<()> {
-    let queries = cisi::load_queries()?;
-    let quality =
-        evaluate_search_quality(&mut queries.iter().cloned(), engine, 10)?;
+    let dataset = CisiDatasetReader::new("datasets/cisi");
+    let quality = evaluate_search_quality(&mut dataset.queries()?, engine, 10)?;
 
     assert_eq!(quality.queries_count, 112);
 

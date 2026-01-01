@@ -7,7 +7,7 @@ use tantivy::schema::{Field, NumericOptions, Schema, TEXT, Value};
 use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
 
 use crate::model::doc::{Doc, DocId};
-use crate::model::engine::SearchEngine;
+use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 
 pub struct TantivySearchEngine {
     index: Index,
@@ -19,10 +19,15 @@ pub struct TantivySearchEngine {
 }
 
 impl TantivySearchEngine {
-    fn new(index: Index) -> Result<Self> {
-        let index_writer: IndexWriter = index
-            .writer(50_000_000)
-            .context("index writer should be created")?;
+    fn new(index: Index, index_threads: Option<usize>) -> Result<Self> {
+        const MEMORY_BUDGET_BYTES: usize = 150_000_000;
+
+        let index_writer = if let Some(index_threads) = index_threads {
+            index.writer_with_num_threads(index_threads, MEMORY_BUDGET_BYTES)
+        } else {
+            index.writer(MEMORY_BUDGET_BYTES)
+        }
+        .context("index writer should be created")?;
 
         let index_reader = index
             .reader_builder()
@@ -70,28 +75,28 @@ impl SearchEngine for TantivySearchEngine {
         Self: Sized,
     {
         let index = Index::create_in_ram(create_schema());
-        TantivySearchEngine::new(index)
+        TantivySearchEngine::new(index, None)
     }
 
-    fn create_on_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
-        if index_dir.as_ref().exists() {
-            std::fs::remove_dir_all(index_dir.as_ref())
+    fn create_on_disk(opts: CreateOnDiskOptions) -> Result<Self> {
+        if opts.index_dir.exists() {
+            std::fs::remove_dir_all(&opts.index_dir)
                 .context("existing index dir should be removed")?;
         }
-        std::fs::create_dir(index_dir.as_ref())
+        std::fs::create_dir(&opts.index_dir)
             .context("index dir should be created")?;
 
-        let index = Index::create_in_dir(index_dir, create_schema())
+        let index = Index::create_in_dir(&opts.index_dir, create_schema())
             .context("index should be created in dir")?;
 
-        TantivySearchEngine::new(index)
+        TantivySearchEngine::new(index, opts.index_threads)
     }
 
     fn open_from_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
         let index = Index::open_in_dir(index_dir)
             .context("index should be opened from dir")?;
 
-        TantivySearchEngine::new(index)
+        TantivySearchEngine::new(index, None)
     }
 
     fn index_docs(

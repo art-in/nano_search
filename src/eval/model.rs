@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use anyhow::Result;
+
 use crate::model::doc::DocId;
 
 #[derive(Default, Clone)]
@@ -16,7 +18,7 @@ pub type Relevance = f64;
 
 pub trait QueriesSource {
     type Iter: Iterator<Item = Query>;
-    fn queries(&self) -> anyhow::Result<Self::Iter>;
+    fn queries(&self) -> Result<Self::Iter>;
 }
 
 // Search quality evaluation results summarized for entire query set

@@ -21,13 +21,19 @@ pub enum IndexMedium {
 }
 
 /// An index is composed of one or more segments.
-/// Each segment can be built and searched independently.
 pub trait Index {
     fn get_segments(&self) -> Vec<&dyn IndexSegment>;
 }
 
 /// A segment is a self-contained part of the index.
 /// Segments can be built and searched independently from each other.
+///
+/// Each segment maintains unique statistics that impact relevance scoring.
+/// Consequently, searching a single 10-document segment may yield different
+/// results than searching ten 1-document segments. While document balancing
+/// typically prevents significant skew, relevance remains inconsistent in
+/// smaller, final segments. To ensure accuracy, minimize small segments by
+/// optimizing indexing thread counts and maximum segment document limits.
 pub trait IndexSegment {
     fn get_doc_postings_for_term(
         &self,

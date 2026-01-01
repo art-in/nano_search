@@ -17,7 +17,12 @@ fn test_build_memory_index() -> Result<()> {
 #[test]
 fn test_build_disk_index() -> Result<()> {
     let dir = TempDir::new()?;
-    test_build_index(IndexMedium::Disk(DiskIndexOptions::new(&dir)))
+    test_build_index(IndexMedium::Disk(
+        DiskIndexOptions::builder()
+            .index_dir(dir.path())
+            .index_threads(1)
+            .build(),
+    ))
 }
 
 fn test_build_index(index_medium: IndexMedium) -> Result<()> {
@@ -80,8 +85,13 @@ fn test_build_index(index_medium: IndexMedium) -> Result<()> {
 fn test_build_disk_index_with_multiple_segments() -> Result<()> {
     // setup
     let dir = TempDir::new()?;
-    let options = DiskIndexOptions::new(&dir).set_max_segment_docs(4);
-    let index_medium = IndexMedium::Disk(options);
+    let index_medium = IndexMedium::Disk(
+        DiskIndexOptions::builder()
+            .index_dir(dir.path())
+            .index_threads(1)
+            .max_segment_docs(4)
+            .build(),
+    );
     let mut docs_it = create_cat_mouse_docs_iterator();
 
     // execute
