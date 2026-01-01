@@ -1,25 +1,25 @@
 use std::collections::BTreeMap;
-use std::io::{BufRead, Read};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Read};
 
 use anyhow::{Context, Result};
 
-use crate::eval::model::Query;
+use crate::dataset_readers::cisi::model::CisiDatasetReader;
+use crate::eval::model::{QueriesSource, Query};
 
-pub fn load_queries() -> Result<Vec<Query>> {
-    let queries_file = std::fs::File::open("datasets/cisi/CISI.QRY")
-        .context("file should exist")?;
-    let query_docids_file = std::fs::File::open("datasets/cisi/CISI.REL")
-        .context("file should exist")?;
+impl QueriesSource for CisiDatasetReader {
+    type Iter = std::vec::IntoIter<Query>;
 
-    let mut queries = parse_queries(queries_file)?;
-    parse_query_docids(query_docids_file, &mut queries)?;
+    fn queries(&self) -> Result<Self::Iter> {
+        let queries_file = BufReader::new(File::open(&self.queries_file)?);
+        let qrels_file = BufReader::new(File::open(&self.qrels_file)?);
 
-    let mut res = Vec::new();
-    for (_, query) in queries {
-        res.push(query);
+        let mut queries = read_queries(queries_file)?;
+        read_qrels(qrels_file, &mut queries)?;
+
+        let queries = queries.into_values().collect::<Vec<Query>>();
+        Ok(queries.into_iter())
     }
-
-    Ok(res)
 }
 
 enum ELineType {
@@ -34,17 +34,17 @@ enum ESectionType {
     QueryText,
 }
 
-// parses query contents from CISI.QRY file
-//
-// each query in CISI.QRY is defined in sequence of text lines, grouped by
-// sections.
-//
-// each section has following format:
-//  required section header :  .SECTION_TYPE <data>
-//  optional section content:  <data>
-//  optional section content:  <data>
-//  etc.
-fn parse_queries<R: Read>(input: R) -> Result<BTreeMap<u64, Query>> {
+/// Parses query contents from CISI.QRY file
+///
+/// Each query in CISI.QRY is defined in sequence of text lines, grouped by
+/// sections.
+///
+/// Each section has following format:
+///  required section header :  .SECTION_TYPE <data>
+///  optional section content:  <data>
+///  optional section content:  <data>
+///  etc.
+fn read_queries<R: Read>(input: R) -> Result<BTreeMap<u64, Query>> {
     let lines = std::io::BufReader::new(input).lines();
 
     let mut queries: BTreeMap<u64, Query> = BTreeMap::new();
@@ -134,8 +134,8 @@ fn parse_queries<R: Read>(input: R) -> Result<BTreeMap<u64, Query>> {
     Ok(queries)
 }
 
-// parses query docids from CISI.REL file
-fn parse_query_docids<R: Read>(
+/// Parses query docids from CISI.REL file
+fn read_qrels<R: Read>(
     input: R,
     queries: &mut BTreeMap<u64, Query>,
 ) -> Result<()> {
@@ -160,7 +160,7 @@ fn parse_query_docids<R: Read>(
             .get_mut(&query_id)
             .context("query should exist")?
             .relevant_docs
-            // relevance is not provided in dataset, so default to 1.0
+            // relevance is not provided in this dataset, so default to 1.0
             .insert(docid, 1.0);
     }
 

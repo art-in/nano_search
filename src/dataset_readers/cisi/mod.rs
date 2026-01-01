@@ -1,8 +1,5 @@
-pub mod it_docs;
-pub mod model;
+mod it_docs;
+mod it_queries;
 
-mod load_queries;
-pub use load_queries::load_queries;
-
-mod load_docs;
-pub use load_docs::load_docs;
+mod model;
+pub use model::CisiDatasetReader;

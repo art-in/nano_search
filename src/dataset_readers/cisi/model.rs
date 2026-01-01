@@ -1,16 +1,17 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::path::{Path, PathBuf};
 
-use crate::model::doc::Doc;
-
-pub struct CisiDocs {
-    pub docs: Rc<RefCell<Vec<Doc>>>,
+pub struct CisiDatasetReader {
+    pub(super) docs_file: PathBuf,
+    pub(super) queries_file: PathBuf,
+    pub(super) qrels_file: PathBuf,
 }
 
-impl Clone for CisiDocs {
-    fn clone(&self) -> Self {
-        Self {
-            docs: Rc::clone(&self.docs),
+impl CisiDatasetReader {
+    pub fn new(dir: impl AsRef<Path>) -> CisiDatasetReader {
+        CisiDatasetReader {
+            docs_file: dir.as_ref().join("CISI.ALL"),
+            queries_file: dir.as_ref().join("CISI.QRY"),
+            qrels_file: dir.as_ref().join("CISI.REL"),
         }
     }
 }
