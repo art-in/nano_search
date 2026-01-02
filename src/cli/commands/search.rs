@@ -1,15 +1,18 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
 
-use super::common::{init_dataset, init_search_engines_open};
+use crate::dataset_readers::utils::init_dataset_by_name;
+use crate::engines::utils::engine_open_from_disk_by_names;
 use crate::eval::evaluate_search_quality_for_query;
-use crate::eval::model::QueriesSource;
 
 const SEARCH_LIMIT: u64 = 10;
 
-pub fn search_command() -> Result<()> {
-    let engines = init_search_engines_open()?;
-    let dataset = init_dataset()?;
+pub fn search(engines: &[String], dataset: &str) -> Result<()> {
+    println!("initializing search engines: {}", engines.join(","));
+    println!("initializing dataset '{dataset}'");
+
+    let engines = engine_open_from_disk_by_names(engines)?;
+    let dataset = init_dataset_by_name(dataset)?;
 
     let query = dataset.queries()?.nth(10).context("should get query")?;
 

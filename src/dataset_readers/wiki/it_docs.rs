@@ -10,13 +10,11 @@ pub struct WikiDocsIterator {
 }
 
 impl DocsSource for WikiDatasetReader {
-    type Iter = WikiDocsIterator;
-
-    fn docs(&self) -> Result<Self::Iter> {
-        Ok(WikiDocsIterator {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+        Ok(Box::new(WikiDocsIterator {
             it: self.wikidump.clone().into_iter(),
             docid: 0,
-        })
+        }))
     }
 
     fn docs_count(&self) -> Result<Option<usize>> {

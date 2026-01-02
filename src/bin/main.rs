@@ -1,35 +1,20 @@
-use anyhow::{Result, bail};
-use nano_search::commands;
+use anyhow::Result;
+use clap::Parser;
+use nano_search::cli::args::{Args, Command};
+use nano_search::cli::commands;
 
 fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-
-    if args.len() < 2 {
-        print_usage();
-        bail!("no command specified");
-    }
-
     tracing_subscriber::fmt::init();
 
-    match args[1].as_str() {
-        "--index" => commands::index_command()?,
-        "--eval" => commands::eval_command()?,
-        "--search" => commands::search_command()?,
-        _ => {
-            print_usage();
-            bail!("unknown command: {}", args[1]);
+    let args = Args::parse();
+
+    match args.command {
+        Command::Index { threads } => {
+            commands::index(&args.engines, &args.dataset, threads)?
         }
-    }
+        Command::Eval => commands::eval(&args.engines, &args.dataset)?,
+        Command::Search => commands::search(&args.engines, &args.dataset)?,
+    };
 
     Ok(())
-}
-
-fn print_usage() {
-    eprintln!("Usage: nano_search [--index | --eval | --search]");
-    eprintln!();
-    eprintln!("Commands:");
-    eprintln!("  --index   Index documents using all search engines");
-    eprintln!("  --eval    Evaluate search quality for all engines");
-    eprintln!("  --search  Perform a search test with a single query");
-    eprintln!();
 }

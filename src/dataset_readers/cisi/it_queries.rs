@@ -8,9 +8,7 @@ use crate::dataset_readers::cisi::model::CisiDatasetReader;
 use crate::eval::model::{QueriesSource, Query};
 
 impl QueriesSource for CisiDatasetReader {
-    type Iter = std::vec::IntoIter<Query>;
-
-    fn queries(&self) -> Result<Self::Iter> {
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>> {
         let queries_file = BufReader::new(File::open(&self.queries_file)?);
         let qrels_file = BufReader::new(File::open(&self.qrels_file)?);
 
@@ -18,7 +16,7 @@ impl QueriesSource for CisiDatasetReader {
         read_qrels(qrels_file, &mut queries)?;
 
         let queries = queries.into_values().collect::<Vec<Query>>();
-        Ok(queries.into_iter())
+        Ok(Box::new(queries.into_iter()))
     }
 }
 

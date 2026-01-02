@@ -3,25 +3,38 @@ use std::time::Instant;
 use anyhow::Result;
 use colored::Colorize;
 
-use super::common::{init_dataset, init_search_engines_create};
+use crate::dataset_readers::utils::init_dataset_by_name;
+use crate::engines::utils::engine_create_on_disk_by_names;
 use crate::model::doc::{Doc, DocsSource};
 use crate::model::engine::SearchEngine;
 
-pub fn index_command() -> Result<()> {
-    let mut engines = init_search_engines_create()?;
-    let dataset = init_dataset()?;
+pub fn index(
+    engines: &[String],
+    dataset: &str,
+    threads: Option<usize>,
+) -> Result<()> {
+    println!("initializing search engines: {}", engines.join(","));
+    println!("initializing dataset '{dataset}'");
+
+    let mut engines = engine_create_on_disk_by_names(engines, threads)?;
+    let dataset = init_dataset_by_name(dataset)?;
 
     for engine in &mut engines {
-        index(engine.as_mut(), &dataset)?;
+        index_with_engine(engine.as_mut(), dataset.as_ref())?;
     }
 
     Ok(())
 }
 
-fn index(engine: &mut dyn SearchEngine, docs: &impl DocsSource) -> Result<()> {
+fn index_with_engine(
+    engine: &mut dyn SearchEngine,
+    docs: &dyn DocsSource,
+) -> Result<()> {
     println!("indexing docs with {} engine... ", engine.get_name().red());
     let now = Instant::now();
+
     engine.index_docs(&mut log_progress(docs.docs()?, docs.docs_count()?))?;
+
     println!(
         "indexing docs with {} engine... done in {:.1} seconds",
         engine.get_name(),

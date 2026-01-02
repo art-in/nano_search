@@ -28,6 +28,7 @@ hf-hub = "0.4.3"
 flate2 = "1.1.5"
 crossbeam-channel = "0.5.15"
 bon = "3.8.1"
+clap = { version = "4.5.53", features = ["derive", "string"] }
 
 [dev-dependencies]
 rusty-hook = "0.11.2"

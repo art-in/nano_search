@@ -11,12 +11,10 @@ pub struct BeirDocsIterator {
 }
 
 impl DocsSource for BeirDatasetReader {
-    type Iter = BeirDocsIterator;
-
-    fn docs(&self) -> Result<Self::Iter> {
-        Ok(BeirDocsIterator {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+        Ok(Box::new(BeirDocsIterator {
             lines: get_file_lines(&self.docs_file)?,
-        })
+        }))
     }
 
     fn docs_count(&self) -> Result<Option<usize>> {

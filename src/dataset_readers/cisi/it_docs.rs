@@ -11,14 +11,12 @@ pub struct CisiDocsIterator {
 }
 
 impl DocsSource for CisiDatasetReader {
-    type Iter = CisiDocsIterator;
-
-    fn docs(&self) -> Result<Self::Iter> {
-        Ok(CisiDocsIterator {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+        Ok(Box::new(CisiDocsIterator {
             lines: get_file_lines(&self.docs_file)?,
             current_line_type: ELineType::Unknown,
             current_doc: None,
-        })
+        }))
     }
 
     fn docs_count(&self) -> Result<Option<usize>> {

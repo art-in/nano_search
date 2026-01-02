@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 pub type DocId = u64;
 
 #[derive(Clone)]
@@ -7,7 +9,6 @@ pub struct Doc {
 }
 
 pub trait DocsSource {
-    type Iter: Iterator<Item = Doc>;
-    fn docs(&self) -> anyhow::Result<Self::Iter>;
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>>;
     fn docs_count(&self) -> anyhow::Result<Option<usize>>;
 }

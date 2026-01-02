@@ -16,12 +16,10 @@ pub struct BeirQueriesIterator {
 }
 
 impl QueriesSource for BeirDatasetReader {
-    type Iter = BeirQueriesIterator;
-
-    fn queries(&self) -> Result<Self::Iter> {
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>> {
         let qrels = load_qrels(&self.qrels_file)?;
         let lines = get_file_lines(&self.queries_file)?;
-        Ok(BeirQueriesIterator { lines, qrels })
+        Ok(Box::new(BeirQueriesIterator { lines, qrels }))
     }
 }
 

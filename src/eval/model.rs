@@ -17,8 +17,7 @@ pub struct Query {
 pub type Relevance = f64;
 
 pub trait QueriesSource {
-    type Iter: Iterator<Item = Query>;
-    fn queries(&self) -> Result<Self::Iter>;
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>>;
 }
 
 // Search quality evaluation results summarized for entire query set

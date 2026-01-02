@@ -14,13 +14,11 @@ pub struct JsonDocsIterator {
 }
 
 impl DocsSource for JsonDatasetReader {
-    type Iter = JsonDocsIterator;
-
-    fn docs(&self) -> Result<Self::Iter> {
-        Ok(JsonDocsIterator {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+        Ok(Box::new(JsonDocsIterator {
             lines: get_doc_lines(&self.file_path),
             docid: 0,
-        })
+        }))
     }
 
     fn docs_count(&self) -> Result<Option<usize>> {

@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::{Field, NumericOptions, Schema, TEXT, Value};
+use tantivy::schema::{Field, NumericOptions, Schema, Value, TEXT};
 use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
 
 use crate::model::doc::{Doc, DocId};
@@ -20,7 +20,7 @@ pub struct TantivySearchEngine {
 
 impl TantivySearchEngine {
     fn new(index: Index, index_threads: Option<usize>) -> Result<Self> {
-        const MEMORY_BUDGET_BYTES: usize = 150_000_000;
+        const MEMORY_BUDGET_BYTES: usize = 50_000_000;
 
         let index_writer = if let Some(index_threads) = index_threads {
             index.writer_with_num_threads(index_threads, MEMORY_BUDGET_BYTES)
