@@ -1,47 +1,33 @@
-use std::fs::File;
-use std::io::{BufReader, Seek};
-
-use anyhow::{Context, Result};
+use anyhow::Result;
+use memmap2::Mmap;
 
 use super::model::TermPostingListFileAddress;
 use super::serialize::BinarySerializable;
 use crate::engines::nano::index::model::DocPosting;
 
-pub struct DiskDocPostingsIterator {
-    postings_file_reader: BufReader<File>,
-    end_position: u64,
+pub struct DiskDocPostingsIterator<'a> {
+    posting_list: &'a [u8],
 }
 
-impl DiskDocPostingsIterator {
+impl<'a> DiskDocPostingsIterator<'a> {
     pub fn new(
-        postings_file: File,
-        address: TermPostingListFileAddress,
+        postings_file: &'a Mmap,
+        address: &TermPostingListFileAddress,
     ) -> Result<Self> {
-        let mut postings_file_reader = BufReader::new(postings_file);
-
-        postings_file_reader
-            .seek(std::io::SeekFrom::Start(address.start_byte))
-            .context("postings file position should be moved")?;
-
         Ok(DiskDocPostingsIterator {
-            postings_file_reader,
-            end_position: address.end_byte,
+            posting_list: &postings_file[address.start_byte..address.end_byte],
         })
     }
 }
 
-impl Iterator for DiskDocPostingsIterator {
+impl<'a> Iterator for DiskDocPostingsIterator<'a> {
+    // TODO: use Result<DocPosting> to avoid .expect() in next()
     type Item = DocPosting;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let current_position = self
-            .postings_file_reader
-            .stream_position()
-            .expect("current position on postings file should be read");
-
-        if current_position < self.end_position {
+        if !self.posting_list.is_empty() {
             let posting =
-                DocPosting::deserialize(&mut self.postings_file_reader)
+                DocPosting::deserialize_from_slice(&mut self.posting_list)
                     .expect("posting should be deserialized from file");
             Some(posting)
         } else {

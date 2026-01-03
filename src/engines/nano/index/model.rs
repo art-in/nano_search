@@ -35,10 +35,10 @@ pub trait Index {
 /// smaller, final segments. To ensure accuracy, minimize small segments by
 /// optimizing indexing thread counts and maximum segment document limits.
 pub trait IndexSegment {
-    fn get_doc_postings_for_term(
-        &self,
+    fn get_doc_postings_for_term<'a>(
+        &'a self,
         term: &Term,
-    ) -> Result<Option<DocPostingsForTerm>>;
+    ) -> Result<Option<DocPostingsForTerm<'a>>>;
     fn get_stats(&self) -> &IndexSegmentStats;
 }
 
@@ -60,12 +60,12 @@ pub struct IndexSegmentStats {
 /// Abstracts over memory and disk index implementations:
 /// - Memory: reads from in-memory structures
 /// - Disk: reads from on-disk segment files
-pub struct DocPostingsForTerm {
+pub struct DocPostingsForTerm<'a> {
     /// Total number of postings, that can be read through the iterator
     pub count: usize,
 
     /// Iterator over postings
-    pub iterator: Box<dyn Iterator<Item = DocPosting>>,
+    pub iterator: Box<dyn Iterator<Item = DocPosting> + 'a>,
 }
 
 /// Reference to document containing specific term.

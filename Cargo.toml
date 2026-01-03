@@ -29,6 +29,7 @@ flate2 = "1.1.5"
 crossbeam-channel = "0.5.15"
 bon = "3.8.1"
 clap = { version = "4.5.53", features = ["derive", "string"] }
+memmap2 = "0.9.9"
 
 [dev-dependencies]
 rusty-hook = "0.11.2"

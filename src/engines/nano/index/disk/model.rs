@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use std::fs::File;
 use std::path::PathBuf;
 
 use anyhow::Result;
+use memmap2::Mmap;
 
 use super::iterator::DiskDocPostingsIterator;
 use crate::engines::nano::index::model::{
-    DocPosting, DocPostingsForTerm, Index, IndexSegment, IndexSegmentStats,
-    Term,
+    DocPostingsForTerm, Index, IndexSegment, IndexSegmentStats, Term,
 };
 
 #[derive(bon::Builder)]
@@ -40,7 +39,9 @@ pub struct DiskIndex {
 
 pub struct DiskIndexSegment {
     pub terms: HashMap<Term, TermPostingListFileAddress>,
-    pub postings_file: File,
+    // use file mmap instead of open/seek/read to avoid "Too many opened files"
+    // OS error on big indices with lots of segments
+    pub postings_file: Mmap,
     pub stats: IndexSegmentStats,
 }
 
@@ -69,8 +70,8 @@ impl IndexFile {
 #[derive(Clone)]
 pub struct TermPostingListFileAddress {
     pub postings_count: usize,
-    pub start_byte: u64,
-    pub end_byte: u64,
+    pub start_byte: usize,
+    pub end_byte: usize,
 }
 
 impl Index for DiskIndex {
@@ -84,20 +85,19 @@ impl Index for DiskIndex {
 }
 
 impl IndexSegment for DiskIndexSegment {
-    fn get_doc_postings_for_term(
-        &self,
+    fn get_doc_postings_for_term<'a>(
+        &'a self,
         term: &Term,
-    ) -> Result<Option<DocPostingsForTerm>> {
+    ) -> Result<Option<DocPostingsForTerm<'a>>> {
         let term_posting_list_addr = self.terms.get(term);
 
         if let Some(term_posting_list_addr) = term_posting_list_addr {
             Ok(Some(DocPostingsForTerm {
                 count: term_posting_list_addr.postings_count,
                 iterator: Box::new(DiskDocPostingsIterator::new(
-                    self.postings_file.try_clone()?,
-                    term_posting_list_addr.clone(),
-                )?)
-                    as Box<dyn Iterator<Item = DocPosting>>,
+                    &self.postings_file,
+                    term_posting_list_addr,
+                )?),
             }))
         } else {
             Ok(None)

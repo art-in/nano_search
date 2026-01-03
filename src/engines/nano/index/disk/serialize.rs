@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use super::model::TermPostingListFileAddress;
 use crate::engines::nano::index::model::{DocPosting, IndexSegmentStats};
@@ -9,6 +9,7 @@ use crate::engines::nano::index::model::{DocPosting, IndexSegmentStats};
 pub trait BinarySerializable: Sized {
     fn serialize(&self, write: &mut dyn Write) -> Result<()>;
     fn deserialize(read: &mut dyn Read) -> Result<Self>;
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self>;
 }
 
 impl BinarySerializable for u32 {
@@ -21,6 +22,13 @@ impl BinarySerializable for u32 {
         read.read_exact(&mut buf)?;
         Ok(u32::from_le_bytes(buf))
     }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let (bytes, rest) = data
+            .split_first_chunk::<4>()
+            .context("should read u32 from slice")?;
+        *data = rest;
+        Ok(u32::from_le_bytes(*bytes))
+    }
 }
 
 impl BinarySerializable for usize {
@@ -29,9 +37,18 @@ impl BinarySerializable for usize {
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        let mut buf: [u8; 8] = [0; 8];
+        const SIZE: usize = std::mem::size_of::<usize>();
+        let mut buf: [u8; SIZE] = [0; SIZE];
         read.read_exact(&mut buf)?;
         Ok(usize::from_le_bytes(buf))
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        const SIZE: usize = std::mem::size_of::<usize>();
+        let (bytes, rest) = data
+            .split_first_chunk::<SIZE>()
+            .context("should read usize from slice")?;
+        *data = rest;
+        Ok(usize::from_le_bytes(*bytes))
     }
 }
 
@@ -45,6 +62,13 @@ impl BinarySerializable for u64 {
         read.read_exact(&mut buf)?;
         Ok(u64::from_le_bytes(buf))
     }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let (bytes, rest) = data
+            .split_first_chunk::<8>()
+            .context("should read u64 from slice")?;
+        *data = rest;
+        Ok(u64::from_le_bytes(*bytes))
+    }
 }
 
 impl BinarySerializable for f64 {
@@ -56,6 +80,13 @@ impl BinarySerializable for f64 {
         let mut buf: [u8; 8] = [0; 8];
         read.read_exact(&mut buf)?;
         Ok(f64::from_le_bytes(buf))
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let (bytes, rest) = data
+            .split_first_chunk::<8>()
+            .context("should read f64 from slice")?;
+        *data = rest;
+        Ok(f64::from_le_bytes(*bytes))
     }
 }
 
@@ -70,6 +101,14 @@ impl BinarySerializable for String {
         let mut string = String::with_capacity(string_length);
         read.take(string_length as u64)
             .read_to_string(&mut string)?;
+        Ok(string)
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let string_length = usize::deserialize_from_slice(data)?;
+        let (mut bytes, rest) = data.split_at(string_length);
+        *data = rest;
+        let mut string = String::with_capacity(string_length);
+        bytes.read_to_string(&mut string)?;
         Ok(string)
     }
 }
@@ -88,6 +127,13 @@ impl BinarySerializable for IndexSegmentStats {
             terms_count_per_doc_avg: f64::deserialize(read)?,
         })
     }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        Ok(IndexSegmentStats {
+            indexed_docs_count: u64::deserialize_from_slice(data)?,
+            max_posting_list_size: u64::deserialize_from_slice(data)?,
+            terms_count_per_doc_avg: f64::deserialize_from_slice(data)?,
+        })
+    }
 }
 
 impl BinarySerializable for DocPosting {
@@ -104,6 +150,13 @@ impl BinarySerializable for DocPosting {
             total_terms_count: u64::deserialize(read)?,
         })
     }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        Ok(DocPosting {
+            docid: u64::deserialize_from_slice(data)?,
+            term_count: u64::deserialize_from_slice(data)?,
+            total_terms_count: u64::deserialize_from_slice(data)?,
+        })
+    }
 }
 
 impl BinarySerializable for TermPostingListFileAddress {
@@ -116,8 +169,15 @@ impl BinarySerializable for TermPostingListFileAddress {
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         Ok(TermPostingListFileAddress {
             postings_count: usize::deserialize(read)?,
-            start_byte: u64::deserialize(read)?,
-            end_byte: u64::deserialize(read)?,
+            start_byte: usize::deserialize(read)?,
+            end_byte: usize::deserialize(read)?,
+        })
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        Ok(TermPostingListFileAddress {
+            postings_count: usize::deserialize_from_slice(data)?,
+            start_byte: usize::deserialize_from_slice(data)?,
+            end_byte: usize::deserialize_from_slice(data)?,
         })
     }
 }
@@ -132,13 +192,24 @@ impl BinarySerializable for HashMap<String, TermPostingListFileAddress> {
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        let terms_len = usize::deserialize(read)?;
-        let mut terms = HashMap::with_capacity(terms_len);
-        for _ in 0..terms_len {
+        let len = usize::deserialize(read)?;
+        let mut map = HashMap::with_capacity(len);
+        for _ in 0..len {
             let term = String::deserialize(read)?;
             let address = TermPostingListFileAddress::deserialize(read)?;
-            terms.insert(term, address);
+            map.insert(term, address);
         }
-        Ok(terms)
+        Ok(map)
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let len = usize::deserialize_from_slice(data)?;
+        let mut map = HashMap::with_capacity(len);
+        for _ in 0..len {
+            let term = String::deserialize_from_slice(data)?;
+            let address =
+                TermPostingListFileAddress::deserialize_from_slice(data)?;
+            map.insert(term, address);
+        }
+        Ok(map)
     }
 }

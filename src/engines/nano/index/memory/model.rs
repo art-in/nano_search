@@ -27,7 +27,7 @@ impl IndexSegment for MemoryIndex {
     fn get_doc_postings_for_term(
         &self,
         term: &Term,
-    ) -> Result<Option<DocPostingsForTerm>> {
+    ) -> Result<Option<DocPostingsForTerm<'_>>> {
         let term_posting_list = self.terms.get(term);
 
         if let Some(term_posting_list) = term_posting_list {
@@ -35,8 +35,7 @@ impl IndexSegment for MemoryIndex {
                 count: term_posting_list.len(),
                 iterator: Box::new(MemoryDocPostingsIterator::new(
                     term_posting_list.values().cloned().collect(),
-                ))
-                    as Box<dyn Iterator<Item = DocPosting>>,
+                )),
             }))
         } else {
             Ok(None)

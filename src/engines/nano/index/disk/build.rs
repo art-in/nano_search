@@ -5,6 +5,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result, anyhow};
 use itertools::Itertools;
+use memmap2::Mmap;
 
 use super::model::{
     DiskIndex, DiskIndexSegment, IndexFile, TermPostingListFileAddress,
@@ -98,8 +99,8 @@ fn build_disk_index_segment(
 
         let address = TermPostingListFileAddress {
             postings_count: posting_list.len(),
-            start_byte,
-            end_byte,
+            start_byte: start_byte as usize,
+            end_byte: end_byte as usize,
         };
 
         terms.insert(term.clone(), address);
@@ -114,11 +115,12 @@ fn build_disk_index_segment(
         .serialize(&mut stats_file)
         .context("stats should be serialized to file")?;
 
+    let postings_file =
+        mmap_file(segment_dir.join(IndexFile::Postings.name()))?;
+
     Ok(DiskIndexSegment {
         terms,
-        postings_file: File::open(
-            segment_dir.join(IndexFile::Postings.name()),
-        )?,
+        postings_file,
         stats: memory_index.stats.clone(),
     })
 }
@@ -146,11 +148,12 @@ fn open_disk_index_segment(segment_dir: &Path) -> Result<DiskIndexSegment> {
     )?;
     let stats = IndexSegmentStats::deserialize(&mut stats_file)?;
 
+    let postings_file =
+        mmap_file(segment_dir.join(IndexFile::Postings.name()))?;
+
     Ok(DiskIndexSegment {
         terms,
-        postings_file: File::open(
-            segment_dir.join(IndexFile::Postings.name()),
-        )?,
+        postings_file,
         stats,
     })
 }
@@ -173,4 +176,10 @@ fn open_reader(
     let file = File::open(dir.as_ref().join(filename))
         .with_context(|| format!("{filename} file should be opened"))?;
     Ok(BufReader::new(file))
+}
+
+fn mmap_file(file_path: impl AsRef<Path>) -> Result<Mmap> {
+    let file = File::open(file_path)?;
+    let mmap = unsafe { Mmap::map(&file)? };
+    Ok(mmap)
 }
