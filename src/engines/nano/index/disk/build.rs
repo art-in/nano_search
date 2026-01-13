@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Seek};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::thread::JoinHandle;
 
 use anyhow::{Context, Result, anyhow};
+use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use memmap2::Mmap;
 
@@ -18,27 +20,62 @@ use crate::model::doc::Doc;
 
 const SEGMENT_DIR_PREFIX: &str = "segment-";
 
-// Limit number of index threads to not create too much segments
+// limit number of index threads to not create too much segments
 const MAX_INDEX_THREADS: usize = 10;
+const DOCS_CHANNEL_CAPACITY: usize = 10_000;
 
 pub fn build_disk_index(
     docs: &mut dyn Iterator<Item = Doc>,
     opts: &DiskIndexOptions,
 ) -> Result<DiskIndex> {
-    let (docs_sender, docs_receiver) = crossbeam_channel::bounded(10_000);
+    let (docs_sender, docs_receiver) =
+        crossbeam_channel::bounded(DOCS_CHANNEL_CAPACITY);
 
-    let mut threads_handles = Vec::new();
+    let mut thread_handles = Vec::new();
+
     let threads_count = opts
         .index_threads
         .unwrap_or(std::thread::available_parallelism()?.get())
         .min(MAX_INDEX_THREADS);
 
-    for _ in 0..threads_count {
-        let docs_receiver = docs_receiver.clone();
-        let max_segment_docs = opts.max_segment_docs;
-        let index_dir = opts.index_dir.clone();
+    for thread_idx in 0..threads_count {
+        let handle = spawn_indexer_thread(
+            thread_idx,
+            docs_receiver.clone(),
+            opts.max_segment_docs,
+            opts.index_dir.clone(),
+        )?;
+        thread_handles.push(handle);
+    }
 
-        let handle = std::thread::spawn(move || -> Result<_> {
+    for doc in docs {
+        docs_sender.send(doc)?;
+    }
+
+    // drop sender, so threads may exit from wait loop
+    drop(docs_sender);
+
+    let mut segments = Vec::new();
+
+    for handle in thread_handles {
+        let thread_segments = handle
+            .join()
+            .map_err(|_| anyhow!("index thread should be joined"))??;
+        segments.extend(thread_segments);
+    }
+
+    Ok(DiskIndex { segments })
+}
+
+fn spawn_indexer_thread(
+    thread_idx: usize,
+    docs_receiver: Receiver<Doc>,
+    max_segment_docs: usize,
+    index_dir: PathBuf,
+) -> Result<JoinHandle<Result<Vec<DiskIndexSegment>>>> {
+    let handle = std::thread::Builder::new()
+        .name(format!("indexer-{}", thread_idx))
+        .spawn(move || -> Result<_> {
             let mut segments = Vec::new();
 
             let docs_chunks =
@@ -51,28 +88,9 @@ pub fn build_disk_index(
             }
 
             Ok(segments)
-        });
+        })?;
 
-        threads_handles.push(handle);
-    }
-
-    for doc in docs {
-        docs_sender.send(doc)?;
-    }
-
-    // drop sender, so threads may exit from iteration loop
-    drop(docs_sender);
-
-    let mut segments = Vec::new();
-
-    for handle in threads_handles {
-        let thread_segments = handle
-            .join()
-            .map_err(|_| anyhow!("index thread should be joined"))??;
-        segments.extend(thread_segments);
-    }
-
-    Ok(DiskIndex { segments })
+    Ok(handle)
 }
 
 fn build_disk_index_segment(
