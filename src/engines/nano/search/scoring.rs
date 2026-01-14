@@ -6,9 +6,9 @@
 pub struct ScoringParams {
     /// Number of occurrences of the term in the document
     pub doc_term_count: u64,
-    /// Total number of terms in the document
-    pub doc_total_terms_count: u64,
-    /// Number of documents containing this term in the index
+    /// Total count of terms in the document (i.e. document length)
+    pub doc_total_terms_count: u16,
+    /// Count of documents containing this term in the index
     pub docs_with_term_count: u64,
     /// Total number of documents in the index
     pub docs_total_count: u64,

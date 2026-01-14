@@ -5,33 +5,64 @@ use super::disk::DiskIndexOptions;
 use super::model::IndexMedium;
 use super::*;
 use crate::engines::nano::index::model::{
-    DocPosting, IndexSegment, IndexSegmentStats,
+    DocPosting, Index, IndexSegment, IndexSegmentStats,
 };
 use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
 
 #[test]
 fn test_build_memory_index() -> Result<()> {
-    test_build_index(IndexMedium::Memory)
-}
-
-#[test]
-fn test_build_disk_index() -> Result<()> {
-    let dir = TempDir::new()?;
-    test_build_index(IndexMedium::Disk(
-        DiskIndexOptions::builder()
-            .index_dir(dir.path())
-            .index_threads(1)
-            .build(),
-    ))
-}
-
-fn test_build_index(index_medium: IndexMedium) -> Result<()> {
     // setup
     let mut docs_it = create_cat_mouse_docs_iterator();
 
     // execute
-    let index = build_index(&index_medium, &mut docs_it)?;
+    let index = build_index(&IndexMedium::Memory, &mut docs_it)?;
+
+    // assert
+    assert_one_segment_index(index)
+}
+
+#[test]
+fn test_build_disk_index() -> Result<()> {
+    // setup
+    let mut docs_it = create_cat_mouse_docs_iterator();
+    let dir = TempDir::new()?;
+    let medium = IndexMedium::Disk(
+        DiskIndexOptions::builder()
+            .index_dir(dir.path())
+            .index_threads(1)
+            .build(),
+    );
+
+    // execute
+    let index = build_index(&medium, &mut docs_it)?;
+
+    // assert
+    assert_one_segment_index(index)
+}
+
+#[test]
+fn test_build_disk_index_and_open() -> Result<()> {
+    // setup
+    let mut docs_it = create_cat_mouse_docs_iterator();
+    let dir = TempDir::new()?;
+    let medium = IndexMedium::Disk(
+        DiskIndexOptions::builder()
+            .index_dir(dir.path())
+            .index_threads(1)
+            .build(),
+    );
+
+    // execute
+    build_index(&medium, &mut docs_it)?;
+    let index = open_index(&medium)?;
+
+    // assert
+    assert_one_segment_index(index)
+}
+
+fn assert_one_segment_index(index: Box<dyn Index>) -> Result<()> {
     let segments = index.get_segments();
+    assert_eq!(segments.len(), 1);
     let segment = segments[0];
 
     // assert no postings for unknown term
@@ -48,32 +79,37 @@ fn test_build_index(index_medium: IndexMedium) -> Result<()> {
             DocPosting {
                 docid: ID.cat,
                 term_count: 1,
-                total_terms_count: 1,
             },
             DocPosting {
                 docid: ID.cat_dog,
                 term_count: 1,
-                total_terms_count: 2,
             },
             DocPosting {
                 docid: ID.cat_mouse,
                 term_count: 1,
-                total_terms_count: 2,
             },
             DocPosting {
                 docid: ID.cat_mouse_cat,
                 term_count: 2,
-                total_terms_count: 3,
             },
         ],
     )?;
+
+    // assert correct doc terms counts
+    assert_eq!(segment.get_doc_terms_count(ID.cat)?, 1);
+    assert_eq!(segment.get_doc_terms_count(ID.dog)?, 1);
+    assert_eq!(segment.get_doc_terms_count(ID.mouse)?, 1);
+    assert_eq!(segment.get_doc_terms_count(ID.cat_dog)?, 2);
+    assert_eq!(segment.get_doc_terms_count(ID.dog_mouse)?, 2);
+    assert_eq!(segment.get_doc_terms_count(ID.cat_mouse)?, 2);
+    assert_eq!(segment.get_doc_terms_count(ID.cat_mouse_cat)?, 3);
 
     // assert correct index statistics
     assert_eq!(
         segment.get_stats(),
         &IndexSegmentStats {
             indexed_docs_count: 7,
-            max_posting_list_size: 4,
+            max_posting_list_size: 4, // docs with "cat" term
             terms_count_per_doc_avg: 12.0 / 7.0,
         }
     );
@@ -84,18 +120,45 @@ fn test_build_index(index_medium: IndexMedium) -> Result<()> {
 #[test]
 fn test_build_disk_index_with_multiple_segments() -> Result<()> {
     // setup
+    let mut docs_it = create_cat_mouse_docs_iterator();
     let dir = TempDir::new()?;
-    let index_medium = IndexMedium::Disk(
+    let medium = IndexMedium::Disk(
         DiskIndexOptions::builder()
             .index_dir(dir.path())
             .index_threads(1)
             .max_segment_docs(4)
             .build(),
     );
-    let mut docs_it = create_cat_mouse_docs_iterator();
 
     // execute
-    let index = build_index(&index_medium, &mut docs_it)?;
+    let index = build_index(&medium, &mut docs_it)?;
+
+    // assert
+    assert_multiple_segments_index(index)
+}
+
+#[test]
+fn test_build_disk_index_with_multiple_segments_and_open() -> Result<()> {
+    // setup
+    let mut docs_it = create_cat_mouse_docs_iterator();
+    let dir = TempDir::new()?;
+    let medium = IndexMedium::Disk(
+        DiskIndexOptions::builder()
+            .index_dir(dir.path())
+            .index_threads(1)
+            .max_segment_docs(4)
+            .build(),
+    );
+
+    // execute
+    build_index(&medium, &mut docs_it)?;
+    let index = open_index(&medium)?;
+
+    // assert
+    assert_multiple_segments_index(index)
+}
+
+fn assert_multiple_segments_index(index: Box<dyn Index>) -> Result<()> {
     let segments = index.get_segments();
 
     // assert
@@ -104,10 +167,17 @@ fn test_build_disk_index_with_multiple_segments() -> Result<()> {
     assert_eq!(create_cat_mouse_docs_iterator().count(), 7);
     assert_eq!(segments.len(), 2);
 
+    // when opening index from disk, segment sequence is undetermined, since
+    // their names on disk are randomized. so we have to normalize it first
+    let mut first_segment = segments[0];
+    let mut second_segment = segments[1];
+
+    if first_segment.get_stats().indexed_docs_count == 3 {
+        std::mem::swap(&mut first_segment, &mut second_segment);
+    }
+
     // assert correct first segment
     {
-        let first_segment = segments[0];
-
         assert_postings_for_term(
             first_segment,
             "cat",
@@ -115,15 +185,18 @@ fn test_build_disk_index_with_multiple_segments() -> Result<()> {
                 DocPosting {
                     docid: ID.cat,
                     term_count: 1,
-                    total_terms_count: 1,
                 },
                 DocPosting {
                     docid: ID.cat_dog,
                     term_count: 1,
-                    total_terms_count: 2,
                 },
             ],
         )?;
+
+        assert_eq!(first_segment.get_doc_terms_count(ID.cat)?, 1);
+        assert_eq!(first_segment.get_doc_terms_count(ID.dog)?, 1);
+        assert_eq!(first_segment.get_doc_terms_count(ID.mouse)?, 1);
+        assert_eq!(first_segment.get_doc_terms_count(ID.cat_dog)?, 2);
 
         assert_eq!(
             first_segment.get_stats(),
@@ -137,8 +210,6 @@ fn test_build_disk_index_with_multiple_segments() -> Result<()> {
 
     // assert correct second segment
     {
-        let second_segment = segments[1];
-
         assert_postings_for_term(
             second_segment,
             "cat",
@@ -146,15 +217,17 @@ fn test_build_disk_index_with_multiple_segments() -> Result<()> {
                 DocPosting {
                     docid: ID.cat_mouse,
                     term_count: 1,
-                    total_terms_count: 2,
                 },
                 DocPosting {
                     docid: ID.cat_mouse_cat,
                     term_count: 2,
-                    total_terms_count: 3,
                 },
             ],
         )?;
+
+        assert_eq!(second_segment.get_doc_terms_count(ID.dog_mouse)?, 2);
+        assert_eq!(second_segment.get_doc_terms_count(ID.cat_mouse)?, 2);
+        assert_eq!(second_segment.get_doc_terms_count(ID.cat_mouse_cat)?, 3);
 
         assert_eq!(
             second_segment.get_stats(),

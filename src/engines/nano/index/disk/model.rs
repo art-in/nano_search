@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use memmap2::Mmap;
 
 use super::iterator::DiskDocPostingsIterator;
 use crate::engines::nano::index::model::{
     DocPostingsForTerm, Index, IndexSegment, IndexSegmentStats, Term,
 };
+use crate::model::doc::DocId;
 
 #[derive(bon::Builder)]
 pub struct DiskIndexOptions {
@@ -42,18 +43,29 @@ pub struct DiskIndexSegment {
     // use file mmap instead of open/seek/read to avoid "Too many opened files"
     // OS error on big indices with lots of segments
     pub postings_file: Mmap,
+    pub doc_terms_count: HashMap<DocId, u16>,
     pub stats: IndexSegmentStats,
 }
 
 pub enum IndexFile {
-    // Maps terms to offsets of corresponding posting lists in Postings file
+    /// Maps terms to offsets of corresponding posting lists in Postings file
     Terms,
 
-    // Posting lists for terms from Terms file
+    /// Posting lists for terms from Terms file
     Postings,
 
-    // Statistics gathered while building index, which is used later by search
-    // routine (e.g. for candidates scoring) and debugging
+    /// Maps docids to total count of terms in corresponding document, i.e.
+    /// document lengths.
+    ///
+    /// Implementation note:
+    /// For example, Tantivy/Lucene store document lengths in '.fieldnorm' file.
+    /// They use log-scaled length approximations for better compression and
+    /// search performance, trading some scoring precision for efficiency.
+    /// See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs
+    DocLen,
+
+    /// Statistics gathered while building index, which is used later by search
+    /// routine (e.g. for candidates scoring) and debugging
     Stats,
 }
 
@@ -62,6 +74,7 @@ impl IndexFile {
         match self {
             IndexFile::Terms => "terms",
             IndexFile::Postings => "postings",
+            IndexFile::DocLen => "doclen",
             IndexFile::Stats => "stats",
         }
     }
@@ -103,6 +116,14 @@ impl IndexSegment for DiskIndexSegment {
             Ok(None)
         }
     }
+
+    fn get_doc_terms_count(&self, docid: DocId) -> Result<u16> {
+        self.doc_terms_count
+            .get(&docid)
+            .copied()
+            .context("document should exist")
+    }
+
     fn get_stats(&self) -> &IndexSegmentStats {
         &self.stats
     }

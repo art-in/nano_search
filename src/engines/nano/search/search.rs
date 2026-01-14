@@ -52,7 +52,8 @@ fn search_segment(
                 let relevance = scoring::calc_bm25(
                     scoring::ScoringParams {
                         doc_term_count: posting.term_count,
-                        doc_total_terms_count: posting.total_terms_count,
+                        doc_total_terms_count: segment
+                            .get_doc_terms_count(posting.docid)?,
                         docs_with_term_count: postings.count as u64,
                         docs_total_count: segment
                             .get_stats()

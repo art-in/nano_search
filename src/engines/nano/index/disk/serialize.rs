@@ -12,6 +12,25 @@ pub trait BinarySerializable: Sized {
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self>;
 }
 
+impl BinarySerializable for u16 {
+    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+        write.write_all(&self.to_le_bytes())?;
+        Ok(())
+    }
+    fn deserialize(read: &mut dyn Read) -> Result<Self> {
+        let mut buf: [u8; 2] = [0; 2];
+        read.read_exact(&mut buf)?;
+        Ok(u16::from_le_bytes(buf))
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let (bytes, rest) = data
+            .split_first_chunk::<2>()
+            .context("should read u16 from slice")?;
+        *data = rest;
+        Ok(u16::from_le_bytes(*bytes))
+    }
+}
+
 impl BinarySerializable for u32 {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         write.write_all(&self.to_le_bytes())?;
@@ -113,6 +132,41 @@ impl BinarySerializable for String {
     }
 }
 
+impl<K, V> BinarySerializable for HashMap<K, V>
+where
+    K: BinarySerializable + std::cmp::Eq + std::hash::Hash,
+    V: BinarySerializable,
+{
+    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+        self.len().serialize(write)?;
+        for (key, value) in self {
+            key.serialize(write)?;
+            value.serialize(write)?;
+        }
+        Ok(())
+    }
+    fn deserialize(read: &mut dyn Read) -> Result<Self> {
+        let len = usize::deserialize(read)?;
+        let mut map = HashMap::with_capacity(len);
+        for _ in 0..len {
+            let key = K::deserialize(read)?;
+            let value = V::deserialize(read)?;
+            map.insert(key, value);
+        }
+        Ok(map)
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let len = usize::deserialize_from_slice(data)?;
+        let mut map = HashMap::with_capacity(len);
+        for _ in 0..len {
+            let key = K::deserialize_from_slice(data)?;
+            let value = V::deserialize_from_slice(data)?;
+            map.insert(key, value);
+        }
+        Ok(map)
+    }
+}
+
 impl BinarySerializable for IndexSegmentStats {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         self.indexed_docs_count.serialize(write)?;
@@ -140,21 +194,18 @@ impl BinarySerializable for DocPosting {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         self.docid.serialize(write)?;
         self.term_count.serialize(write)?;
-        self.total_terms_count.serialize(write)?;
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         Ok(DocPosting {
             docid: u64::deserialize(read)?,
             term_count: u64::deserialize(read)?,
-            total_terms_count: u64::deserialize(read)?,
         })
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         Ok(DocPosting {
             docid: u64::deserialize_from_slice(data)?,
             term_count: u64::deserialize_from_slice(data)?,
-            total_terms_count: u64::deserialize_from_slice(data)?,
         })
     }
 }
@@ -179,37 +230,5 @@ impl BinarySerializable for TermPostingListFileAddress {
             start_byte: usize::deserialize_from_slice(data)?,
             end_byte: usize::deserialize_from_slice(data)?,
         })
-    }
-}
-
-impl BinarySerializable for HashMap<String, TermPostingListFileAddress> {
-    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
-        self.len().serialize(write)?;
-        for (term, address) in self {
-            term.serialize(write)?;
-            address.serialize(write)?;
-        }
-        Ok(())
-    }
-    fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        let len = usize::deserialize(read)?;
-        let mut map = HashMap::with_capacity(len);
-        for _ in 0..len {
-            let term = String::deserialize(read)?;
-            let address = TermPostingListFileAddress::deserialize(read)?;
-            map.insert(term, address);
-        }
-        Ok(map)
-    }
-    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        let len = usize::deserialize_from_slice(data)?;
-        let mut map = HashMap::with_capacity(len);
-        for _ in 0..len {
-            let term = String::deserialize_from_slice(data)?;
-            let address =
-                TermPostingListFileAddress::deserialize_from_slice(data)?;
-            map.insert(term, address);
-        }
-        Ok(map)
     }
 }

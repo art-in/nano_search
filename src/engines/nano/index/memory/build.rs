@@ -10,34 +10,32 @@ pub fn build_memory_index(docs: &mut dyn Iterator<Item = Doc>) -> MemoryIndex {
     for doc in docs {
         let words = doc.text.split_whitespace();
 
-        let terms: Vec<String> = words
-            .filter_map(|word| {
-                let term = crate::utils::normalize_word(word);
-                if term.is_empty() { None } else { Some(term) }
-            })
-            .collect();
+        let terms = words.filter_map(|word| {
+            let term = crate::utils::normalize_word(word);
+            if term.is_empty() { None } else { Some(term) }
+        });
 
-        terms_total += terms.len() as u64;
+        let mut doc_terms_count = 0_u16;
 
-        for term in &terms {
-            let posting_list = index
-                .terms
-                .entry(term.clone())
-                .or_insert_with(TermPostingList::new);
+        for term in terms {
+            let posting_list =
+                index.terms.entry(term).or_insert_with(TermPostingList::new);
 
             let posting =
                 posting_list.entry(doc.id).or_insert_with(|| DocPosting {
                     docid: doc.id,
                     term_count: 0,
-                    total_terms_count: terms.len() as u64,
                 });
 
             posting.term_count += 1;
+            doc_terms_count += 1;
 
             index.stats.max_posting_list_size = (posting_list.len() as u64)
                 .max(index.stats.max_posting_list_size);
         }
 
+        terms_total += doc_terms_count as u64;
+        index.doc_terms_count.insert(doc.id, doc_terms_count);
         index.stats.indexed_docs_count += 1;
     }
 

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use super::iterator::MemoryDocPostingsIterator;
 use crate::engines::nano::index::model::{
@@ -12,6 +12,7 @@ use crate::model::doc::DocId;
 #[derive(Default)]
 pub struct MemoryIndex {
     pub terms: HashMap<Term, TermPostingList>,
+    pub doc_terms_count: HashMap<DocId, u16>,
     pub stats: IndexSegmentStats,
 }
 
@@ -40,6 +41,13 @@ impl IndexSegment for MemoryIndex {
         } else {
             Ok(None)
         }
+    }
+
+    fn get_doc_terms_count(&self, docid: DocId) -> Result<u16> {
+        self.doc_terms_count
+            .get(&docid)
+            .copied()
+            .context("document should exist")
     }
 
     fn get_stats(&self) -> &IndexSegmentStats {
