@@ -7,6 +7,7 @@ use crate::dataset_readers::utils::init_dataset_by_name;
 use crate::engines::utils::engine_create_on_disk_by_names;
 use crate::model::doc::{Doc, DocsSource};
 use crate::model::engine::SearchEngine;
+use crate::utils::format_number_si;
 
 pub fn index(
     engines: &[String],
@@ -72,10 +73,10 @@ pub fn log_progress(
 
             print!(
                 "{} ({}) {} ({}) ",
-                format_number(docs_processed as f64, "docs"),
-                format_number(docs_per_second, "docs/sec"),
-                format_number(bytes_total as f64, "B"),
-                format_number(bytes_per_second, "B/sec")
+                format_number_si(docs_processed, "docs"),
+                format_number_si(docs_per_second, "docs/sec"),
+                format_number_si(bytes_total, "B"),
+                format_number_si(bytes_per_second, "B/sec")
             );
 
             if let Some(docs_count) = docs_count {
@@ -96,11 +97,4 @@ pub fn log_progress(
             period_start = Instant::now();
         }
     })
-}
-
-/// Formats a number with human-readable units (KB, MB, etc.)
-pub fn format_number(value: f64, units: &str) -> String {
-    human_format::Formatter::new()
-        .with_units(units)
-        .format(value)
 }

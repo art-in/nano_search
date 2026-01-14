@@ -15,6 +15,9 @@ pub use download_hf_file::*;
 mod get_file_lines;
 pub use get_file_lines::*;
 
+mod format_number_si;
+pub use format_number_si::*;
+
 #[cfg(test)]
 pub mod test_docs_iterator;
 

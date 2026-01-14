@@ -1982,6 +1982,7 @@ dependencies = [
  "human_format",
  "itertools 0.14.0",
  "memmap2",
+ "num-traits",
  "ort",
  "parse_wiki_text",
  "quick-xml",
