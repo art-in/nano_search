@@ -1,7 +1,8 @@
 FROM rust:latest
 
-# install rust nightly toolchain:
-# - few useful unstable rustfmt options work in nightly only (see rustfmt.toml)
+# install rust nightly toolchain. reasons:
+# - to enable some useful unstable rustfmt options (see rustfmt.toml)
+# - to enable lagacy mangling format in profiling build (see Cargo.toml)
 RUN rustup toolchain install nightly
 RUN rustup override set nightly
 

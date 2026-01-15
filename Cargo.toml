@@ -1,3 +1,6 @@
+# allow to set separate "rustflags" per build profile
+cargo-features = ["profile-rustflags"]
+
 [package]
 name = "nano_search"
 version = "0.1.0"
@@ -39,7 +42,29 @@ criterion = { version = "0.6.0", features = ["html_reports"] }
 
 [profile.profiling]
 inherits = "release"
+
+# include debug info (e.g. DWARF on linux) to enable source-level mapping
+# and line numbers in profilers. note that address-to-function-name mapping
+# would work without it, using the symbol table (symtab section of .elf binary),
+# which is enabled by default in release build
 debug = true
+
+# packs debug info into a separate file, so Instruments and other profilers
+# can locate it automatically without manual path configuration
+split-debuginfo = "packed"
+
+rustflags = [
+  # force frame pointers to accelerate stack unwinding. note that unwinding
+  # would still work without it, since modern profilers can unwind stack using
+  # other means (e.g. DWARF unwind table in eh_frame section of .elf binary),
+  # which is enabled by default in release build, but frame pointers
+  # significantly reduce profiling overhead and increase sampling accuracy
+  "-C", "force-frame-pointers=on",
+
+  # use legacy symbol mangling format, since some profilers (e.g. Heaptrack
+  # or Instruments) do not recognize/demangle new v0 format yet
+  "-C", "symbol-mangling-version=legacy", "-Z", "unstable-options"
+]
 
 [lints.clippy]
 unwrap_used = "warn"
