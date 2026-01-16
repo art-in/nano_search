@@ -23,7 +23,7 @@ pub fn search(engines: &[String], dataset: &str) -> Result<()> {
         println!("searching with {} engine", engine.get_name().red());
         let found_docids = engine.search(&query.text, SEARCH_LIMIT)?;
 
-        println!("found docids: {:?}", found_docids);
+        println!("found docids: {found_docids:?}");
 
         let quality = evaluate_search_quality_for_query(
             &found_docids,

@@ -31,16 +31,17 @@ impl IndexSegment for MemoryIndex {
     ) -> Result<Option<DocPostingsForTerm<'_>>> {
         let term_posting_list = self.terms.get(term);
 
-        if let Some(term_posting_list) = term_posting_list {
-            Ok(Some(DocPostingsForTerm {
-                count: term_posting_list.len(),
-                iterator: Box::new(MemoryDocPostingsIterator::new(
-                    term_posting_list.values().cloned().collect(),
-                )),
-            }))
-        } else {
-            Ok(None)
-        }
+        term_posting_list.map_or_else(
+            || Ok(None),
+            |list| {
+                Ok(Some(DocPostingsForTerm {
+                    count: list.len(),
+                    iterator: Box::new(MemoryDocPostingsIterator::new(
+                        list.values().cloned().collect(),
+                    )),
+                }))
+            },
+        )
     }
 
     fn get_doc_terms_count(&self, docid: DocId) -> Result<u16> {

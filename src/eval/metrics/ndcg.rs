@@ -13,7 +13,7 @@ use crate::model::doc::DocId;
 /// into account, i.e. placing document is penalized more its position is closer
 /// to the end.
 ///
-/// See https://en.wikipedia.org/wiki/Discounted_cumulative_gain
+/// See <https://en.wikipedia.org/wiki/Discounted_cumulative_gain>
 pub fn ndcg(
     found_docids: &[DocId],
     relevant_docs: &HashMap<DocId, Relevance>,
@@ -109,8 +109,8 @@ pub enum WeightingScheme {
 impl WeightingScheme {
     fn weight(self, relevance: Relevance) -> f64 {
         match self {
-            WeightingScheme::Jarvelin => relevance,
-            WeightingScheme::Burges => 2.0_f64.powf(relevance) - 1.0,
+            Self::Jarvelin => relevance,
+            Self::Burges => relevance.exp2() - 1.0,
         }
     }
 }

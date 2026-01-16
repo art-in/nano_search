@@ -48,7 +48,7 @@ impl IntoIterator for WikiDump {
             .create_xml_reader()
             .expect("XML reader should be created");
         let text_parser =
-            WikiTextParser::new(parser_config::english_wikipedia());
+            WikiTextParser::new(&parser_config::english_wikipedia());
 
         WikiPagesIterator {
             xml_reader,

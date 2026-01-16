@@ -40,17 +40,19 @@ fn get_next_page(
                     b"title" => {
                         current_page.title =
                             get_text_from_event(xml_reader, &mut text_buf)
-                                .expect("should get text from 'title' node")
+                                .expect("should get text from 'title' node");
                     }
                     b"text" => {
                         current_revision.text =
                             get_text_from_event(xml_reader, &mut text_buf)
-                                .expect("should get text from 'text' node")
+                                .expect("should get text from 'text' node");
                     }
                     b"timestamp" => {
                         current_revision.timestamp =
                             get_text_from_event(xml_reader, &mut text_buf)
-                                .expect("should get text from 'timestamp' node")
+                                .expect(
+                                    "should get text from 'timestamp' node",
+                                );
                     }
                     b"ns" => {
                         let ns = get_text_from_event(xml_reader, &mut text_buf)
@@ -64,7 +66,7 @@ fn get_next_page(
                         }
                     }
                     _ => {}
-                };
+                }
             }
             Ok(Event::End(ref e)) => {
                 match e.name().as_ref() {
@@ -94,7 +96,7 @@ fn get_next_page(
                         }
                     }
                     _ => {}
-                };
+                }
             }
             Ok(Event::Eof) => {
                 break None;

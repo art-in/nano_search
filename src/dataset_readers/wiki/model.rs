@@ -11,7 +11,7 @@ pub struct WikiDatasetReader {
 
 impl WikiDatasetReader {
     pub fn new<P: AsRef<Path>>(file_path: P) -> Result<Self> {
-        Ok(WikiDatasetReader {
+        Ok(Self {
             wikidump: WikiDump::new(file_path)?,
         })
     }

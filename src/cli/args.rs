@@ -48,7 +48,7 @@ pub enum Command {
     Search,
 }
 
-fn get_examples_string() -> &'static str {
+const fn get_examples_string() -> &'static str {
     "Examples:
 
     # minimal

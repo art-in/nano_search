@@ -20,14 +20,14 @@ pub fn parse_id(input: &str) -> Result<u64> {
         input
     };
 
-    match id_str.parse::<u64>() {
-        Ok(id) => Ok(id),
-        Err(_) => {
+    id_str.parse::<u64>().map_or_else(
+        |_| {
             let mut hasher = DefaultHasher::new();
             hasher.write(input.as_bytes());
             Ok(hasher.finish())
-        }
-    }
+        },
+        Ok,
+    )
 }
 
 /// Extracts a string field value from a JSON object.
@@ -54,15 +54,15 @@ mod tests {
         // fallback to hashing
         assert_eq!(
             parse_id("632589828c8b9fca2c3a59e97451fde8fa7d188d")?,
-            2277164672189146571
+            2_277_164_672_189_146_571
         );
         assert_eq!(
             parse_id("test-environment-aeghhgwpe-pro02b")?,
-            17880531886978462505
+            17_880_531_886_978_462_505
         );
         assert_eq!(
             parse_id("4d3d4471-2019-04-18T11:45:01Z-00002-000")?,
-            16211700675218413973
+            16_211_700_675_218_413_973
         );
 
         Ok(())

@@ -83,6 +83,7 @@ impl SearchEngine for VectorSearchEngine {
 
         // experimenting with batched embedding. noticed slow down compared to
         // sequential embedding. should work better with hardware acceleration
+        #[expect(clippy::items_after_statements)]
         const EMBED_DOCS_BATCH_SIZE: usize = 1;
 
         for docs_batch in &docs.chunks(EMBED_DOCS_BATCH_SIZE) {
@@ -131,8 +132,7 @@ impl SearchEngine for VectorSearchEngine {
             .into_iter()
             .map(|docid_str| {
                 docid_str.parse::<u64>().context(format!(
-                    "numeric docid should be parsed from {}",
-                    docid_str
+                    "numeric docid should be parsed from {docid_str}"
                 ))
             })
             .collect::<Result<Vec<_>>>()?;
@@ -142,7 +142,7 @@ impl SearchEngine for VectorSearchEngine {
 }
 
 impl VectorSearchEngine {
-    #[allow(clippy::missing_transmute_annotations)]
+    #[expect(clippy::missing_transmute_annotations)]
     fn init_vector_extension() {
         unsafe {
             sqlite3_auto_extension(Some(std::mem::transmute(

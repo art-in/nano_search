@@ -1,6 +1,6 @@
 use parse_wiki_text::ConfigurationSource;
 
-pub fn english_wikipedia<'c>() -> ConfigurationSource<'c> {
+pub const fn english_wikipedia<'c>() -> ConfigurationSource<'c> {
     ConfigurationSource {
         category_namespaces: &["category"],
         extension_tags: &[

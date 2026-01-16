@@ -67,6 +67,23 @@ rustflags = [
 ]
 
 [lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+
+# disable some noisy pedantic/nurcery warnings that I do not care about for now
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+cast_lossless = "allow"
+cast_possible_truncation = "allow"
+float_cmp = "allow"
+struct_field_names = "allow"
+implicit_hasher = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+suboptimal_flops = "allow"
+significant_drop_tightening = "allow"
+
+# prefer propagating error to parent function through Result, instead of panic
 unwrap_used = "warn"
 
 [[bench]]

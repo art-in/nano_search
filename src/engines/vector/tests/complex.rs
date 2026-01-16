@@ -40,19 +40,19 @@ fn assert_search_quality(
     assert_eq!(quality.queries_count, 112);
 
     // assert precision
-    assert_eq!(quality.precision_avg, 0.2598214285714286);
+    assert_eq!(quality.precision_avg, 0.259_821_428_571_428_6);
     assert_eq!(quality.precisions.perc(0.5)?, 0.1);
     assert_eq!(quality.precisions.perc(0.9)?, 0.8);
     assert_eq!(quality.precisions.perc(1.0)?, 1.0);
 
     // assert recall
-    assert_eq!(quality.recall_avg, 0.407004555378722);
-    assert_eq!(quality.recalls.perc(0.5)?, 0.16666666666666666);
+    assert_eq!(quality.recall_avg, 0.407_004_555_378_722);
+    assert_eq!(quality.recalls.perc(0.5)?, 0.166_666_666_666_666_66);
     assert_eq!(quality.recalls.perc(0.9)?, 1.0);
     assert_eq!(quality.recalls.perc(1.0)?, 1.0);
 
     // assert NDCG
-    assert_eq!(quality.ndcg_avg, 0.28298675475553986);
+    assert_eq!(quality.ndcg_avg, 0.282_986_754_755_539_86);
 
     Ok(())
 }

@@ -74,7 +74,7 @@ fn spawn_indexer_thread(
     index_dir: PathBuf,
 ) -> Result<JoinHandle<Result<Vec<DiskIndexSegment>>>> {
     let handle = std::thread::Builder::new()
-        .name(format!("indexer-{}", thread_idx))
+        .name(format!("indexer-{thread_idx}"))
         .spawn(move || -> Result<_> {
             let mut segments = Vec::new();
 

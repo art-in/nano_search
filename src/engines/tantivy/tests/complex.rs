@@ -69,14 +69,14 @@ fn assert_search_quality(engine: &impl SearchEngine) -> Result<()> {
     assert_eq!(quality.queries_count, 112);
 
     // assert precision
-    assert_eq!(quality.precision_avg, 0.18839285714285717);
+    assert_eq!(quality.precision_avg, 0.188_392_857_142_857_17);
     assert_eq!(quality.precisions.perc(0.5)?, 0.1);
     assert_eq!(quality.precisions.perc(0.9)?, 0.5);
     assert_eq!(quality.precisions.perc(1.0)?, 0.9);
 
     // assert recall
-    assert_eq!(quality.recall_avg, 0.3975600431151478);
-    assert_eq!(quality.recalls.perc(0.5)?, 0.13392857142857142);
+    assert_eq!(quality.recall_avg, 0.397_560_043_115_147_8);
+    assert_eq!(quality.recalls.perc(0.5)?, 0.133_928_571_428_571_42);
     assert_eq!(quality.recalls.perc(0.9)?, 1.0);
     assert_eq!(quality.recalls.perc(1.0)?, 1.0);
 

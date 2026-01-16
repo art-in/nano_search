@@ -6,7 +6,7 @@ pub struct MemoryDocPostingsIterator {
 }
 
 impl MemoryDocPostingsIterator {
-    pub fn new(postings: Vec<DocPosting>) -> Self {
+    pub const fn new(postings: Vec<DocPosting>) -> Self {
         Self {
             postings,
             position: 0,

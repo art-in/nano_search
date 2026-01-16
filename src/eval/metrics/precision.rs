@@ -4,6 +4,7 @@ use crate::eval::metrics::hits::hits;
 use crate::eval::model::Relevance;
 use crate::model::doc::DocId;
 
+#[must_use]
 pub fn precision(
     found_docids: &[DocId],
     relevant_docs: &HashMap<DocId, Relevance>,

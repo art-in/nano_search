@@ -72,7 +72,7 @@ pub struct DocPostingsForTerm<'a> {
 }
 
 /// Reference to document containing specific term.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct DocPosting {
     /// Unique document identifier
     pub docid: DocId,

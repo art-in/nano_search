@@ -94,7 +94,7 @@ mod tests {
         };
 
         let score = calc_tfidf(params);
-        assert_eq!(score, 0.10596634733096073);
+        assert_eq!(score, 0.105_966_347_330_960_73);
     }
 
     #[test]
@@ -108,6 +108,6 @@ mod tests {
         let avg_terms = 150.0;
 
         let score = calc_bm25(params, avg_terms);
-        assert_eq!(score, 7.895734283840656);
+        assert_eq!(score, 7.895_734_283_840_656);
     }
 }

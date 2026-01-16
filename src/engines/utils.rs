@@ -9,6 +9,7 @@ const NANO_INDEX_DIR: &str = "index_nano";
 const TANTIVY_INDEX_DIR: &str = "index_tantivy";
 const VECTOR_INDEX_DIR: &str = "index_vector";
 
+#[must_use]
 pub fn get_all_engine_names() -> Vec<String> {
     Vec::from([
         NanoSearchEngine::name().to_string(),

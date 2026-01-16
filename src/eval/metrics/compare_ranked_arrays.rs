@@ -79,7 +79,7 @@ mod tests {
         assert_eq!(compare_ranked_arrays(&[1, 2, 3, 4], &[1, 3, 2, 4])?, 0.875);
         assert_eq!(
             compare_ranked_arrays(&[1, 2, 3, 4], &[1, 2, 4, 3])?,
-            0.9166666666666666
+            0.916_666_666_666_666_6
         );
         Ok(())
     }

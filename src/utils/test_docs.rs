@@ -28,6 +28,7 @@ pub static ID: DocIds = DocIds {
     cat_mouse_cat: CAT_MOUSE_CAT.0,
 };
 
+#[must_use]
 pub fn create_cat_mouse_docs_iterator() -> TestDocsIterator {
     TestDocsIterator::from_enumerated_texts(&Vec::from([
         CAT,

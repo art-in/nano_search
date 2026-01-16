@@ -10,6 +10,6 @@ pub static STOP_WORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
         "that", "the", "their", "then", "there", "these", "they", "this", "to",
         "was", "will", "with",
     ]
-    .map(|s| s.to_string())
+    .map(std::string::ToString::to_string)
     .into()
 });

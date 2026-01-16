@@ -5,9 +5,9 @@ pub struct WikiTextParser {
 }
 
 impl WikiTextParser {
-    pub fn new(config_source: ConfigurationSource) -> Self {
-        WikiTextParser {
-            config: Configuration::new(&config_source),
+    pub fn new(config_source: &ConfigurationSource) -> Self {
+        Self {
+            config: Configuration::new(config_source),
         }
     }
 
@@ -15,9 +15,9 @@ impl WikiTextParser {
         let parsed_output = self.config.parse(text);
         let mut text = get_text_from_nodes(&parsed_output.nodes);
 
-        text = text.replace("\t", " ");
-        text = text.replace("\n", " ");
-        text = text.replace("\r", " ");
+        text = text.replace('\t', " ");
+        text = text.replace('\n', " ");
+        text = text.replace('\r', " ");
 
         text.trim().to_string()
     }
@@ -26,44 +26,42 @@ impl WikiTextParser {
 fn get_text_from_nodes(nodes: &[Node]) -> String {
     let mut text = String::with_capacity(64 + 64 * nodes.len());
 
-    nodes.iter().for_each(|node| {
+    for node in nodes {
         match node {
             Node::Text { value, .. } => text.push_str(value),
             Node::ParagraphBreak { .. } => text.push('\n'),
             Node::CharacterEntity { character, .. } => {
-                text.push_str(character.to_string().as_str())
+                text.push_str(character.to_string().as_str());
             }
-            Node::Link { text: nodes, .. } => {
-                text.push_str(get_text_from_nodes(nodes).as_str())
-            }
-            Node::ExternalLink { nodes, .. } => {
-                text.push_str(get_text_from_nodes(nodes).as_str())
+            Node::Link { text: nodes, .. }
+            | Node::ExternalLink { nodes, .. }
+            | Node::Preformatted { nodes, .. } => {
+                text.push_str(get_text_from_nodes(nodes).as_str());
             }
             Node::Heading { nodes, .. } => {
                 text.push('\n');
                 text.push_str(get_text_from_nodes(nodes).as_str());
                 text.push('\n');
             }
+            Node::OrderedList { items, .. }
+            | Node::UnorderedList { items, .. } => {
+                for item in items {
+                    text.push_str(get_text_from_nodes(&item.nodes).as_str());
+                    text.push(' ');
+                }
+            }
+            Node::DefinitionList { items, .. } => {
+                for item in items {
+                    text.push_str(get_text_from_nodes(&item.nodes).as_str());
+                }
+            }
+            #[expect(clippy::match_same_arms)]
             Node::Image { .. } => {
                 // TODO: Allow image text.
                 // Currently not allowed because it's a bit difficult to figure
                 // out what is normal text and what isn't.
             }
-            Node::OrderedList { items, .. }
-            | Node::UnorderedList { items, .. } => {
-                items.iter().for_each(|i| {
-                    text.push_str(get_text_from_nodes(&i.nodes).as_str());
-                    text.push(' ');
-                });
-            }
-            Node::DefinitionList { items, .. } => {
-                items.iter().for_each(|i| {
-                    text.push_str(get_text_from_nodes(&i.nodes).as_str());
-                });
-            }
-            Node::Preformatted { nodes, .. } => {
-                text.push_str(get_text_from_nodes(nodes).as_str())
-            }
+
             Node::Template { .. }
             | Node::Bold { .. }
             | Node::BoldItalic { .. }
@@ -79,7 +77,7 @@ fn get_text_from_nodes(nodes: &[Node]) -> String {
             | Node::Category { .. }
             | Node::Table { .. } => {}
         }
-    });
+    }
 
     text
 }

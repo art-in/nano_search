@@ -86,7 +86,7 @@ pub fn log_progress(
                 let eta_seconds = docs_remaining as f64 / docs_per_second;
                 let eta_minutes = eta_seconds / 60.0;
 
-                print!("ETA ~{} minutes", eta_minutes as usize)
+                print!("ETA ~{} minutes", eta_minutes as usize);
             }
 
             println!();

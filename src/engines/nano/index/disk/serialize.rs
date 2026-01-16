@@ -20,14 +20,14 @@ impl BinarySerializable for u16 {
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 2] = [0; 2];
         read.read_exact(&mut buf)?;
-        Ok(u16::from_le_bytes(buf))
+        Ok(Self::from_le_bytes(buf))
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         let (bytes, rest) = data
             .split_first_chunk::<2>()
             .context("should read u16 from slice")?;
         *data = rest;
-        Ok(u16::from_le_bytes(*bytes))
+        Ok(Self::from_le_bytes(*bytes))
     }
 }
 
@@ -39,14 +39,14 @@ impl BinarySerializable for u32 {
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 4] = [0; 4];
         read.read_exact(&mut buf)?;
-        Ok(u32::from_le_bytes(buf))
+        Ok(Self::from_le_bytes(buf))
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         let (bytes, rest) = data
             .split_first_chunk::<4>()
             .context("should read u32 from slice")?;
         *data = rest;
-        Ok(u32::from_le_bytes(*bytes))
+        Ok(Self::from_le_bytes(*bytes))
     }
 }
 
@@ -59,7 +59,7 @@ impl BinarySerializable for usize {
         const SIZE: usize = std::mem::size_of::<usize>();
         let mut buf: [u8; SIZE] = [0; SIZE];
         read.read_exact(&mut buf)?;
-        Ok(usize::from_le_bytes(buf))
+        Ok(Self::from_le_bytes(buf))
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         const SIZE: usize = std::mem::size_of::<usize>();
@@ -67,7 +67,7 @@ impl BinarySerializable for usize {
             .split_first_chunk::<SIZE>()
             .context("should read usize from slice")?;
         *data = rest;
-        Ok(usize::from_le_bytes(*bytes))
+        Ok(Self::from_le_bytes(*bytes))
     }
 }
 
@@ -79,14 +79,14 @@ impl BinarySerializable for u64 {
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 8] = [0; 8];
         read.read_exact(&mut buf)?;
-        Ok(u64::from_le_bytes(buf))
+        Ok(Self::from_le_bytes(buf))
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         let (bytes, rest) = data
             .split_first_chunk::<8>()
             .context("should read u64 from slice")?;
         *data = rest;
-        Ok(u64::from_le_bytes(*bytes))
+        Ok(Self::from_le_bytes(*bytes))
     }
 }
 
@@ -98,14 +98,14 @@ impl BinarySerializable for f64 {
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let mut buf: [u8; 8] = [0; 8];
         read.read_exact(&mut buf)?;
-        Ok(f64::from_le_bytes(buf))
+        Ok(Self::from_le_bytes(buf))
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         let (bytes, rest) = data
             .split_first_chunk::<8>()
             .context("should read f64 from slice")?;
         *data = rest;
-        Ok(f64::from_le_bytes(*bytes))
+        Ok(Self::from_le_bytes(*bytes))
     }
 }
 
@@ -117,7 +117,7 @@ impl BinarySerializable for String {
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let string_length = usize::deserialize(read)?;
-        let mut string = String::with_capacity(string_length);
+        let mut string = Self::with_capacity(string_length);
         read.take(string_length as u64)
             .read_to_string(&mut string)?;
         Ok(string)
@@ -126,7 +126,7 @@ impl BinarySerializable for String {
         let string_length = usize::deserialize_from_slice(data)?;
         let (mut bytes, rest) = data.split_at(string_length);
         *data = rest;
-        let mut string = String::with_capacity(string_length);
+        let mut string = Self::with_capacity(string_length);
         bytes.read_to_string(&mut string)?;
         Ok(string)
     }
@@ -147,7 +147,7 @@ where
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         let len = usize::deserialize(read)?;
-        let mut map = HashMap::with_capacity(len);
+        let mut map = Self::with_capacity(len);
         for _ in 0..len {
             let key = K::deserialize(read)?;
             let value = V::deserialize(read)?;
@@ -157,7 +157,7 @@ where
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         let len = usize::deserialize_from_slice(data)?;
-        let mut map = HashMap::with_capacity(len);
+        let mut map = Self::with_capacity(len);
         for _ in 0..len {
             let key = K::deserialize_from_slice(data)?;
             let value = V::deserialize_from_slice(data)?;
@@ -175,14 +175,14 @@ impl BinarySerializable for IndexSegmentStats {
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        Ok(IndexSegmentStats {
+        Ok(Self {
             indexed_docs_count: u64::deserialize(read)?,
             max_posting_list_size: u64::deserialize(read)?,
             terms_count_per_doc_avg: f64::deserialize(read)?,
         })
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        Ok(IndexSegmentStats {
+        Ok(Self {
             indexed_docs_count: u64::deserialize_from_slice(data)?,
             max_posting_list_size: u64::deserialize_from_slice(data)?,
             terms_count_per_doc_avg: f64::deserialize_from_slice(data)?,
@@ -197,13 +197,13 @@ impl BinarySerializable for DocPosting {
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        Ok(DocPosting {
+        Ok(Self {
             docid: u64::deserialize(read)?,
             term_count: u64::deserialize(read)?,
         })
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        Ok(DocPosting {
+        Ok(Self {
             docid: u64::deserialize_from_slice(data)?,
             term_count: u64::deserialize_from_slice(data)?,
         })
@@ -218,14 +218,14 @@ impl BinarySerializable for TermPostingListFileAddress {
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        Ok(TermPostingListFileAddress {
+        Ok(Self {
             postings_count: usize::deserialize(read)?,
             start_byte: usize::deserialize(read)?,
             end_byte: usize::deserialize(read)?,
         })
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        Ok(TermPostingListFileAddress {
+        Ok(Self {
             postings_count: usize::deserialize_from_slice(data)?,
             start_byte: usize::deserialize_from_slice(data)?,
             end_byte: usize::deserialize_from_slice(data)?,

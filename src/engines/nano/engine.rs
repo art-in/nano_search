@@ -24,7 +24,7 @@ impl SearchEngine for NanoSearchEngine {
     where
         Self: Sized,
     {
-        Ok(NanoSearchEngine {
+        Ok(Self {
             index_medium: IndexMedium::Memory,
             index: None,
         })
@@ -45,7 +45,7 @@ impl SearchEngine for NanoSearchEngine {
                 .build(),
         );
 
-        Ok(NanoSearchEngine {
+        Ok(Self {
             index_medium,
             index: None,
         })
@@ -60,7 +60,7 @@ impl SearchEngine for NanoSearchEngine {
         let index =
             open_index(&index_medium).context("index should be opened")?;
 
-        Ok(NanoSearchEngine {
+        Ok(Self {
             index_medium,
             index: Some(index),
         })

@@ -15,8 +15,7 @@ impl QueriesSource for CisiDatasetReader {
         let mut queries = read_queries(queries_file)?;
         read_qrels(qrels_file, &mut queries)?;
 
-        let queries = queries.into_values().collect::<Vec<Query>>();
-        Ok(Box::new(queries.into_iter()))
+        Ok(Box::new(queries.into_values()))
     }
 }
 
@@ -38,7 +37,7 @@ enum ESectionType {
 /// sections.
 ///
 /// Each section has following format:
-///  required section header :  .SECTION_TYPE <data>
+///  required section header :  .<type> <data>
 ///  optional section content:  <data>
 ///  optional section content:  <data>
 ///  etc.

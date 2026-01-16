@@ -18,7 +18,7 @@ fn test_build_memory_index() -> Result<()> {
     let index = build_index(&IndexMedium::Memory, &mut docs_it)?;
 
     // assert
-    assert_one_segment_index(index)
+    assert_one_segment_index(index.as_ref())
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn test_build_disk_index() -> Result<()> {
     let index = build_index(&medium, &mut docs_it)?;
 
     // assert
-    assert_one_segment_index(index)
+    assert_one_segment_index(index.as_ref())
 }
 
 #[test]
@@ -57,10 +57,10 @@ fn test_build_disk_index_and_open() -> Result<()> {
     let index = open_index(&medium)?;
 
     // assert
-    assert_one_segment_index(index)
+    assert_one_segment_index(index.as_ref())
 }
 
-fn assert_one_segment_index(index: Box<dyn Index>) -> Result<()> {
+fn assert_one_segment_index(index: &dyn Index) -> Result<()> {
     let segments = index.get_segments();
     assert_eq!(segments.len(), 1);
     let segment = segments[0];
@@ -75,7 +75,7 @@ fn assert_one_segment_index(index: Box<dyn Index>) -> Result<()> {
     assert_postings_for_term(
         segment,
         "cat",
-        vec![
+        &[
             DocPosting {
                 docid: ID.cat,
                 term_count: 1,
@@ -134,7 +134,7 @@ fn test_build_disk_index_with_multiple_segments() -> Result<()> {
     let index = build_index(&medium, &mut docs_it)?;
 
     // assert
-    assert_multiple_segments_index(index)
+    assert_multiple_segments_index(index.as_ref())
 }
 
 #[test]
@@ -155,10 +155,10 @@ fn test_build_disk_index_with_multiple_segments_and_open() -> Result<()> {
     let index = open_index(&medium)?;
 
     // assert
-    assert_multiple_segments_index(index)
+    assert_multiple_segments_index(index.as_ref())
 }
 
-fn assert_multiple_segments_index(index: Box<dyn Index>) -> Result<()> {
+fn assert_multiple_segments_index(index: &dyn Index) -> Result<()> {
     let segments = index.get_segments();
 
     // assert
@@ -181,7 +181,7 @@ fn assert_multiple_segments_index(index: Box<dyn Index>) -> Result<()> {
         assert_postings_for_term(
             first_segment,
             "cat",
-            vec![
+            &[
                 DocPosting {
                     docid: ID.cat,
                     term_count: 1,
@@ -213,7 +213,7 @@ fn assert_multiple_segments_index(index: Box<dyn Index>) -> Result<()> {
         assert_postings_for_term(
             second_segment,
             "cat",
-            vec![
+            &[
                 DocPosting {
                     docid: ID.cat_mouse,
                     term_count: 1,
@@ -245,7 +245,7 @@ fn assert_multiple_segments_index(index: Box<dyn Index>) -> Result<()> {
 fn assert_postings_for_term(
     segment: &dyn IndexSegment,
     term: &str,
-    expected_postings: Vec<DocPosting>,
+    expected_postings: &[DocPosting],
 ) -> Result<()> {
     let postings_it = segment
         .get_doc_postings_for_term(&term.to_string())?

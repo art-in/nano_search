@@ -47,6 +47,7 @@ pub struct DiskIndexSegment {
     pub stats: IndexSegmentStats,
 }
 
+#[derive(Copy, Clone)]
 pub enum IndexFile {
     /// Maps terms to offsets of corresponding posting lists in Postings file
     Terms,
@@ -61,7 +62,7 @@ pub enum IndexFile {
     /// For example, Tantivy/Lucene store document lengths in '.fieldnorm' file.
     /// They use log-scaled length approximations for better compression and
     /// search performance, trading some scoring precision for efficiency.
-    /// See: https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs
+    /// See <https://github.com/quickwit-oss/tantivy/blob/5a2fe42c248a45635cbf4a37f1c85136ffe7bb16/src/fieldnorm/mod.rs>
     DocLen,
 
     /// Statistics gathered while building index, which is used later by search
@@ -70,12 +71,12 @@ pub enum IndexFile {
 }
 
 impl IndexFile {
-    pub fn name(&self) -> &'static str {
+    pub const fn name(self) -> &'static str {
         match self {
-            IndexFile::Terms => "terms",
-            IndexFile::Postings => "postings",
-            IndexFile::DocLen => "doclen",
-            IndexFile::Stats => "stats",
+            Self::Terms => "terms",
+            Self::Postings => "postings",
+            Self::DocLen => "doclen",
+            Self::Stats => "stats",
         }
     }
 }
@@ -104,17 +105,18 @@ impl IndexSegment for DiskIndexSegment {
     ) -> Result<Option<DocPostingsForTerm<'a>>> {
         let term_posting_list_addr = self.terms.get(term);
 
-        if let Some(term_posting_list_addr) = term_posting_list_addr {
-            Ok(Some(DocPostingsForTerm {
-                count: term_posting_list_addr.postings_count,
-                iterator: Box::new(DiskDocPostingsIterator::new(
-                    &self.postings_file,
-                    term_posting_list_addr,
-                )?),
-            }))
-        } else {
-            Ok(None)
-        }
+        term_posting_list_addr.map_or_else(
+            || Ok(None),
+            |addr| {
+                Ok(Some(DocPostingsForTerm {
+                    count: addr.postings_count,
+                    iterator: Box::new(DiskDocPostingsIterator::new(
+                        &self.postings_file,
+                        addr,
+                    )),
+                }))
+            },
+        )
     }
 
     fn get_doc_terms_count(&self, docid: DocId) -> Result<u16> {

@@ -6,12 +6,14 @@ pub struct TestDocsIterator {
 }
 
 impl TestDocsIterator {
+    #[must_use]
     pub fn from_docs(docs: Vec<Doc>) -> Self {
-        TestDocsIterator { docs, position: 0 }
+        Self { docs, position: 0 }
     }
 
+    #[must_use]
     pub fn from_enumerated_texts(texts: &Vec<(u64, &str)>) -> Self {
-        TestDocsIterator {
+        Self {
             docs: texts
                 .iter()
                 .map(|(id, text)| Doc {
@@ -23,6 +25,7 @@ impl TestDocsIterator {
         }
     }
 
+    #[must_use]
     pub fn from_texts(texts: &Vec<&str>) -> Self {
         Self::from_enumerated_texts(
             &texts
