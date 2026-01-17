@@ -25,10 +25,10 @@ impl Index for MemoryIndex {
 }
 
 impl IndexSegment for MemoryIndex {
-    fn get_doc_postings_for_term(
-        &self,
+    fn get_doc_postings_for_term<'a>(
+        &'a self,
         term: &Term,
-    ) -> Result<Option<DocPostingsForTerm<'_>>> {
+    ) -> Result<Option<DocPostingsForTerm<'a>>> {
         let term_posting_list = self.terms.get(term);
 
         term_posting_list.map_or_else(
@@ -37,7 +37,7 @@ impl IndexSegment for MemoryIndex {
                 Ok(Some(DocPostingsForTerm {
                     count: list.len(),
                     iterator: Box::new(MemoryDocPostingsIterator::new(
-                        list.values().cloned().collect(),
+                        list.values(),
                     )),
                 }))
             },

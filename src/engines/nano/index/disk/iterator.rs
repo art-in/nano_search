@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use anyhow::Result;
 use memmap2::Mmap;
 
@@ -20,16 +22,17 @@ impl<'a> DiskDocPostingsIterator<'a> {
     }
 }
 
-impl Iterator for DiskDocPostingsIterator<'_> {
-    type Item = Result<DocPosting>;
+impl<'a> Iterator for DiskDocPostingsIterator<'a> {
+    type Item = Result<Cow<'a, DocPosting>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.posting_list.is_empty() {
-            None
-        } else {
-            let posting =
-                DocPosting::deserialize_from_slice(&mut self.posting_list);
-            Some(posting)
+            return None;
         }
+
+        let posting =
+            DocPosting::deserialize_from_slice(&mut self.posting_list)
+                .map(Cow::Owned);
+        Some(posting)
     }
 }

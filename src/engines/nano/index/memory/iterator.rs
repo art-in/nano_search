@@ -1,32 +1,26 @@
+use std::borrow::Cow;
+use std::collections::btree_map;
+
 use anyhow::Result;
 
 use crate::engines::nano::index::model::DocPosting;
 
-pub struct MemoryDocPostingsIterator {
-    postings: Vec<DocPosting>,
-    position: usize,
+pub struct MemoryDocPostingsIterator<'a> {
+    postings: btree_map::Values<'a, u64, DocPosting>,
 }
 
-impl MemoryDocPostingsIterator {
-    pub const fn new(postings: Vec<DocPosting>) -> Self {
-        Self {
-            postings,
-            position: 0,
-        }
+impl<'a> MemoryDocPostingsIterator<'a> {
+    pub const fn new(postings: btree_map::Values<'a, u64, DocPosting>) -> Self {
+        Self { postings }
     }
 }
 
-impl Iterator for MemoryDocPostingsIterator {
-    // TODO: iterate over references to avoid cloning
-    type Item = Result<DocPosting>;
+impl<'a> Iterator for MemoryDocPostingsIterator<'a> {
+    type Item = Result<Cow<'a, DocPosting>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.position < self.postings.len() {
-            let posting = self.postings[self.position].clone();
-            self.position += 1;
-            Some(Ok(posting))
-        } else {
-            None
-        }
+        self.postings
+            .next()
+            .map(|posting| Ok(Cow::Borrowed(posting)))
     }
 }

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use anyhow::Result;
 
 use super::disk::DiskIndexOptions;
@@ -68,8 +70,11 @@ pub struct DocPostingsForTerm<'a> {
     pub count: usize,
 
     /// Iterator over postings
-    pub iterator: Box<dyn Iterator<Item = Result<DocPosting>> + 'a>,
+    pub iterator: DocPostingsIterator<'a>,
 }
+
+type DocPostingsIterator<'a> =
+    Box<dyn Iterator<Item = Result<Cow<'a, DocPosting>>> + 'a>;
 
 /// Reference to document containing specific term.
 #[derive(Clone, PartialEq, Eq, Debug)]

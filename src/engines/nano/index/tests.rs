@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use anyhow::{Context, Result};
 use tempfile::TempDir;
 
@@ -250,7 +252,14 @@ fn assert_postings_for_term(
     let postings_it = segment
         .get_doc_postings_for_term(&term.to_string())?
         .context(format!("postings for term '{term}' should be found"))?;
-    let postings = postings_it.iterator.collect::<Result<Vec<DocPosting>>>()?;
+    let postings = postings_it
+        .iterator
+        .collect::<Result<Vec<Cow<DocPosting>>>>()?;
+
+    let expected_postings = expected_postings
+        .iter()
+        .map(Cow::Borrowed)
+        .collect::<Vec<Cow<'_, DocPosting>>>();
 
     assert_eq!(postings_it.count, postings.len());
     assert!(postings.iter().map(|p| p.docid).is_sorted());
