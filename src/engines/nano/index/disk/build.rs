@@ -109,7 +109,7 @@ fn build_disk_index_segment(
 
     let mut terms = HashMap::new();
 
-    for (term, posting_list) in &memory_index.terms {
+    for (term, posting_list) in memory_index.terms {
         let start_byte = postings_file.stream_position()?;
         for posting in posting_list.values() {
             posting.serialize(&mut postings_file)?;
@@ -122,7 +122,7 @@ fn build_disk_index_segment(
             end_byte: end_byte as usize,
         };
 
-        terms.insert(term.clone(), address);
+        terms.insert(term, address);
     }
 
     terms
