@@ -57,7 +57,6 @@ fn get_text_from_nodes(nodes: &[Node]) -> String {
             }
             #[expect(clippy::match_same_arms)]
             Node::Image { .. } => {
-                // TODO: Allow image text.
                 // Currently not allowed because it's a bit difficult to figure
                 // out what is normal text and what isn't.
             }
