@@ -18,9 +18,8 @@ impl DocsSource for WikiDatasetReader {
     }
 
     fn docs_count(&self) -> Result<Option<usize>> {
-        // TODO: not implemented yet. it's bit more complex with wiki dump,
-        // since it is big compressed XML file, so we need to decompress it
-        // fully in order to get number of doc elements. skip it for now
+        // do not provide docs count for wiki dump, since it requires to
+        // iteratively decompress entire dump, which can take a lot of time
         Ok(None)
     }
 }
