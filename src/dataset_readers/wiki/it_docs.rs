@@ -29,15 +29,14 @@ impl Iterator for WikiDocsIterator {
     type Item = Doc;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let doc = self.it.next().map(|page| Doc {
+        let doc = self.it.next().map(|mut page| Doc {
             id: self.docid,
             text: page
                 .revisions
                 // last revision here means latest revision by timestamp
-                .last()
-                .expect("should get last revision")
-                .text
-                .clone(),
+                .pop()
+                .expect("should get latest revision")
+                .text,
         });
 
         self.docid += 1;
