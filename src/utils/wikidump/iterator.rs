@@ -82,8 +82,8 @@ fn get_next_page(
                         }
                     }
                     b"revision" => {
-                        let mut revision = current_revision.clone();
-                        current_revision.reset();
+                        let mut revision =
+                            std::mem::take(&mut current_revision);
 
                         revision.text = text_parser.parse(&revision.text);
 
