@@ -68,7 +68,7 @@ pub struct DocPostingsForTerm<'a> {
     pub count: usize,
 
     /// Iterator over postings
-    pub iterator: Box<dyn Iterator<Item = DocPosting> + 'a>,
+    pub iterator: Box<dyn Iterator<Item = Result<DocPosting>> + 'a>,
 }
 
 /// Reference to document containing specific term.

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use memmap2::Mmap;
 
 use super::model::TermPostingListFileAddress;
@@ -20,16 +21,14 @@ impl<'a> DiskDocPostingsIterator<'a> {
 }
 
 impl Iterator for DiskDocPostingsIterator<'_> {
-    // TODO: use Result<DocPosting> to avoid .expect() in next()
-    type Item = DocPosting;
+    type Item = Result<DocPosting>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.posting_list.is_empty() {
             None
         } else {
             let posting =
-                DocPosting::deserialize_from_slice(&mut self.posting_list)
-                    .expect("posting should be deserialized from file");
+                DocPosting::deserialize_from_slice(&mut self.posting_list);
             Some(posting)
         }
     }

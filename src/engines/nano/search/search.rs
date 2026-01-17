@@ -49,6 +49,7 @@ fn search_segment(
 
         if let Some(postings) = segment.get_doc_postings_for_term(&term)? {
             for posting in postings.iterator {
+                let posting = posting?;
                 let relevance = scoring::calc_bm25(
                     scoring::ScoringParams {
                         doc_term_count: posting.term_count,

@@ -250,7 +250,7 @@ fn assert_postings_for_term(
     let postings_it = segment
         .get_doc_postings_for_term(&term.to_string())?
         .context(format!("postings for term '{term}' should be found"))?;
-    let postings: Vec<DocPosting> = postings_it.iterator.collect();
+    let postings = postings_it.iterator.collect::<Result<Vec<DocPosting>>>()?;
 
     assert_eq!(postings_it.count, postings.len());
     assert!(postings.iter().map(|p| p.docid).is_sorted());

@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use crate::engines::nano::index::model::DocPosting;
 
 pub struct MemoryDocPostingsIterator {
@@ -16,13 +18,13 @@ impl MemoryDocPostingsIterator {
 
 impl Iterator for MemoryDocPostingsIterator {
     // TODO: iterate over references to avoid cloning
-    type Item = DocPosting;
+    type Item = Result<DocPosting>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.position < self.postings.len() {
             let posting = self.postings[self.position].clone();
             self.position += 1;
-            Some(posting)
+            Some(Ok(posting))
         } else {
             None
         }
