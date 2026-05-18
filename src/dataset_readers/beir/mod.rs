@@ -1,6 +1,9 @@
-mod it_docs;
-mod it_queries;
-mod utils;
+mod reader;
+pub use reader::BeirDatasetReader;
 
-mod model;
-pub use model::BeirDatasetReader;
+mod docs_json;
+mod docs_parquet;
+mod qrels;
+mod queries_json;
+mod queries_parquet;
+mod utils;

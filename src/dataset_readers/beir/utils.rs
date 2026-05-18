@@ -31,7 +31,7 @@ pub fn parse_id(input: &str) -> Result<u64> {
 }
 
 /// Extracts a string field value from a JSON object.
-pub fn extract_string<'a>(
+pub fn extract_string_from_json<'a>(
     json: &'a serde_json::Map<String, serde_json::Value>,
     field_name: &str,
 ) -> Result<&'a str> {

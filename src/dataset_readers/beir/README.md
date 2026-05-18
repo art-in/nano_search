@@ -1,26 +1,24 @@
 Reader for [BEIR](https://github.com/beir-cellar/beir)-formatted dataset.
 
-Dataset itself may be downloaded in two ways:
+Dataset may be downloaded in two ways:
 
 - Manually
 
-    1. Download from https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets
-    1. Decompress and place into datasets/ dir
-    1. Initialize with `BeirDatasetReader::from_dir(dir)`
+    1. Download zip file from https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets
+    1. Decompress and place into datasets/dataset_name/ dir
+    1. Initialize reader with `BeirDatasetReader::from_dir("datasets/dataset_name")`
 
 - Automatically
 
     1. Initialize with `BeirDatasetReader::from_hf(dataset_name)`  
 
-        Use [BEIR-Name](https://github.com/beir-cellar/beir?tab=readme-ov-file#beers-available-datasets) as a dataset name
+        Use [BEIR-Name](https://github.com/beir-cellar/beir?tab=readme-ov-file#beers-available-datasets) as a dataset name.  
 
-        Dataset will be downloaded from https://huggingface.co/BeIR/datasets and decompressed automatically  
+        Dataset will be downloaded from https://huggingface.co/BeIR/datasets and decompressed automatically.  
 
-Each dataset consists of following files:
+Each dataset consists of following parts:
 
-- `qrels/`
-    - `test.tsv` - lines of tab-separated values (query-id, doc-id, score)
-    - `dev.tsv` (optional)
-    - `train.tsv` (optional)
-- `corpus.jsonl` - lines of json objects with documents (_id, title, text, metadata)
-- `queries.jsonl` - lines of json objects with queries (_id, text, metadata)
+- corpus - source documents
+- queries - search queries
+- qrels - relevance score of certain documents for certain queries
+
