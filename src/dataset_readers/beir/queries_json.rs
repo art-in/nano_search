@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 
 use super::qrels::load_qrels;
 use super::utils::{extract_string_from_json, parse_id};
-use crate::eval::model::{QueriesSource, Query, Relevance};
+use crate::eval::model::{QueriesSource, Query, QueryId, Relevance};
 use crate::model::doc::DocId;
 use crate::utils::get_file_lines;
 
@@ -34,7 +34,7 @@ impl QueriesSource for BeirQueriesJsonReader {
 
 struct BeirQueriesJsonIterator {
     lines: Box<dyn Iterator<Item = std::io::Result<String>>>,
-    qrels: HashMap<u64, HashMap<DocId, Relevance>>,
+    qrels: HashMap<QueryId, HashMap<DocId, Relevance>>,
 }
 
 impl Iterator for BeirQueriesJsonIterator {

@@ -8,7 +8,7 @@ use crate::model::doc::{Doc, DocsSource};
 use crate::utils::get_file_lines;
 
 pub struct BeirDocsJsonReader {
-    pub docs_file: PathBuf,
+    docs_file: PathBuf,
 }
 
 impl BeirDocsJsonReader {

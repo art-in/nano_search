@@ -4,17 +4,18 @@ use anyhow::Result;
 
 use crate::model::doc::DocId;
 
+pub type QueryId = u64;
+pub type Relevance = f64;
+
 #[derive(Default, Clone)]
 pub struct Query {
-    pub id: u64,
+    pub id: QueryId,
     pub text: String,
 
     // IDs of documents considered relevant to this query, and thus expected to
     // be in search results
     pub relevant_docs: HashMap<DocId, Relevance>,
 }
-
-pub type Relevance = f64;
 
 pub trait QueriesSource {
     fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>>;

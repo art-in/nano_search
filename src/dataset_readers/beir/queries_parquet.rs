@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
-use parquet::record::{Field, Row};
+use parquet::record::Row;
 
 use super::qrels::load_qrels;
-use super::utils::parse_id;
-use crate::eval::model::{QueriesSource, Query, Relevance};
+use super::utils::{extract_string_from_parquet, parse_id};
+use crate::eval::model::{QueriesSource, Query, QueryId, Relevance};
 use crate::model::doc::DocId;
 use crate::utils::get_parquet_rows;
 
@@ -34,7 +34,7 @@ impl QueriesSource for BeirQueriesParquetReader {
 
 struct BeirQueriesParquetIterator {
     rows: Box<dyn Iterator<Item = Result<Row>>>,
-    qrels: HashMap<u64, HashMap<DocId, Relevance>>,
+    qrels: HashMap<QueryId, HashMap<DocId, Relevance>>,
 }
 
 impl Iterator for BeirQueriesParquetIterator {
@@ -56,7 +56,7 @@ impl Iterator for BeirQueriesParquetIterator {
     }
 }
 
-pub fn parse_query_from_row(
+fn parse_query_from_row(
     row: &Row,
     qrels: &mut HashMap<u64, HashMap<DocId, Relevance>>,
 ) -> Result<Query> {
@@ -65,27 +65,15 @@ pub fn parse_query_from_row(
 
     for (name, field) in row.get_column_iter() {
         match name.as_str() {
-            "_id" => {
-                if let Field::Str(val) = field {
-                    id = Some(val);
-                }
-            }
-            "title" => {
-                // ignore empty column
-            }
-            "text" => {
-                if let Field::Str(val) = field {
-                    text = Some(val);
-                }
-            }
-            _ => {
-                bail!("unknown row column: {}", name)
-            }
+            "_id" => id = Some(extract_string_from_parquet(field)?),
+            "title" => { /* ignore empty column */ }
+            "text" => text = Some(extract_string_from_parquet(field)?),
+            _ => bail!("unknown row column: {}", name),
         }
     }
 
     let id = parse_id(id.context("id column should exist")?)?;
-    let text = text.context("text column should exist")?.clone();
+    let text = text.context("text column should exist")?.to_owned();
     let relevant_docs = qrels.remove(&id).unwrap_or_default();
 
     Ok(Query {

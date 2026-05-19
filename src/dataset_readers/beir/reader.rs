@@ -4,8 +4,8 @@ use anyhow::Result;
 
 use super::docs_json::BeirDocsJsonReader;
 use super::docs_parquet::BeirDocsParquetReader;
-use crate::dataset_readers::beir::queries_json::BeirQueriesJsonReader;
-use crate::dataset_readers::beir::queries_parquet::BeirQueriesParquetReader;
+use super::queries_json::BeirQueriesJsonReader;
+use super::queries_parquet::BeirQueriesParquetReader;
 use crate::eval::model::QueriesSource;
 use crate::model::doc::{Doc, DocsSource};
 use crate::utils::{download_hf_dir, download_hf_file};

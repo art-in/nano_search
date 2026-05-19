@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Context, Result};
-use parquet::record::{Field, Row};
+use anyhow::{Context, Result, bail};
+use parquet::record::Row;
 
-use super::utils::parse_id;
+use super::utils::{extract_string_from_parquet, parse_id};
 use crate::model::doc::{Doc, DocsSource};
 use crate::utils::get_parquet_rows;
 
 pub struct BeirDocsParquetReader {
-    pub docs_files: Vec<PathBuf>,
+    docs_files: Vec<PathBuf>,
 }
 
 impl BeirDocsParquetReader {
@@ -50,24 +50,10 @@ pub fn parse_doc_from_row(row: &Row) -> Result<Doc> {
 
     for (name, field) in row.get_column_iter() {
         match name.as_str() {
-            "_id" => {
-                if let Field::Str(val) = field {
-                    id = Some(val);
-                }
-            }
-            "title" => {
-                if let Field::Str(val) = field {
-                    title = Some(val);
-                }
-            }
-            "text" => {
-                if let Field::Str(val) = field {
-                    text = Some(val);
-                }
-            }
-            _ => {
-                bail!("unknown row column: {}", name)
-            }
+            "_id" => id = Some(extract_string_from_parquet(field)?),
+            "title" => title = Some(extract_string_from_parquet(field)?),
+            "text" => text = Some(extract_string_from_parquet(field)?),
+            _ => bail!("unknown row column: {}", name),
         }
     }
 

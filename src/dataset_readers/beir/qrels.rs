@@ -4,13 +4,13 @@ use std::path::Path;
 use anyhow::{Context, Result};
 
 use super::utils::parse_id;
-use crate::eval::model::Relevance;
+use crate::eval::model::{QueryId, Relevance};
 use crate::model::doc::DocId;
 use crate::utils::get_file_lines;
 
 pub fn load_qrels(
     file_path: &Path,
-) -> Result<HashMap<u64, HashMap<DocId, Relevance>>> {
+) -> Result<HashMap<QueryId, HashMap<DocId, Relevance>>> {
     let lines = get_file_lines(file_path)?;
     let lines = lines.skip(1); // skip header line
 

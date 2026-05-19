@@ -1,6 +1,7 @@
 use std::hash::{DefaultHasher, Hasher};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
+use parquet::record::Field;
 
 /// Parses document/query ID strings to integer.
 ///
@@ -39,6 +40,15 @@ pub fn extract_string_from_json<'a>(
         .with_context(|| format!("{field_name} field should exist"))?
         .as_str()
         .with_context(|| format!("{field_name} field should be a string"))
+}
+
+/// Extracts a string field value from Parquet field.
+pub fn extract_string_from_parquet(field: &Field) -> Result<&str> {
+    if let Field::Str(val) = field {
+        Ok(val)
+    } else {
+        bail!("field should have string type");
+    }
 }
 
 #[cfg(test)]
