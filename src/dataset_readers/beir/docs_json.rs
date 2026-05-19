@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
 use super::utils::{extract_string_from_json, parse_id};
@@ -18,7 +18,7 @@ impl BeirDocsJsonReader {
 }
 
 impl DocsSource for BeirDocsJsonReader {
-    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Result<Doc>>>> {
         Ok(Box::new(BeirDocsJsonIterator {
             lines: get_file_lines(&self.docs_file)?,
         }))
@@ -33,21 +33,17 @@ struct BeirDocsJsonIterator {
 }
 
 impl Iterator for BeirDocsJsonIterator {
-    type Item = Doc;
+    type Item = Result<Doc>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.lines
             .next()
-            // TODO: avoid expect-panics in all dataset readers,
-            // use Iterator<Item = Result<Doc/Query>> instead
-            .map(|line| line.expect("line should be read"))
-            .map(|line| {
-                parse_doc_from_json(&line).expect("doc should be parsed")
-            })
+            .map(|line| line.context("line should be read"))
+            .map(|line| parse_doc(&line?).context("doc should be parsed"))
     }
 }
 
-fn parse_doc_from_json(line: &str) -> Result<Doc> {
+fn parse_doc(line: &str) -> Result<Doc> {
     let json: Map<String, Value> = serde_json::from_str(line)?;
 
     let id = parse_id(extract_string_from_json(&json, "_id")?)?;

@@ -4,7 +4,6 @@ use anyhow::Result;
 
 use crate::utils::wikidump::WikiDump;
 
-#[derive(Clone)]
 pub struct WikiDatasetReader {
     pub wikidump: WikiDump,
 }

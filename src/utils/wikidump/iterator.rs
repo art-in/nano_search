@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use quick_xml::events::Event;
 
 use super::dump::XmlReader;
@@ -11,17 +11,17 @@ pub struct WikiPagesIterator {
 }
 
 impl Iterator for WikiPagesIterator {
-    type Item = WikiPage;
+    type Item = Result<WikiPage>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        get_next_page(&mut self.xml_reader, &self.text_parser)
+        get_next_page(&mut self.xml_reader, &self.text_parser).transpose()
     }
 }
 
 fn get_next_page(
     xml_reader: &mut XmlReader,
     text_parser: &WikiTextParser,
-) -> Option<WikiPage> {
+) -> Result<Option<WikiPage>> {
     let mut event_buf = Vec::new();
     let mut text_buf = Vec::new();
 
@@ -40,23 +40,23 @@ fn get_next_page(
                     b"title" => {
                         current_page.title =
                             get_text_from_event(xml_reader, &mut text_buf)
-                                .expect("should get text from 'title' node");
+                                .context("should get text from 'title' node")?;
                     }
                     b"text" => {
                         current_revision.text =
                             get_text_from_event(xml_reader, &mut text_buf)
-                                .expect("should get text from 'text' node");
+                                .context("should get text from 'text' node")?;
                     }
                     b"timestamp" => {
                         current_revision.timestamp =
                             get_text_from_event(xml_reader, &mut text_buf)
-                                .expect(
+                                .context(
                                     "should get text from 'timestamp' node",
-                                );
+                                )?;
                     }
                     b"ns" => {
                         let ns = get_text_from_event(xml_reader, &mut text_buf)
-                            .expect("should get text from 'ns' node");
+                            .context("should get text from 'ns' node")?;
 
                         // namespace "0" corresponds to articles.
                         // see. https://en.wikipedia.org/wiki/Wikipedia:Namespace
@@ -78,7 +78,7 @@ fn get_next_page(
                             current_page
                                 .revisions
                                 .sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
-                            break Some(current_page);
+                            break Ok(Some(current_page));
                         }
                     }
                     b"revision" => {
@@ -99,9 +99,9 @@ fn get_next_page(
                 }
             }
             Ok(Event::Eof) => {
-                break None;
+                break Ok(None);
             }
-            Err(e) => panic!(
+            Err(e) => bail!(
                 "Error at position {}: {:?}",
                 xml_reader.buffer_position(),
                 e

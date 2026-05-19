@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 
 use super::metrics::{precision, recall};
 use super::model::{QuerySearchQuality, SearchQuality};
@@ -10,7 +10,7 @@ use crate::model::doc::DocId;
 use crate::model::engine::SearchEngine;
 
 pub fn evaluate_search_quality(
-    queries: &mut dyn Iterator<Item = Query>,
+    queries: &mut dyn Iterator<Item = Result<Query>>,
     engine: &dyn SearchEngine,
     search_limit: u64,
 ) -> Result<SearchQuality> {
@@ -24,6 +24,8 @@ pub fn evaluate_search_quality(
     let mut queries_count = 0;
 
     for query in queries {
+        let query = query.context("query should be valid")?;
+
         let found_docids = engine.search(&query.text, search_limit)?;
 
         let quality = evaluate_search_quality_for_query(

@@ -75,7 +75,7 @@ impl SearchEngine for VectorSearchEngine {
 
     fn index_docs(
         &mut self,
-        docs: &mut dyn Iterator<Item = crate::model::doc::Doc>,
+        docs: &mut dyn Iterator<Item = Result<Doc>>,
     ) -> Result<()> {
         let tx = self.db.transaction()?;
         let mut stmt =
@@ -87,16 +87,18 @@ impl SearchEngine for VectorSearchEngine {
         const EMBED_DOCS_BATCH_SIZE: usize = 1;
 
         for docs_batch in &docs.chunks(EMBED_DOCS_BATCH_SIZE) {
-            let docs_batch = docs_batch.collect::<Vec<Doc>>();
+            let docs_batch = docs_batch.collect::<Vec<Result<Doc>>>();
 
             let texts_batch = docs_batch
                 .iter()
+                .filter_map(|doc| doc.as_ref().ok())
                 .map(|d| d.text.as_str())
                 .collect::<Vec<&str>>();
 
             let vectors = embed(&self.model, texts_batch)?;
 
-            for (idx, doc) in docs_batch.iter().enumerate() {
+            for (idx, doc) in docs_batch.into_iter().enumerate() {
+                let doc = doc.context("doc should be valid")?;
                 stmt.execute(rusqlite::params![
                     &doc.id.to_string(),
                     vectors[idx].as_bytes()

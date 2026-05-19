@@ -85,7 +85,9 @@ suboptimal_flops = "allow"
 significant_drop_tightening = "allow"
 
 # prefer propagating error to parent function through Result, instead of panic
+panic = "warn"
 unwrap_used = "warn"
+expect_used = "warn"
 
 [[bench]]
 name = "engine"

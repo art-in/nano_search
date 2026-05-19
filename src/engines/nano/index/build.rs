@@ -7,10 +7,10 @@ use crate::model::doc::Doc;
 
 pub fn build_index(
     index_medium: &IndexMedium,
-    docs: &mut dyn Iterator<Item = Doc>,
+    docs: &mut dyn Iterator<Item = Result<Doc>>,
 ) -> Result<Box<dyn Index>> {
     match index_medium {
-        IndexMedium::Memory => Ok(Box::new(build_memory_index(docs))),
+        IndexMedium::Memory => Ok(Box::new(build_memory_index(docs)?)),
         IndexMedium::Disk(options) => {
             Ok(Box::new(build_disk_index(docs, options)?))
         }

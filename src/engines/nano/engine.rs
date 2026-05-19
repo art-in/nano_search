@@ -68,7 +68,7 @@ impl SearchEngine for NanoSearchEngine {
 
     fn index_docs(
         &mut self,
-        docs: &mut dyn Iterator<Item = Doc>,
+        docs: &mut dyn Iterator<Item = Result<Doc>>,
     ) -> Result<()> {
         self.index = Some(
             build_index(&self.index_medium, docs)

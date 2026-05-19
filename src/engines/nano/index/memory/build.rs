@@ -1,13 +1,18 @@
+use anyhow::{Context, Result};
+
 use super::model::{MemoryIndex, TermPostingList};
 use crate::engines::nano::index::model::DocPosting;
 use crate::model::doc::Doc;
 
-pub fn build_memory_index(docs: &mut dyn Iterator<Item = Doc>) -> MemoryIndex {
+pub fn build_memory_index(
+    docs: &mut dyn Iterator<Item = Result<Doc>>,
+) -> Result<MemoryIndex> {
     let mut index = MemoryIndex::default();
 
     let mut terms_total: u64 = 0;
 
     for doc in docs {
+        let doc = doc.context("doc should be valid")?;
         let words = doc.text.split_whitespace();
 
         let terms = words.filter_map(|word| {
@@ -42,5 +47,5 @@ pub fn build_memory_index(docs: &mut dyn Iterator<Item = Doc>) -> MemoryIndex {
     index.stats.terms_count_per_doc_avg =
         terms_total as f64 / index.stats.indexed_docs_count as f64;
 
-    index
+    Ok(index)
 }

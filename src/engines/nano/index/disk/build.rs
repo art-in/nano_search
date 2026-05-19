@@ -25,7 +25,7 @@ const MAX_INDEX_THREADS: usize = 10;
 const DOCS_CHANNEL_CAPACITY: usize = 10_000;
 
 pub fn build_disk_index(
-    docs: &mut dyn Iterator<Item = Doc>,
+    docs: &mut dyn Iterator<Item = Result<Doc>>,
     opts: &DiskIndexOptions,
 ) -> Result<DiskIndex> {
     let (docs_sender, docs_receiver) =
@@ -69,7 +69,7 @@ pub fn build_disk_index(
 
 fn spawn_indexer_thread(
     thread_idx: usize,
-    docs_receiver: Receiver<Doc>,
+    docs_receiver: Receiver<Result<Doc>>,
     max_segment_docs: usize,
     index_dir: PathBuf,
 ) -> Result<JoinHandle<Result<Vec<DiskIndexSegment>>>> {
@@ -82,7 +82,7 @@ fn spawn_indexer_thread(
                 docs_receiver.into_iter().chunks(max_segment_docs);
 
             for docs_chunk in &docs_chunks {
-                let mem_idx = build_memory_index(&mut docs_chunk.into_iter());
+                let mem_idx = build_memory_index(&mut docs_chunk.into_iter())?;
                 let segment = build_disk_index_segment(mem_idx, &index_dir)?;
                 segments.push(segment);
             }

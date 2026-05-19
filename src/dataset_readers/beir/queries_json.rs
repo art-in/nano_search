@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
 use super::qrels::load_qrels;
@@ -25,7 +25,7 @@ impl BeirQueriesJsonReader {
 }
 
 impl QueriesSource for BeirQueriesJsonReader {
-    fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>> {
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Result<Query>>>> {
         let lines = get_file_lines(&self.queries_file)?;
         let qrels = load_qrels(&self.qrels_file)?;
         Ok(Box::new(BeirQueriesJsonIterator { lines, qrels }))
@@ -38,22 +38,29 @@ struct BeirQueriesJsonIterator {
 }
 
 impl Iterator for BeirQueriesJsonIterator {
-    type Item = Query;
+    type Item = Result<Query>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // skip queries lacking relevant docs to ensure evaluation is possible.
-        // since reduced qrels, like test.tsv, may not have lines for each query
-        for line in self.lines.by_ref() {
-            let line = line.expect("line should be read");
-            let query = parse_query_from_json(&line, &mut self.qrels)
-                .expect("query should be parsed");
-            if !query.relevant_docs.is_empty() {
-                return Some(query);
-            }
-        }
-
-        None
+        get_next_query(&mut self.lines, &mut self.qrels).transpose()
     }
+}
+
+fn get_next_query(
+    lines: &mut dyn Iterator<Item = std::io::Result<String>>,
+    qrels: &mut HashMap<QueryId, HashMap<DocId, Relevance>>,
+) -> Result<Option<Query>> {
+    // skip queries lacking relevant docs to ensure evaluation is possible.
+    // since reduced qrels, like test.tsv, may not have lines for each query
+    for line in lines {
+        let line = line.context("line should be read")?;
+        let query = parse_query_from_json(&line, qrels)
+            .context("query should be parsed")?;
+        if !query.relevant_docs.is_empty() {
+            return Ok(Some(query));
+        }
+    }
+
+    Ok(None)
 }
 
 fn parse_query_from_json(

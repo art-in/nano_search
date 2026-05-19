@@ -18,7 +18,7 @@ impl BeirDocsParquetReader {
 }
 
 impl DocsSource for BeirDocsParquetReader {
-    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Result<Doc>>>> {
         Ok(Box::new(BeirDocsParquetIterator {
             rows: get_parquet_rows(self.docs_files.clone())?,
         }))
@@ -33,17 +33,17 @@ struct BeirDocsParquetIterator {
 }
 
 impl Iterator for BeirDocsParquetIterator {
-    type Item = Doc;
+    type Item = Result<Doc>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.rows
             .next()
-            .map(|row| row.expect("row should be read"))
-            .map(|row| parse_doc_from_row(&row).expect("doc should be parsed"))
+            .map(|row| row.context("row should be read"))
+            .map(|row| parse_doc(&row?).context("doc should be parsed"))
     }
 }
 
-pub fn parse_doc_from_row(row: &Row) -> Result<Doc> {
+pub fn parse_doc(row: &Row) -> Result<Doc> {
     let mut id = None;
     let mut title = None;
     let mut text = None;

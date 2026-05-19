@@ -27,8 +27,10 @@ pub trait SearchEngine {
         Self: Sized;
 
     /// Add documents to the index.
-    fn index_docs(&mut self, docs: &mut dyn Iterator<Item = Doc>)
-    -> Result<()>;
+    fn index_docs(
+        &mut self,
+        docs: &mut dyn Iterator<Item = Result<Doc>>,
+    ) -> Result<()>;
 
     /// Searches for documents relevant to passed query in the index.
     fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>>;

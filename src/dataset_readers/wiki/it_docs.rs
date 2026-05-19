@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use super::model::WikiDatasetReader;
 use crate::model::doc::{Doc, DocsSource};
@@ -10,9 +10,9 @@ pub struct WikiDocsIterator {
 }
 
 impl DocsSource for WikiDatasetReader {
-    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Result<Doc>>>> {
         Ok(Box::new(WikiDocsIterator {
-            it: self.wikidump.clone().into_iter(),
+            it: self.wikidump.pages()?,
             docid: 0,
         }))
     }
@@ -25,17 +25,19 @@ impl DocsSource for WikiDatasetReader {
 }
 
 impl Iterator for WikiDocsIterator {
-    type Item = Doc;
+    type Item = Result<Doc>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let doc = self.it.next().map(|mut page| Doc {
-            id: self.docid,
-            text: page
-                .revisions
-                // last revision here means latest revision by timestamp
-                .pop()
-                .expect("should get latest revision")
-                .text,
+        let doc = self.it.next().map(|page| {
+            Ok(Doc {
+                id: self.docid,
+                text: page?
+                    .revisions
+                    // last revision here means latest revision by timestamp
+                    .pop()
+                    .context("should get latest revision")?
+                    .text,
+            })
         });
 
         self.docid += 1;

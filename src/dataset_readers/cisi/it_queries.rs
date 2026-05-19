@@ -2,20 +2,20 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 
 use crate::dataset_readers::cisi::model::CisiDatasetReader;
 use crate::eval::model::{QueriesSource, Query};
 
 impl QueriesSource for CisiDatasetReader {
-    fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>> {
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Result<Query>>>> {
         let queries_file = BufReader::new(File::open(&self.queries_file)?);
         let qrels_file = BufReader::new(File::open(&self.qrels_file)?);
 
         let mut queries = read_queries(queries_file)?;
         read_qrels(qrels_file, &mut queries)?;
 
-        Ok(Box::new(queries.into_values()))
+        Ok(Box::new(queries.into_values().map(Ok)))
     }
 }
 
@@ -71,7 +71,7 @@ fn read_queries<R: Read>(input: R) -> Result<BTreeMap<u64, Query>> {
                     current_line_type
                 }
                 _default => {
-                    panic!("content line should go after section header");
+                    bail!("content line should go after section header")
                 }
             }
         };
@@ -119,7 +119,7 @@ fn read_queries<R: Read>(input: R) -> Result<BTreeMap<u64, Query>> {
                 }
             }
             _default => {
-                panic!("unknown line type");
+                bail!("unknown line type");
             }
         }
     }

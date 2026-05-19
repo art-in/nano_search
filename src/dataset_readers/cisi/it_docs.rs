@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 
 use super::model::CisiDatasetReader;
 use crate::model::doc::{Doc, DocsSource};
@@ -11,7 +11,7 @@ pub struct CisiDocsIterator {
 }
 
 impl DocsSource for CisiDatasetReader {
-    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Result<Doc>>>> {
         Ok(Box::new(CisiDocsIterator {
             lines: get_file_lines(&self.docs_file)?,
             current_line_type: ELineType::Unknown,
@@ -25,10 +25,12 @@ impl DocsSource for CisiDatasetReader {
 }
 
 impl Iterator for CisiDocsIterator {
-    type Item = Doc;
+    type Item = Result<Doc>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        read_next_doc(self).expect("next doc should be read")
+        read_next_doc(self)
+            .context("next doc should be read")
+            .transpose()
     }
 }
 
@@ -68,7 +70,7 @@ fn read_next_doc(it: &mut CisiDocsIterator) -> Result<Option<Doc>> {
 
         match it.current_line_type {
             ELineType::Unknown => {
-                panic!("unknown line type")
+                bail!("unknown line type")
             }
             ELineType::SectionHeader(ref section_type) => {
                 match section_type {

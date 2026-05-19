@@ -6,7 +6,7 @@ use super::docs_json::BeirDocsJsonReader;
 use super::docs_parquet::BeirDocsParquetReader;
 use super::queries_json::BeirQueriesJsonReader;
 use super::queries_parquet::BeirQueriesParquetReader;
-use crate::eval::model::QueriesSource;
+use crate::eval::model::{QueriesSource, Query};
 use crate::model::doc::{Doc, DocsSource};
 use crate::utils::{download_hf_dir, download_hf_file};
 
@@ -50,7 +50,7 @@ impl BeirDatasetReader {
 }
 
 impl DocsSource for BeirDatasetReader {
-    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Result<Doc>>>> {
         self.docs_reader.docs()
     }
     fn docs_count(&self) -> Result<Option<usize>> {
@@ -59,9 +59,7 @@ impl DocsSource for BeirDatasetReader {
 }
 
 impl QueriesSource for BeirDatasetReader {
-    fn queries(
-        &self,
-    ) -> Result<Box<dyn Iterator<Item = crate::eval::model::Query>>> {
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Result<Query>>>> {
         self.queries_reader.queries()
     }
 }

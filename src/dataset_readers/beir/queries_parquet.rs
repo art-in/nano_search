@@ -25,7 +25,7 @@ impl BeirQueriesParquetReader {
 }
 
 impl QueriesSource for BeirQueriesParquetReader {
-    fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>> {
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Result<Query>>>> {
         let rows = get_parquet_rows(self.queries_files.clone())?;
         let qrels = load_qrels(&self.qrels_file)?;
         Ok(Box::new(BeirQueriesParquetIterator { rows, qrels }))
@@ -38,22 +38,29 @@ struct BeirQueriesParquetIterator {
 }
 
 impl Iterator for BeirQueriesParquetIterator {
-    type Item = Query;
+    type Item = Result<Query>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // skip queries lacking relevant docs to ensure evaluation is possible.
-        // since reduced qrels, like test.tsv, may not have lines for each query
-        for row in self.rows.by_ref() {
-            let line = row.expect("line should be read");
-            let query = parse_query_from_row(&line, &mut self.qrels)
-                .expect("query should be parsed");
-            if !query.relevant_docs.is_empty() {
-                return Some(query);
-            }
-        }
-
-        None
+        get_next_query(&mut self.rows, &mut self.qrels).transpose()
     }
+}
+
+fn get_next_query(
+    rows: &mut dyn Iterator<Item = Result<Row>>,
+    qrels: &mut HashMap<QueryId, HashMap<DocId, Relevance>>,
+) -> Result<Option<Query>> {
+    // skip queries lacking relevant docs to ensure evaluation is possible.
+    // since reduced qrels, like test.tsv, may not have lines for each query
+    for row in rows {
+        let line = row.context("row should be read")?;
+        let query = parse_query_from_row(&line, qrels)
+            .context("query should be parsed")?;
+        if !query.relevant_docs.is_empty() {
+            return Ok(Some(query));
+        }
+    }
+
+    Ok(None)
 }
 
 fn parse_query_from_row(

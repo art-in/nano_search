@@ -101,9 +101,11 @@ impl SearchEngine for TantivySearchEngine {
 
     fn index_docs(
         &mut self,
-        docs: &mut dyn Iterator<Item = Doc>,
+        docs: &mut dyn Iterator<Item = Result<Doc>>,
     ) -> Result<()> {
         for doc in docs {
+            let doc = doc.context("doc should be valid")?;
+
             let mut tantivy_doc = TantivyDocument::default();
             tantivy_doc.add_u64(self.id_field, doc.id);
             tantivy_doc.add_text(self.text_field, doc.text);

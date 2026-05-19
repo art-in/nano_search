@@ -47,9 +47,9 @@ fn index_with_engine(
 
 /// Creates an iterator that logs progress while iterating over documents
 pub fn log_progress(
-    it: impl Iterator<Item = Doc>,
+    it: impl Iterator<Item = Result<Doc>>,
     docs_count: Option<usize>,
-) -> impl Iterator<Item = Doc> {
+) -> impl Iterator<Item = Result<Doc>> {
     let mut docs_processed = 0;
     let mut docs_processed_in_period = 0;
     let mut bytes_total = 0;
@@ -61,8 +61,10 @@ pub fn log_progress(
         docs_processed += 1;
         docs_processed_in_period += 1;
 
-        bytes_total += doc.text.len();
-        bytes_in_period += doc.text.len();
+        let doc_len = doc.as_ref().map_or(0, |doc| doc.text.len());
+
+        bytes_total += doc_len;
+        bytes_in_period += doc_len;
 
         let period_seconds = period_start.elapsed().as_secs_f64();
 

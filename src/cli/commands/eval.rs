@@ -26,7 +26,7 @@ pub fn eval(engines: &[String], dataset: &str) -> Result<()> {
 
 fn evaluate(
     engine: &dyn SearchEngine,
-    queries: &mut dyn Iterator<Item = Query>,
+    queries: &mut dyn Iterator<Item = Result<Query>>,
 ) -> Result<()> {
     let now = Instant::now();
     println!("evaluating {} engine...", engine.get_name().red());

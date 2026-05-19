@@ -9,6 +9,6 @@ pub struct Doc {
 }
 
 pub trait DocsSource {
-    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>>;
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Result<Doc>>>>;
     fn docs_count(&self) -> Result<Option<usize>>;
 }

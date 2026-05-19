@@ -1,9 +1,11 @@
 use std::vec::IntoIter;
 
+use anyhow::Result;
+
 use crate::model::doc::Doc;
 
 pub struct TestDocsIterator {
-    docs: IntoIter<Doc>,
+    docs: IntoIter<Result<Doc>>,
 }
 
 impl TestDocsIterator {
@@ -12,18 +14,20 @@ impl TestDocsIterator {
         Self {
             docs: texts
                 .iter()
-                .map(|(id, text)| Doc {
-                    id: *id,
-                    text: text.to_string(),
+                .map(|(id, text)| {
+                    Ok(Doc {
+                        id: *id,
+                        text: text.to_string(),
+                    })
                 })
-                .collect::<Vec<Doc>>()
+                .collect::<Vec<Result<Doc>>>()
                 .into_iter(),
         }
     }
 }
 
 impl Iterator for TestDocsIterator {
-    type Item = Doc;
+    type Item = Result<Doc>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.docs.next()

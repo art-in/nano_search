@@ -14,7 +14,11 @@ pub fn search(engines: &[String], dataset: &str) -> Result<()> {
     let engines = engine_open_from_disk_by_names(engines)?;
     let dataset = init_dataset_by_name(dataset)?;
 
-    let query = dataset.queries()?.nth(10).context("should get query")?;
+    let query = dataset
+        .queries()?
+        .nth(10)
+        .context("should get query")?
+        .context("query should be valid")?;
 
     println!("query (id={}): {}", query.id, query.text);
     println!("relevant docs: {:?}", query.relevant_docs);

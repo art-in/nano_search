@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
 use super::model::JsonDatasetReader;
@@ -14,35 +14,34 @@ pub struct JsonDocsIterator {
 }
 
 impl DocsSource for JsonDatasetReader {
-    fn docs(&self) -> Result<Box<dyn Iterator<Item = Doc>>> {
+    fn docs(&self) -> Result<Box<dyn Iterator<Item = Result<Doc>>>> {
         Ok(Box::new(JsonDocsIterator {
-            lines: get_doc_lines(&self.file_path),
+            lines: get_doc_lines(&self.file_path)?,
             docid: 0,
         }))
     }
 
     fn docs_count(&self) -> Result<Option<usize>> {
-        Ok(Some(get_doc_lines(&self.file_path).count()))
+        Ok(Some(get_doc_lines(&self.file_path)?.count()))
     }
 }
 
-fn get_doc_lines(file_path: &Path) -> Lines<BufReader<File>> {
-    let file = File::open(file_path).expect("file should exist");
+fn get_doc_lines(file_path: &Path) -> Result<Lines<BufReader<File>>> {
+    let file = File::open(file_path).context("file should exist")?;
     let reader = BufReader::new(file);
-    reader.lines()
+    Ok(reader.lines())
 }
 
 impl Iterator for JsonDocsIterator {
-    type Item = Doc;
+    type Item = Result<Doc>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let doc = self
             .lines
             .next()
-            .map(|line| line.expect("should read line"))
+            .map(|line| line.context("line should be read"))
             .map(|line| {
-                parse_doc_from_json(&line, self.docid)
-                    .expect("doc should be parsed from json string")
+                parse_doc(&line?, self.docid).context("doc should be parsed")
             });
 
         self.docid += 1;
@@ -51,7 +50,7 @@ impl Iterator for JsonDocsIterator {
     }
 }
 
-fn parse_doc_from_json(json: &str, docid: DocId) -> Option<Doc> {
+fn parse_doc(json: &str, docid: DocId) -> Option<Doc> {
     let json_obj: Map<String, Value> = serde_json::from_str(json).ok()?;
 
     let body = json_obj.get("body")?.as_str()?.to_string();

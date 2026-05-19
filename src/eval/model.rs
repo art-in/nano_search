@@ -18,7 +18,7 @@ pub struct Query {
 }
 
 pub trait QueriesSource {
-    fn queries(&self) -> Result<Box<dyn Iterator<Item = Query>>>;
+    fn queries(&self) -> Result<Box<dyn Iterator<Item = Result<Query>>>>;
 }
 
 // Search quality evaluation results summarized for entire query set

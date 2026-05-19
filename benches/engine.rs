@@ -43,7 +43,10 @@ fn index_with<SE: SearchEngine>(
     index_type: &IndexType,
 ) -> Result<()> {
     // serve docs from memory, to not affect benchmark with extra disk IO
-    let docs = dataset.docs()?.collect::<Vec<Doc>>();
+    let docs = dataset
+        .docs()?
+        .filter_map(std::result::Result::ok)
+        .collect::<Vec<Doc>>();
 
     let bench_id = format!("{}/{:?}", SE::name(), index_type).to_lowercase();
 
@@ -59,7 +62,7 @@ fn index_with<SE: SearchEngine>(
                         .build(),
                 )?,
             };
-            engine.index_docs(&mut docs.iter().cloned())?;
+            engine.index_docs(&mut docs.iter().cloned().map(Ok))?;
             Ok(())
         });
     });
@@ -138,7 +141,10 @@ fn search_with<SE: SearchEngine>(
     engine.index_docs(&mut dataset.docs()?)?;
 
     // serve queries from memory, to not affect benchmark with extra disk IO
-    let queries = dataset.queries()?.collect::<Vec<Query>>();
+    let queries = dataset
+        .queries()?
+        .filter_map(std::result::Result::ok)
+        .collect::<Vec<Query>>();
 
     let bench_id = format!("{}/{:?}", SE::name(), index_type).to_lowercase();
 
