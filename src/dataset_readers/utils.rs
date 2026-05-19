@@ -22,6 +22,10 @@ pub fn init_dataset_by_name(dataset_name: &str) -> Result<Box<dyn Dataset>> {
         }
 
         // BEIR
+        "nfcorpus" => {
+            Box::new(BeirDatasetReader::from_dir("datasets/nfcorpus/data")?)
+        }
+
         n if n.starts_with("beir_") => {
             let dataset_name = n.strip_prefix("beir_").context("stripped")?;
             Box::new(BeirDatasetReader::from_hf(dataset_name)?)
