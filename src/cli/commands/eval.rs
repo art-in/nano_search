@@ -10,11 +10,15 @@ use crate::eval::model::{Query, SearchQuality};
 use crate::model::engine::SearchEngine;
 use crate::utils::GetPercentile;
 
-pub fn eval(engines: &[String], dataset: &str) -> Result<()> {
+pub fn eval(
+    engines: &[String],
+    dataset: &str,
+    parent_index_dir: &str,
+) -> Result<()> {
     println!("initializing search engines: {}", engines.join(","));
     println!("initializing dataset '{dataset}'");
 
-    let engines = engine_open_from_disk_by_names(engines)?;
+    let engines = engine_open_from_disk_by_names(engines, parent_index_dir)?;
     let dataset = init_dataset_by_name(dataset)?;
 
     for engine in engines {

@@ -21,6 +21,9 @@ pub use get_parquet_rows::*;
 mod format_number_si;
 pub use format_number_si::*;
 
+mod get_dir_size;
+pub use get_dir_size::*;
+
 #[cfg(test)]
 pub mod test_docs_iterator;
 

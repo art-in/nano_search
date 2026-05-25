@@ -52,7 +52,7 @@ impl SearchEngine for VectorSearchEngine {
             std::fs::remove_dir_all(&opts.index_dir)?;
         }
 
-        std::fs::create_dir(&opts.index_dir)
+        std::fs::create_dir_all(&opts.index_dir)
             .context("index dir should be created")?;
 
         Self::init_vector_extension();

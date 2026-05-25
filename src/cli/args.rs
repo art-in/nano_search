@@ -24,6 +24,14 @@ pub struct Args {
     )]
     pub dataset: String,
 
+    #[arg(
+        long,
+        default_value = ".",
+        help = "Parent directory for engine indices. Each engine produces its \
+                own directory inside of it with 'index_<engine>' name."
+    )]
+    pub parent_index_dir: String,
+
     #[command(subcommand)]
     pub command: Command,
 }

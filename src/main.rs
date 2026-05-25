@@ -10,10 +10,23 @@ fn main() -> Result<()> {
 
     match args.command {
         Command::Index { threads } => {
-            commands::index(&args.engines, &args.dataset, threads)?;
+            commands::index(
+                &args.engines,
+                &args.dataset,
+                &args.parent_index_dir,
+                threads,
+            )?;
         }
-        Command::Eval => commands::eval(&args.engines, &args.dataset)?,
-        Command::Search => commands::search(&args.engines, &args.dataset)?,
+        Command::Eval => commands::eval(
+            &args.engines,
+            &args.dataset,
+            &args.parent_index_dir,
+        )?,
+        Command::Search => commands::search(
+            &args.engines,
+            &args.dataset,
+            &args.parent_index_dir,
+        )?,
     }
 
     Ok(())

@@ -7,11 +7,15 @@ use crate::eval::evaluate_search_quality_for_query;
 
 const SEARCH_LIMIT: u64 = 10;
 
-pub fn search(engines: &[String], dataset: &str) -> Result<()> {
+pub fn search(
+    engines: &[String],
+    dataset: &str,
+    parent_index_dir: &str,
+) -> Result<()> {
     println!("initializing search engines: {}", engines.join(","));
     println!("initializing dataset '{dataset}'");
 
-    let engines = engine_open_from_disk_by_names(engines)?;
+    let engines = engine_open_from_disk_by_names(engines, parent_index_dir)?;
     let dataset = init_dataset_by_name(dataset)?;
 
     let query = dataset
