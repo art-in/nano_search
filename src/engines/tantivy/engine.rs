@@ -123,6 +123,13 @@ impl SearchEngine for TantivySearchEngine {
             .reload()
             .context("index reader should be reloaded after writer commit")?;
 
+        // garbage collect unused index files after switching reader to new
+        // segments, and thus releasing old segments
+        self.index_writer
+            .garbage_collect_files()
+            .wait()
+            .context("index_writer should garbage collect index files")?;
+
         Ok(())
     }
 
