@@ -142,7 +142,10 @@ impl SearchEngine for TantivySearchEngine {
         let (query, _) = query_parser.parse_query_lenient(query);
 
         let top_docs = searcher
-            .search(&query, &TopDocs::with_limit(limit as usize))
+            .search(
+                &query,
+                &TopDocs::with_limit(limit as usize).order_by_score(),
+            )
             .context("should search")?;
 
         let mut result = Vec::new();
