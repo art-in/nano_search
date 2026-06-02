@@ -1,42 +1,62 @@
 use super::test_docs_iterator::TestDocsIterator;
+use crate::model::doc::ExternalDocId;
 
-static CAT: (u64, &str) = (0, "cat");
-static DOG: (u64, &str) = (1, "dog");
-static MOUSE: (u64, &str) = (2, "mouse");
-static CAT_DOG: (u64, &str) = (3, "cat dog");
-static DOG_MOUSE: (u64, &str) = (4, "dog mouse");
-static CAT_MOUSE: (u64, &str) = (5, "cat mouse");
-static CAT_MOUSE_CAT: (u64, &str) = (6, "cat mouse cat");
-
-pub struct DocIds {
-    pub cat: u64,
-    pub dog: u64,
-    pub mouse: u64,
-    pub cat_dog: u64,
-    pub dog_mouse: u64,
-    pub cat_mouse: u64,
-    pub cat_mouse_cat: u64,
+pub struct TestDoc {
+    /// Sequential index this doc will have when emitted from iterator
+    pub index: u32,
+    pub id: ExternalDocId,
+    pub text: &'static str,
 }
 
-pub static ID: DocIds = DocIds {
-    cat: CAT.0,
-    dog: DOG.0,
-    mouse: MOUSE.0,
-    cat_dog: CAT_DOG.0,
-    dog_mouse: DOG_MOUSE.0,
-    cat_mouse: CAT_MOUSE.0,
-    cat_mouse_cat: CAT_MOUSE_CAT.0,
-};
+pub mod docs {
+    use super::TestDoc;
+
+    pub static CAT: TestDoc = TestDoc {
+        index: 0,
+        id: 0,
+        text: "cat",
+    };
+    pub static DOG: TestDoc = TestDoc {
+        index: 1,
+        id: 1,
+        text: "dog",
+    };
+    pub static MOUSE: TestDoc = TestDoc {
+        index: 2,
+        id: 2,
+        text: "mouse",
+    };
+    pub static CAT_DOG: TestDoc = TestDoc {
+        index: 3,
+        id: 3,
+        text: "cat dog",
+    };
+    pub static DOG_MOUSE: TestDoc = TestDoc {
+        index: 4,
+        id: 4,
+        text: "dog mouse",
+    };
+    pub static CAT_MOUSE: TestDoc = TestDoc {
+        index: 5,
+        id: 5,
+        text: "cat mouse",
+    };
+    pub static CAT_MOUSE_CAT: TestDoc = TestDoc {
+        index: 6,
+        id: 6,
+        text: "cat mouse cat",
+    };
+}
 
 #[must_use]
 pub fn create_cat_mouse_docs_iterator() -> TestDocsIterator {
     TestDocsIterator::from_enumerated_texts(&Vec::from([
-        CAT,
-        DOG,
-        MOUSE,
-        CAT_DOG,
-        DOG_MOUSE,
-        CAT_MOUSE,
-        CAT_MOUSE_CAT,
+        &docs::CAT,
+        &docs::DOG,
+        &docs::MOUSE,
+        &docs::CAT_DOG,
+        &docs::DOG_MOUSE,
+        &docs::CAT_MOUSE,
+        &docs::CAT_MOUSE_CAT,
     ]))
 }

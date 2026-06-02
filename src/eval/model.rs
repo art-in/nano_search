@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::model::doc::DocId;
+use crate::model::doc::ExternalDocId;
 
 pub type QueryId = u64;
 pub type Relevance = f64;
@@ -14,7 +14,7 @@ pub struct Query {
 
     // IDs of documents considered relevant to this query, and thus expected to
     // be in search results
-    pub relevant_docs: HashMap<DocId, Relevance>,
+    pub relevant_docs: HashMap<ExternalDocId, Relevance>,
 }
 
 pub trait QueriesSource {

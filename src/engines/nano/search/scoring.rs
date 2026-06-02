@@ -5,7 +5,7 @@
 #[derive(Debug, Clone, Copy)]
 pub struct ScoringParams {
     /// Number of occurrences of the term in the document
-    pub doc_term_count: u64,
+    pub doc_term_freq: u32,
     /// Total count of terms in the document (i.e. document length)
     pub doc_total_terms_count: u16,
     /// Count of documents containing this term in the index
@@ -29,7 +29,7 @@ pub struct ScoringParams {
 #[allow(dead_code)]
 pub fn calc_tfidf(p: ScoringParams) -> f64 {
     let term_frequency =
-        p.doc_term_count as f64 / p.doc_total_terms_count as f64;
+        p.doc_term_freq as f64 / p.doc_total_terms_count as f64;
 
     let inverted_doc_frequency =
         f64::ln(p.docs_total_count as f64 / p.docs_with_term_count as f64);
@@ -59,7 +59,7 @@ pub fn calc_bm25(p: ScoringParams, terms_count_per_doc_avg: f64) -> f64 {
         let doc_length_normalization_factor =
             1.0 - B + (B * doc_length_normalized);
 
-        let tf = p.doc_term_count as f64;
+        let tf = p.doc_term_freq as f64;
 
         let num = tf * (K + 1.0);
         let den = tf + (K * doc_length_normalization_factor);
@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn test_tfidf() {
         let params = ScoringParams {
-            doc_term_count: 2,
+            doc_term_freq: 2,
             doc_total_terms_count: 100,
             docs_with_term_count: 5,
             docs_total_count: 1000,
@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn test_bm25() {
         let params = ScoringParams {
-            doc_term_count: 2,
+            doc_term_freq: 2,
             doc_total_terms_count: 100,
             docs_with_term_count: 5,
             docs_total_count: 1000,

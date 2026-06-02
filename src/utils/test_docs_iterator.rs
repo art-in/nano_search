@@ -1,8 +1,10 @@
 use std::vec::IntoIter;
 
 use anyhow::Result;
+use itertools::Itertools;
 
 use crate::model::doc::Doc;
+use crate::utils::test_docs::TestDoc;
 
 pub struct TestDocsIterator {
     docs: IntoIter<Result<Doc>>,
@@ -10,14 +12,15 @@ pub struct TestDocsIterator {
 
 impl TestDocsIterator {
     #[must_use]
-    pub fn from_enumerated_texts(texts: &Vec<(u64, &str)>) -> Self {
+    pub fn from_enumerated_texts(texts: &Vec<&TestDoc>) -> Self {
         Self {
             docs: texts
                 .iter()
-                .map(|(id, text)| {
+                .sorted_by_key(|doc| doc.index)
+                .map(|doc| {
                     Ok(Doc {
-                        id: *id,
-                        text: text.to_string(),
+                        id: doc.id,
+                        text: doc.text.to_owned(),
                     })
                 })
                 .collect::<Vec<Result<Doc>>>()

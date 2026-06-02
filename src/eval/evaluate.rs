@@ -6,7 +6,7 @@ use super::metrics::{precision, recall};
 use super::model::{QuerySearchQuality, SearchQuality};
 use crate::eval::metrics::ndcg;
 use crate::eval::model::{Query, Relevance};
-use crate::model::doc::DocId;
+use crate::model::doc::ExternalDocId;
 use crate::model::engine::SearchEngine;
 
 pub fn evaluate_search_quality(
@@ -64,8 +64,8 @@ pub fn evaluate_search_quality(
 }
 
 pub fn evaluate_search_quality_for_query(
-    found_docids: &[DocId],
-    relevant_docs: &HashMap<DocId, Relevance>,
+    found_docids: &[ExternalDocId],
+    relevant_docs: &HashMap<ExternalDocId, Relevance>,
     search_limit: u64,
 ) -> Result<QuerySearchQuality> {
     let precision = precision(found_docids, relevant_docs);

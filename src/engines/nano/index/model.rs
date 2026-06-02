@@ -3,9 +3,19 @@ use std::borrow::Cow;
 use anyhow::Result;
 
 use super::disk::DiskIndexOptions;
-use crate::model::doc::DocId;
+use crate::model::doc::ExternalDocId;
 
 pub type Term = String;
+
+/// Unique identifier of a document inside an index segment.
+///
+/// This is a simple sequential index, in the order doc was supplied to the
+/// segment indexer.
+///
+/// Index posting lists contain this ID and not the external document ID,
+/// because a client document can, in theory, have no ID assigned at all.
+/// And a sequence of small, sorted numbers can be compressed much better.
+pub type SegmentDocId = u32;
 
 pub enum IndexMedium {
     /// Index built and used entirely in RAM.
@@ -27,24 +37,42 @@ pub trait Index {
     fn get_segments(&self) -> Vec<&dyn IndexSegment>;
 }
 
-/// A segment is a self-contained part of the index.
+/// A segment is a self-contained immutable part of the index.
 /// Segments can be built and searched independently from each other.
 ///
-/// Each segment maintains unique statistics that impact relevance scoring.
-/// Consequently, searching a single 10-document segment may yield different
-/// results than searching ten 1-document segments. While document balancing
-/// typically prevents significant skew, relevance remains inconsistent in
-/// smaller, final segments. To ensure accuracy, minimize small segments by
-/// optimizing indexing thread counts and maximum segment document limits.
+/// This trait is abstraction for in-memory and on-disk index implementations.
+// TODO: fix cross-segment relevance skew for better ranking.
+// - the problem: each segment maintains unique statistics that impact relevance
+//   scoring. e.g., searching a single 10-document segment may yield different
+//   results than searching ten 1-document segments. while document balancing
+//   typically prevents significant skew, relevance remains inconsistent in
+//   smaller, final segments
+// - use approach from lucene/tantivy: maintain local segment stats in memory,
+//   compute global stats for query terms on the fly, and pass it along with the
+//   query to segments, so all segments score their local results using global
+//   term statistics
 pub trait IndexSegment {
     fn get_doc_postings_for_term<'a>(
         &'a self,
         term: &Term,
     ) -> Result<Option<DocPostingsForTerm<'a>>>;
 
-    fn get_doc_terms_count(&self, docid: DocId) -> Result<u16>;
+    fn get_doc_terms_count(&self, docid: SegmentDocId) -> Result<Cow<'_, u16>>;
+
+    fn get_stored_doc(&self, docid: SegmentDocId)
+    -> Result<Cow<'_, StoredDoc>>;
 
     fn get_stats(&self) -> &IndexSegmentStats;
+}
+
+/// Doc fields stored inside index.
+///
+/// Currently just bare minimum is stored - external doc IDs to answer
+/// search queries with. Do not need to store doc text, since we do not support
+/// snippets or any other feature that requires source doc text yet.
+#[derive(Clone, Debug)]
+pub struct StoredDoc {
+    pub docid: ExternalDocId,
 }
 
 /// Useful statistics for search results scoring and debugging.
@@ -62,9 +90,8 @@ pub struct IndexSegmentStats {
 
 /// Posting list (inverted list): references to documents containing a term.
 ///
-/// Abstracts over memory and disk index implementations:
-/// - Memory: reads from in-memory structures
-/// - Disk: reads from on-disk segment files
+/// This struct is abstraction for iterator in in-memory and on-disk index
+/// implementations.
 pub struct DocPostingsForTerm<'a> {
     /// Total number of postings, that can be read through the iterator
     pub count: usize,
@@ -80,8 +107,8 @@ type DocPostingsIterator<'a> =
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct DocPosting {
     /// Unique document identifier
-    pub docid: DocId,
+    pub docid: SegmentDocId,
 
-    /// Number of times the term appears in the document (term frequency)
-    pub term_count: u64,
+    /// Number of occurrences of the term in the document
+    pub term_freq: u32,
 }

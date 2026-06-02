@@ -6,11 +6,11 @@ use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
 use super::model::JsonDatasetReader;
-use crate::model::doc::{Doc, DocId, DocsSource};
+use crate::model::doc::{Doc, DocsSource, ExternalDocId};
 
 pub struct JsonDocsIterator {
     lines: Lines<BufReader<File>>,
-    docid: DocId,
+    docid: ExternalDocId,
 }
 
 impl DocsSource for JsonDatasetReader {
@@ -50,7 +50,7 @@ impl Iterator for JsonDocsIterator {
     }
 }
 
-fn parse_doc(json: &str, docid: DocId) -> Option<Doc> {
+fn parse_doc(json: &str, docid: ExternalDocId) -> Option<Doc> {
     let json_obj: Map<String, Value> = serde_json::from_str(json).ok()?;
 
     let body = json_obj.get("body")?.as_str()?.to_string();

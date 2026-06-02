@@ -6,7 +6,7 @@ use tantivy::query::QueryParser;
 use tantivy::schema::{Field, NumericOptions, Schema, TEXT, Value};
 use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
 
-use crate::model::doc::{Doc, DocId};
+use crate::model::doc::{Doc, ExternalDocId};
 use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 
 pub struct TantivySearchEngine {
@@ -133,7 +133,7 @@ impl SearchEngine for TantivySearchEngine {
         Ok(())
     }
 
-    fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>> {
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<ExternalDocId>> {
         let searcher = self.index_reader.searcher();
 
         let query_parser =

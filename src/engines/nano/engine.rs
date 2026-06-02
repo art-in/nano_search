@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use super::index::model::{Index, IndexMedium};
 use super::index::{DiskIndexOptions, build_index, open_index};
 use super::search::search;
-use crate::model::doc::{Doc, DocId};
+use crate::model::doc::{Doc, ExternalDocId};
 use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 
 pub struct NanoSearchEngine {
@@ -77,7 +77,7 @@ impl SearchEngine for NanoSearchEngine {
         Ok(())
     }
 
-    fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>> {
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<ExternalDocId>> {
         let index = self
             .index
             .as_ref()

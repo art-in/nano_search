@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{BufReader, BufWriter, Seek};
+use std::io::{BufReader, BufWriter, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 
@@ -16,7 +16,7 @@ use super::serialize::BinarySerializable;
 use crate::engines::nano::index::disk::DiskIndexOptions;
 use crate::engines::nano::index::memory::{MemoryIndex, build_memory_index};
 use crate::engines::nano::index::model::IndexSegmentStats;
-use crate::model::doc::{Doc, DocId};
+use crate::model::doc::Doc;
 
 const SEGMENT_DIR_PREFIX: &str = "segment-";
 
@@ -104,7 +104,9 @@ fn build_disk_index_segment(
 
     let mut terms_file = create_writer(&segment_dir, IndexFile::Terms)?;
     let mut postings_file = create_writer(&segment_dir, IndexFile::Postings)?;
-    let mut doclen_file = create_writer(&segment_dir, IndexFile::DocLen)?;
+    let mut doc_term_counts_file =
+        create_writer(&segment_dir, IndexFile::DocLen)?;
+    let mut docs_file = create_writer(&segment_dir, IndexFile::Docs)?;
     let mut stats_file = create_writer(&segment_dir, IndexFile::Stats)?;
 
     let mut terms = HashMap::new();
@@ -125,24 +127,41 @@ fn build_disk_index_segment(
         terms.insert(term, address);
     }
 
+    postings_file.flush()?;
+    drop(postings_file);
+
     terms
         .serialize(&mut terms_file)
         .context("terms should be serialized to file")?;
 
-    memory_index.doc_terms_count.serialize(&mut doclen_file)?;
+    memory_index
+        .doc_term_counts
+        .serialize(&mut doc_term_counts_file)?;
+
+    doc_term_counts_file.flush()?;
+    drop(doc_term_counts_file);
+
+    memory_index.docs.serialize(&mut docs_file)?;
+
+    docs_file.flush()?;
+    drop(docs_file);
 
     memory_index
         .stats
         .serialize(&mut stats_file)
         .context("stats should be serialized to file")?;
 
+    let doc_term_counts_file =
+        mmap_file(segment_dir.join(IndexFile::DocLen.name()))?;
     let postings_file =
         mmap_file(segment_dir.join(IndexFile::Postings.name()))?;
+    let docs_file = mmap_file(segment_dir.join(IndexFile::Docs.name()))?;
 
     Ok(DiskIndexSegment {
         terms,
         postings_file,
-        doc_terms_count: memory_index.doc_terms_count,
+        doc_term_counts_file,
+        docs_file,
         stats: memory_index.stats,
     })
 }
@@ -163,21 +182,24 @@ pub fn open_disk_index(options: &DiskIndexOptions) -> Result<DiskIndex> {
 
 fn open_disk_index_segment(segment_dir: &Path) -> Result<DiskIndexSegment> {
     let mut terms_file = open_reader(segment_dir, IndexFile::Terms)?;
-    let mut doclen_file = open_reader(segment_dir, IndexFile::DocLen)?;
     let mut stats_file = open_reader(segment_dir, IndexFile::Stats)?;
+    let doc_term_counts_file_name = segment_dir.join(IndexFile::DocLen.name());
     let postings_file_name = segment_dir.join(IndexFile::Postings.name());
+    let docs_file_name = segment_dir.join(IndexFile::Docs.name());
 
     let terms = HashMap::<String, TermPostingListFileAddress>::deserialize(
         &mut terms_file,
     )?;
-    let doc_terms_count = HashMap::<DocId, u16>::deserialize(&mut doclen_file)?;
     let stats = IndexSegmentStats::deserialize(&mut stats_file)?;
     let postings_file = mmap_file(postings_file_name)?;
+    let doc_term_counts_file = mmap_file(doc_term_counts_file_name)?;
+    let docs_file = mmap_file(docs_file_name)?;
 
     Ok(DiskIndexSegment {
         terms,
         postings_file,
-        doc_terms_count,
+        doc_term_counts_file,
+        docs_file,
         stats,
     })
 }

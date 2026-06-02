@@ -9,7 +9,8 @@ use super::*;
 use crate::engines::nano::index::model::{
     DocPosting, Index, IndexSegment, IndexSegmentStats,
 };
-use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
+use crate::utils::test_docs::create_cat_mouse_docs_iterator;
+use crate::utils::test_docs::docs::*;
 
 #[test]
 fn test_build_memory_index() -> Result<()> {
@@ -79,32 +80,32 @@ fn assert_one_segment_index(index: &dyn Index) -> Result<()> {
         "cat",
         &[
             DocPosting {
-                docid: ID.cat,
-                term_count: 1,
+                docid: CAT.index,
+                term_freq: 1,
             },
             DocPosting {
-                docid: ID.cat_dog,
-                term_count: 1,
+                docid: CAT_DOG.index,
+                term_freq: 1,
             },
             DocPosting {
-                docid: ID.cat_mouse,
-                term_count: 1,
+                docid: CAT_MOUSE.index,
+                term_freq: 1,
             },
             DocPosting {
-                docid: ID.cat_mouse_cat,
-                term_count: 2,
+                docid: CAT_MOUSE_CAT.index,
+                term_freq: 2,
             },
         ],
     )?;
 
     // assert correct doc terms counts
-    assert_eq!(segment.get_doc_terms_count(ID.cat)?, 1);
-    assert_eq!(segment.get_doc_terms_count(ID.dog)?, 1);
-    assert_eq!(segment.get_doc_terms_count(ID.mouse)?, 1);
-    assert_eq!(segment.get_doc_terms_count(ID.cat_dog)?, 2);
-    assert_eq!(segment.get_doc_terms_count(ID.dog_mouse)?, 2);
-    assert_eq!(segment.get_doc_terms_count(ID.cat_mouse)?, 2);
-    assert_eq!(segment.get_doc_terms_count(ID.cat_mouse_cat)?, 3);
+    assert_eq!(*segment.get_doc_terms_count(CAT.index)?, 1);
+    assert_eq!(*segment.get_doc_terms_count(DOG.index)?, 1);
+    assert_eq!(*segment.get_doc_terms_count(MOUSE.index)?, 1);
+    assert_eq!(*segment.get_doc_terms_count(CAT_DOG.index)?, 2);
+    assert_eq!(*segment.get_doc_terms_count(DOG_MOUSE.index)?, 2);
+    assert_eq!(*segment.get_doc_terms_count(CAT_MOUSE.index)?, 2);
+    assert_eq!(*segment.get_doc_terms_count(CAT_MOUSE_CAT.index)?, 3);
 
     // assert correct index statistics
     assert_eq!(
@@ -185,20 +186,20 @@ fn assert_multiple_segments_index(index: &dyn Index) -> Result<()> {
             "cat",
             &[
                 DocPosting {
-                    docid: ID.cat,
-                    term_count: 1,
+                    docid: CAT.index,
+                    term_freq: 1,
                 },
                 DocPosting {
-                    docid: ID.cat_dog,
-                    term_count: 1,
+                    docid: CAT_DOG.index,
+                    term_freq: 1,
                 },
             ],
         )?;
 
-        assert_eq!(first_segment.get_doc_terms_count(ID.cat)?, 1);
-        assert_eq!(first_segment.get_doc_terms_count(ID.dog)?, 1);
-        assert_eq!(first_segment.get_doc_terms_count(ID.mouse)?, 1);
-        assert_eq!(first_segment.get_doc_terms_count(ID.cat_dog)?, 2);
+        assert_eq!(*first_segment.get_doc_terms_count(CAT.index)?, 1);
+        assert_eq!(*first_segment.get_doc_terms_count(DOG.index)?, 1);
+        assert_eq!(*first_segment.get_doc_terms_count(MOUSE.index)?, 1);
+        assert_eq!(*first_segment.get_doc_terms_count(CAT_DOG.index)?, 2);
 
         assert_eq!(
             first_segment.get_stats(),
@@ -212,24 +213,38 @@ fn assert_multiple_segments_index(index: &dyn Index) -> Result<()> {
 
     // assert correct second segment
     {
+        // some docs were consumed by first segment, so original sequential
+        // index of docs should be shifted for second segment
+        let index_shift = first_segment.get_stats().indexed_docs_count as u32;
+        let sh = |index: u32| index - index_shift;
+
         assert_postings_for_term(
             second_segment,
             "cat",
             &[
                 DocPosting {
-                    docid: ID.cat_mouse,
-                    term_count: 1,
+                    docid: sh(CAT_MOUSE.index),
+                    term_freq: 1,
                 },
                 DocPosting {
-                    docid: ID.cat_mouse_cat,
-                    term_count: 2,
+                    docid: sh(CAT_MOUSE_CAT.index),
+                    term_freq: 2,
                 },
             ],
         )?;
 
-        assert_eq!(second_segment.get_doc_terms_count(ID.dog_mouse)?, 2);
-        assert_eq!(second_segment.get_doc_terms_count(ID.cat_mouse)?, 2);
-        assert_eq!(second_segment.get_doc_terms_count(ID.cat_mouse_cat)?, 3);
+        assert_eq!(
+            *second_segment.get_doc_terms_count(sh(DOG_MOUSE.index))?,
+            2
+        );
+        assert_eq!(
+            *second_segment.get_doc_terms_count(sh(CAT_MOUSE.index))?,
+            2
+        );
+        assert_eq!(
+            *second_segment.get_doc_terms_count(sh(CAT_MOUSE_CAT.index))?,
+            3
+        );
 
         assert_eq!(
             second_segment.get_stats(),

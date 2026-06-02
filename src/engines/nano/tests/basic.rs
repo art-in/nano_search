@@ -3,7 +3,8 @@ use tempfile::TempDir;
 
 use crate::engines::nano::engine::NanoSearchEngine;
 use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
-use crate::utils::test_docs::{ID, create_cat_mouse_docs_iterator};
+use crate::utils::test_docs::create_cat_mouse_docs_iterator;
+use crate::utils::test_docs::docs::*;
 
 #[test]
 fn test_search_fails_on_uninitialized_index() -> Result<()> {
@@ -70,8 +71,8 @@ fn test_search_limit() -> Result<()> {
     assert_eq!(
         docids,
         vec![
-            ID.cat,           // 1st - full match with query
-            ID.cat_mouse_cat, // 2nd - contains query term (twice)
+            CAT.id,           // 1st - full query match
+            CAT_MOUSE_CAT.id, // 2nd - contains query term (twice)
         ]
     );
     Ok(())
@@ -116,10 +117,10 @@ fn test_search() -> Result<()> {
     assert_eq!(
         docids,
         vec![
-            ID.cat,           // 1st - full match with query
-            ID.cat_mouse_cat, // 2nd - contains query term (twice)
-            ID.cat_dog,       // 3nd - contains query term (once)
-            ID.cat_mouse      // 4rd - contains query term (once)
+            CAT.id,           // 1st - full query match
+            CAT_MOUSE_CAT.id, // 2nd - contains query term (twice)
+            CAT_DOG.id,       // 3nd - contains query term (once)
+            CAT_MOUSE.id      // 4rd - contains query term (once)
         ]
     );
     Ok(())
@@ -144,12 +145,12 @@ fn test_search_with_multiple_words_query() -> Result<()> {
     assert_eq!(
         docids,
         vec![
-            ID.cat_mouse_cat, // 1st - full match with query (one term twice)
-            ID.cat_mouse,     // 2nd - full match with query
-            ID.cat,           // 3rd - match with one of query terms
-            ID.mouse,         // 4th - match with one of query terms
-            ID.cat_dog,       // 5th - contains one of query terms
-            ID.dog_mouse      // 6th - contains one of query terms
+            CAT_MOUSE_CAT.id, // 1st - full query match (one term twice)
+            CAT_MOUSE.id,     // 2nd - full query match
+            CAT.id,           // 3rd - match with one of query terms
+            MOUSE.id,         // 4th - match with one of query terms
+            CAT_DOG.id,       // 5th - contains one of query terms
+            DOG_MOUSE.id      // 6th - contains one of query terms
         ]
     );
     Ok(())

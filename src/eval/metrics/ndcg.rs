@@ -4,7 +4,7 @@ use anyhow::{Result, bail};
 use itertools::Itertools;
 
 use crate::eval::model::Relevance;
-use crate::model::doc::DocId;
+use crate::model::doc::ExternalDocId;
 
 /// Calculates Normalized Discounted Cumulative Gain (NDCG), which is a measure
 /// of search result quality.
@@ -15,8 +15,8 @@ use crate::model::doc::DocId;
 ///
 /// See <https://en.wikipedia.org/wiki/Discounted_cumulative_gain>
 pub fn ndcg(
-    found_docids: &[DocId],
-    relevant_docs: &HashMap<DocId, Relevance>,
+    found_docids: &[ExternalDocId],
+    relevant_docs: &HashMap<ExternalDocId, Relevance>,
     search_limit: u64,
 ) -> Result<f64> {
     if relevant_docs.is_empty() {
@@ -36,8 +36,8 @@ pub fn ndcg(
 }
 
 fn extract_relevances(
-    found_docids: &[DocId],
-    relevant_docs: &HashMap<DocId, Relevance>,
+    found_docids: &[ExternalDocId],
+    relevant_docs: &HashMap<ExternalDocId, Relevance>,
     search_limit: u64,
 ) -> Vec<Relevance> {
     found_docids
@@ -48,7 +48,7 @@ fn extract_relevances(
 }
 
 fn compute_ideal_relevances(
-    relevant_docs: &HashMap<DocId, Relevance>,
+    relevant_docs: &HashMap<ExternalDocId, Relevance>,
     search_limit: u64,
 ) -> Vec<Relevance> {
     relevant_docs
@@ -139,7 +139,7 @@ mod test {
 
     #[test]
     fn test_ndcg_zero_found_docs_returns_zero() -> Result<()> {
-        let found_docids: Vec<DocId> = vec![];
+        let found_docids: Vec<ExternalDocId> = vec![];
         let relevant_docs = HashMap::from([(1, 1.0)]);
         let search_limit = 10;
 
@@ -151,7 +151,7 @@ mod test {
 
     #[test]
     fn test_ndcg_no_found_and_no_relevant_docs_returns_one() -> Result<()> {
-        let found_docids: Vec<DocId> = vec![];
+        let found_docids: Vec<ExternalDocId> = vec![];
         let relevant_docs = HashMap::new();
         let search_limit = 10;
 
@@ -163,7 +163,7 @@ mod test {
 
     #[test]
     fn test_ndcg_some_found_and_no_relevant_docs_returns_zero() -> Result<()> {
-        let found_docids: Vec<DocId> = vec![1, 2, 3];
+        let found_docids: Vec<ExternalDocId> = vec![1, 2, 3];
         let relevant_docs = HashMap::new();
         let search_limit = 10;
 
@@ -176,7 +176,7 @@ mod test {
     #[test]
     fn test_ndcg_zero_relevant_docs_is_error() {
         let found_docids = vec![1, 2, 3];
-        let relevant_docs: HashMap<DocId, Relevance> =
+        let relevant_docs: HashMap<ExternalDocId, Relevance> =
             HashMap::from([(1, 0.0), (2, 0.0), (3, 0.0)]);
         let search_limit = 10;
 

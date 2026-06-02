@@ -10,7 +10,7 @@ use sqlite_vec::sqlite3_vec_init;
 use tracing::debug;
 use zerocopy::IntoBytes;
 
-use crate::model::doc::{Doc, DocId};
+use crate::model::doc::{Doc, ExternalDocId};
 use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
 use crate::utils::HF_CACHE_DIR;
 
@@ -111,7 +111,7 @@ impl SearchEngine for VectorSearchEngine {
         Ok(())
     }
 
-    fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>> {
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<ExternalDocId>> {
         let vectors = embed(&self.model, vec![query])?;
         let vector = &vectors[0];
 

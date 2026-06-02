@@ -1,8 +1,8 @@
-use crate::model::doc::DocId;
+use crate::model::doc::ExternalDocId;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DocCandidate {
-    pub id: DocId,
+    pub id: ExternalDocId,
     pub relevance: f64,
 }
 

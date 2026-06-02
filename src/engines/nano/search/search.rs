@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use super::model::DocCandidate;
 use super::scoring;
 use super::stop_words::STOP_WORDS;
-use crate::engines::nano::index::model::{Index, IndexSegment};
-use crate::model::doc::DocId;
+use crate::engines::nano::index::model::{Index, IndexSegment, SegmentDocId};
+use crate::model::doc::ExternalDocId;
 
 pub fn search(
     query: &str,
     index: &dyn Index,
     limit: u64,
-) -> Result<Vec<DocId>> {
+) -> Result<Vec<ExternalDocId>> {
     let mut candidates = Vec::new();
 
     for segment in index.get_segments() {
@@ -38,7 +38,7 @@ fn search_segment(
 ) -> Result<Vec<DocCandidate>> {
     let words: Vec<&str> = query.split_whitespace().collect();
 
-    let mut candidates: HashMap<DocId, DocCandidate> = HashMap::new();
+    let mut candidates: HashMap<SegmentDocId, DocCandidate> = HashMap::new();
 
     for word in words {
         let term = crate::utils::normalize_word(word);
@@ -52,8 +52,8 @@ fn search_segment(
                 let posting = posting?;
                 let relevance = scoring::calc_bm25(
                     scoring::ScoringParams {
-                        doc_term_count: posting.term_count,
-                        doc_total_terms_count: segment
+                        doc_term_freq: posting.term_freq,
+                        doc_total_terms_count: *segment
                             .get_doc_terms_count(posting.docid)?,
                         docs_with_term_count: postings.count as u64,
                         docs_total_count: segment
@@ -67,7 +67,10 @@ fn search_segment(
                     .entry(posting.docid)
                     .and_modify(|c| c.relevance += relevance)
                     .or_insert(DocCandidate {
-                        id: posting.docid,
+                        id: segment
+                            .get_stored_doc(posting.docid)
+                            .context("stored doc should exist")?
+                            .docid,
                         relevance,
                     });
             }

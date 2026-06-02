@@ -3,14 +3,16 @@ use std::collections::btree_map;
 
 use anyhow::Result;
 
-use crate::engines::nano::index::model::DocPosting;
+use crate::engines::nano::index::model::{DocPosting, SegmentDocId};
 
 pub struct MemoryDocPostingsIterator<'a> {
-    postings: btree_map::Values<'a, u64, DocPosting>,
+    postings: btree_map::Values<'a, SegmentDocId, DocPosting>,
 }
 
 impl<'a> MemoryDocPostingsIterator<'a> {
-    pub const fn new(postings: btree_map::Values<'a, u64, DocPosting>) -> Self {
+    pub const fn new(
+        postings: btree_map::Values<'a, SegmentDocId, DocPosting>,
+    ) -> Self {
         Self { postings }
     }
 }

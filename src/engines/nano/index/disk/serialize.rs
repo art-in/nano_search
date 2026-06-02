@@ -1,10 +1,13 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 
 use anyhow::{Context, Result};
 
 use super::model::TermPostingListFileAddress;
-use crate::engines::nano::index::model::{DocPosting, IndexSegmentStats};
+use crate::engines::nano::index::model::{
+    DocPosting, IndexSegmentStats, StoredDoc,
+};
 
 pub trait BinarySerializable: Sized {
     fn serialize(&self, write: &mut dyn Write) -> Result<()>;
@@ -132,6 +135,51 @@ impl BinarySerializable for String {
     }
 }
 
+impl<T> BinarySerializable for Vec<T>
+where
+    T: BinarySerializable,
+{
+    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+        self.len().serialize(write)?;
+        for item in self {
+            item.serialize(write)?;
+        }
+        Ok(())
+    }
+    fn deserialize(read: &mut dyn Read) -> Result<Self> {
+        let len = usize::deserialize(read)?;
+        let mut vec = Self::with_capacity(len);
+        for _ in 0..len {
+            let item = T::deserialize(read)?;
+            vec.push(item);
+        }
+        Ok(vec)
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let len = usize::deserialize_from_slice(data)?;
+        let mut vec = Self::with_capacity(len);
+        for _ in 0..len {
+            let item = T::deserialize_from_slice(data)?;
+            vec.push(item);
+        }
+        Ok(vec)
+    }
+}
+
+/// Deserializes an item at a given index from a slice with a serialized vector.
+pub fn deserialize_vec_item<T>(data: &[u8], index: usize) -> Result<Cow<'_, T>>
+where
+    T: BinarySerializable + Clone,
+{
+    // jump over leading usize number, which is vector length
+    let byte_index = size_of::<usize>() + size_of::<T>() * index;
+    let mut item_slice = data
+        .get(byte_index..)
+        .context("byte index should be in slice bounds")?;
+    let item = T::deserialize_from_slice(&mut item_slice)?;
+    Ok(Cow::Owned(item))
+}
+
 impl<K, V> BinarySerializable for HashMap<K, V>
 where
     K: BinarySerializable + std::cmp::Eq + std::hash::Hash,
@@ -193,19 +241,19 @@ impl BinarySerializable for IndexSegmentStats {
 impl BinarySerializable for DocPosting {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         self.docid.serialize(write)?;
-        self.term_count.serialize(write)?;
+        self.term_freq.serialize(write)?;
         Ok(())
     }
     fn deserialize(read: &mut dyn Read) -> Result<Self> {
         Ok(Self {
-            docid: u64::deserialize(read)?,
-            term_count: u64::deserialize(read)?,
+            docid: u32::deserialize(read)?,
+            term_freq: u32::deserialize(read)?,
         })
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         Ok(Self {
-            docid: u64::deserialize_from_slice(data)?,
-            term_count: u64::deserialize_from_slice(data)?,
+            docid: u32::deserialize_from_slice(data)?,
+            term_freq: u32::deserialize_from_slice(data)?,
         })
     }
 }
@@ -229,6 +277,23 @@ impl BinarySerializable for TermPostingListFileAddress {
             postings_count: usize::deserialize_from_slice(data)?,
             start_byte: usize::deserialize_from_slice(data)?,
             end_byte: usize::deserialize_from_slice(data)?,
+        })
+    }
+}
+
+impl BinarySerializable for StoredDoc {
+    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+        self.docid.serialize(write)?;
+        Ok(())
+    }
+    fn deserialize(read: &mut dyn Read) -> Result<Self> {
+        Ok(Self {
+            docid: u64::deserialize(read)?,
+        })
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        Ok(Self {
+            docid: u64::deserialize_from_slice(data)?,
         })
     }
 }

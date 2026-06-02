@@ -2,7 +2,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use super::doc::{Doc, DocId};
+use super::doc::Doc;
+use crate::model::doc::ExternalDocId;
 
 pub trait SearchEngine {
     /// Gets search engine name for debug logging purposes.
@@ -33,7 +34,7 @@ pub trait SearchEngine {
     ) -> Result<()>;
 
     /// Searches for documents relevant to passed query in the index.
-    fn search(&self, query: &str, limit: u64) -> Result<Vec<DocId>>;
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<ExternalDocId>>;
 }
 
 #[derive(bon::Builder)]
