@@ -9,11 +9,11 @@ use crossbeam_channel::Receiver;
 use itertools::Itertools;
 use memmap2::Mmap;
 
+use super::DiskIndexOptions;
 use super::model::{
     DiskIndex, DiskIndexSegment, IndexFile, TermPostingListFileAddress,
 };
-use super::serialize::BinarySerializable;
-use crate::engines::nano::index::disk::DiskIndexOptions;
+use super::serializer::{BinarySerializable, PostingsSerializer};
 use crate::engines::nano::index::memory::{MemoryIndex, build_memory_index};
 use crate::engines::nano::index::model::IndexSegmentStats;
 use crate::model::doc::Doc;
@@ -113,9 +113,14 @@ fn build_disk_index_segment(
 
     for (term, posting_list) in memory_index.terms {
         let start_byte = postings_file.stream_position()?;
+        // TODO: maybe it's better to reuse serializer for all lists, so we do
+        // need to reallocate block for each list
+        let mut serializer = PostingsSerializer::new(&mut postings_file);
         for posting in posting_list.values() {
-            posting.serialize(&mut postings_file)?;
+            serializer.write_posting(posting)?;
         }
+        serializer.flush()?;
+        drop(serializer);
         let end_byte = postings_file.stream_position()?;
 
         let address = TermPostingListFileAddress {

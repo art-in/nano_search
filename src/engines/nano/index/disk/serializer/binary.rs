@@ -4,7 +4,7 @@ use std::io::{Read, Write};
 
 use anyhow::{Context, Result};
 
-use super::model::TermPostingListFileAddress;
+use crate::engines::nano::index::disk::model::TermPostingListFileAddress;
 use crate::engines::nano::index::model::{
     DocPosting, IndexSegmentStats, StoredDoc,
 };
@@ -13,6 +13,26 @@ pub trait BinarySerializable: Sized {
     fn serialize(&self, write: &mut dyn Write) -> Result<()>;
     fn deserialize(read: &mut dyn Read) -> Result<Self>;
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self>;
+}
+
+impl BinarySerializable for u8 {
+    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+        write.write_all(&self.to_le_bytes())?;
+        Ok(())
+    }
+    fn deserialize(read: &mut dyn Read) -> Result<Self> {
+        #[allow(clippy::use_self)]
+        let mut buf: [u8; 1] = [0; 1];
+        read.read_exact(&mut buf)?;
+        Ok(Self::from_le_bytes(buf))
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        let (bytes, rest) = data
+            .split_first_chunk::<1>()
+            .context("should read u8 from slice")?;
+        *data = rest;
+        Ok(Self::from_le_bytes(*bytes))
+    }
 }
 
 impl BinarySerializable for u16 {
@@ -53,6 +73,8 @@ impl BinarySerializable for u32 {
     }
 }
 
+// TODO: do not serialize usize type, because it is architecture dependant, use
+// u32/u64 instead.
 impl BinarySerializable for usize {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         write.write_all(&self.to_le_bytes())?;
@@ -127,7 +149,10 @@ impl BinarySerializable for String {
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         let string_length = usize::deserialize_from_slice(data)?;
-        let (mut bytes, rest) = data.split_at(string_length);
+        let (mut bytes, rest) = data
+            .get(..string_length)
+            .zip(data.get(string_length..))
+            .context("string length should be in bounds of the slice")?;
         *data = rest;
         let mut string = Self::with_capacity(string_length);
         bytes.read_to_string(&mut string)?;
@@ -167,6 +192,9 @@ where
 }
 
 /// Deserializes an item at a given index from a slice with a serialized vector.
+///
+/// Caution: it only works for fixed size types, like numbers or
+/// [`DocPosting`]-s, but not for strings or hashmaps, etc.
 pub fn deserialize_vec_item<T>(data: &[u8], index: usize) -> Result<Cow<'_, T>>
 where
     T: BinarySerializable + Clone,

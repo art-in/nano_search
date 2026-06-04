@@ -6,7 +6,7 @@ use anyhow::Result;
 use memmap2::Mmap;
 
 use super::iterator::DiskDocPostingsIterator;
-use crate::engines::nano::index::disk::serialize::deserialize_vec_item;
+use crate::engines::nano::index::disk::serializer::deserialize_vec_item;
 use crate::engines::nano::index::model::{
     DocPostingsForTerm, Index, IndexSegment, IndexSegmentStats, SegmentDocId,
     StoredDoc, Term,

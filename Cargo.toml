@@ -88,11 +88,7 @@ significant_drop_tightening = "allow"
 panic = "warn"
 unwrap_used = "warn"
 expect_used = "warn"
-#
-# [[bench]]
-# name = "engine"
-# harness = false
-#
+
 [[bench]]
 name = "engine"
 harness = false
