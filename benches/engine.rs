@@ -77,7 +77,7 @@ main!(
         // collect and show CPU metrics
         .tool(Callgrind::default().soft_limits([(EventKind::Ir, 5.0)]))
         // collect and show RAM metrics
-        .tool(Dhat::default().soft_limits([(DhatMetric::TotalBytes, 5.0)]))
+        .tool(Dhat::default().soft_limits([(DhatMetric::AtTGmaxBytes, 5.0)]))
         .output_format(
             OutputFormat::default()
                 // do not highlight small variation of results as a change.
