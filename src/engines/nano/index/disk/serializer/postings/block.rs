@@ -3,6 +3,9 @@ use std::io::Write;
 use anyhow::{Result, bail};
 
 use crate::engines::nano::index::disk::serializer::binary::BinarySerializable;
+use crate::engines::nano::index::disk::serializer::compression::{
+    decode_sorted, decode_unsorted, encode_sorted, encode_unsorted,
+};
 use crate::engines::nano::index::model::{DocPosting, SegmentDocId};
 
 const BLOCK_CAPACITY: usize = 128;
@@ -72,12 +75,8 @@ impl DocPostingsBlock {
     pub fn serialize(&self, output: &mut dyn Write) -> Result<()> {
         (self.len as u16).serialize(output)?;
 
-        for idx in 0..self.len {
-            self.docids[idx].serialize(output)?;
-        }
-        for idx in 0..self.len {
-            self.term_freqs[idx].serialize(output)?;
-        }
+        encode_sorted(&self.docids, self.len, output)?;
+        encode_unsorted(&self.term_freqs, self.len, output)?;
 
         Ok(())
     }
@@ -88,12 +87,8 @@ impl DocPostingsBlock {
             bail!("block length should be in bounds");
         }
 
-        for idx in 0..self.len {
-            self.docids[idx] = u32::deserialize_from_slice(input)?;
-        }
-        for idx in 0..self.len {
-            self.term_freqs[idx] = u32::deserialize_from_slice(input)?;
-        }
+        decode_sorted(self.len, input, &mut self.docids)?;
+        decode_unsorted(self.len, input, &mut self.term_freqs)?;
 
         Ok(())
     }

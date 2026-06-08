@@ -15,8 +15,6 @@ use crate::engines::nano::index::model::DocPosting;
 /// - `[docids]` - Delta-encoded and bit-packed series of sorted document IDs.
 /// - `[freqs]`  - Bit-packed series of unsorted term frequencies.
 ///
-/// TODO: add compression encoders
-///
 /// Document IDs and frequencies are interleaved block-by-block using a
 /// Structure of Arrays (SOA) layout. This maximizes spatial locality because
 /// posting lists are currently always read sequentially from start to finish,
