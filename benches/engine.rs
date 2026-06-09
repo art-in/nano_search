@@ -2,7 +2,11 @@ use anyhow::Result;
 use gungraun::prelude::*;
 use gungraun::{Callgrind, Dhat, DhatMetric, EventKind, OutputFormat};
 
-static DATASET: &str = "cisi";
+// dataset was selected by following criteria:
+// - not too small, so it has representative amount of valuable work
+// - not too big, so bench can finish in under couple of minutes max
+// - less than 10% of non-valuable work (harness itself, dataset parsing, etc.)
+static DATASET: &str = "scifact";
 
 fn create_index_command(engine: &str) -> gungraun::Command {
     gungraun::Command::new(env!("CARGO_BIN_EXE_nano_search"))
