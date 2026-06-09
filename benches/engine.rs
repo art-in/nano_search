@@ -2,10 +2,12 @@ use anyhow::Result;
 use gungraun::prelude::*;
 use gungraun::{Callgrind, Dhat, DhatMetric, EventKind, OutputFormat};
 
+static DATASET: &str = "cisi";
+
 fn create_index_command(engine: &str) -> gungraun::Command {
     gungraun::Command::new(env!("CARGO_BIN_EXE_nano_search"))
         .arg(format!("--engines={engine}"))
-        .arg("--dataset=cisi")
+        .arg(format!("--dataset={DATASET}"))
         .arg("--parent-index-dir=/tmp")
         .arg("index")
         .arg("--threads=1")
@@ -13,14 +15,14 @@ fn create_index_command(engine: &str) -> gungraun::Command {
 }
 
 #[binary_benchmark]
-#[bench::index(args = ("tantivy"))]
-fn bench_index_tantivy(engine: &str) -> gungraun::Command {
+#[bench::index(args = ("nano"))]
+fn bench_index_nano(engine: &str) -> gungraun::Command {
     create_index_command(engine)
 }
 
 #[binary_benchmark]
-#[bench::index(args = ("nano"))]
-fn bench_index_nano(engine: &str) -> gungraun::Command {
+#[bench::index(args = ("tantivy"))]
+fn bench_index_tantivy(engine: &str) -> gungraun::Command {
     create_index_command(engine)
 }
 
@@ -30,14 +32,14 @@ binary_benchmark_group!(
     // this is the main reason to create a group of several bench functions,
     // instead of single one with different arguments
     compare_by_id = true,
-    benchmarks = [bench_index_tantivy, bench_index_nano]
+    benchmarks = [bench_index_nano, bench_index_tantivy]
 );
 
 #[allow(clippy::expect_used)]
 fn setup_eval(engine: &str) {
     std::process::Command::new(env!("CARGO_BIN_EXE_nano_search"))
         .arg(format!("--engines={engine}"))
-        .arg("--dataset=cisi")
+        .arg(format!("--dataset={DATASET}"))
         .arg("--parent-index-dir=/tmp")
         .arg("index")
         .arg("--threads=1")
@@ -48,16 +50,10 @@ fn setup_eval(engine: &str) {
 fn create_eval_command(engine: &str) -> gungraun::Command {
     gungraun::Command::new(env!("CARGO_BIN_EXE_nano_search"))
         .arg(format!("--engines={engine}"))
-        .arg("--dataset=cisi")
+        .arg(format!("--dataset={DATASET}"))
         .arg("--parent-index-dir=/tmp")
         .arg("eval")
         .build()
-}
-
-#[binary_benchmark]
-#[bench::eval(args = ("tantivy"), setup = setup_eval)]
-fn bench_eval_tantivy(engine: &str) -> gungraun::Command {
-    create_eval_command(engine)
 }
 
 #[binary_benchmark]
@@ -66,10 +62,16 @@ fn bench_eval_nano(engine: &str) -> gungraun::Command {
     create_eval_command(engine)
 }
 
+#[binary_benchmark]
+#[bench::eval(args = ("tantivy"), setup = setup_eval)]
+fn bench_eval_tantivy(engine: &str) -> gungraun::Command {
+    create_eval_command(engine)
+}
+
 binary_benchmark_group!(
     name = bench_eval_group,
     compare_by_id = true,
-    benchmarks = [bench_eval_tantivy, bench_eval_nano]
+    benchmarks = [bench_eval_nano, bench_eval_tantivy]
 );
 
 main!(
