@@ -73,29 +73,6 @@ impl BinarySerializable for u32 {
     }
 }
 
-// TODO: do not serialize usize type, because it is architecture dependant, use
-// u32/u64 instead.
-impl BinarySerializable for usize {
-    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
-        write.write_all(&self.to_le_bytes())?;
-        Ok(())
-    }
-    fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        const SIZE: usize = std::mem::size_of::<usize>();
-        let mut buf: [u8; SIZE] = [0; SIZE];
-        read.read_exact(&mut buf)?;
-        Ok(Self::from_le_bytes(buf))
-    }
-    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        const SIZE: usize = std::mem::size_of::<usize>();
-        let (bytes, rest) = data
-            .split_first_chunk::<SIZE>()
-            .context("should read usize from slice")?;
-        *data = rest;
-        Ok(Self::from_le_bytes(*bytes))
-    }
-}
-
 impl BinarySerializable for u64 {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
         write.write_all(&self.to_le_bytes())?;
@@ -112,6 +89,18 @@ impl BinarySerializable for u64 {
             .context("should read u64 from slice")?;
         *data = rest;
         Ok(Self::from_le_bytes(*bytes))
+    }
+}
+
+impl BinarySerializable for usize {
+    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+        (*self as u64).serialize(write)
+    }
+    fn deserialize(read: &mut dyn Read) -> Result<Self> {
+        Ok(u64::deserialize(read)? as Self)
+    }
+    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+        Ok(u64::deserialize_from_slice(data)? as Self)
     }
 }
 
