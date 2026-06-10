@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use super::block::DocPostingsBlock;
 use crate::engines::nano::index::model::DocPosting;
+use crate::utils::CountingWriter;
 
 /// Serializer for [`DocPosting`]-lists.
 ///
@@ -28,13 +29,13 @@ use crate::engines::nano::index::model::DocPosting;
 /// reading unnecessary blocks during intersections.
 ///
 /// Lucene and Tantivy use same IDs+freqs interleaved block layout + skip lists.
-pub struct PostingsSerializer<'a> {
+pub struct PostingsSerializer<'a, W: Write> {
     block: DocPostingsBlock,
-    output: &'a mut dyn Write,
+    output: &'a mut CountingWriter<W>,
 }
 
-impl<'a> PostingsSerializer<'a> {
-    pub fn new(output: &'a mut dyn Write) -> Self {
+impl<'a, W: Write> PostingsSerializer<'a, W> {
+    pub const fn new(output: &'a mut CountingWriter<W>) -> Self {
         Self {
             block: DocPostingsBlock::new(),
             output,
@@ -53,6 +54,10 @@ impl<'a> PostingsSerializer<'a> {
         Ok(())
     }
 
+    pub const fn get_written_bytes(&self) -> usize {
+        self.output.get_written_bytes()
+    }
+
     /// Flushes internal buffer to output.
     ///
     /// It is required to flush changes explicitly before [`drop()`], otherwise
@@ -63,12 +68,11 @@ impl<'a> PostingsSerializer<'a> {
             self.block.serialize(self.output)?;
             self.block.clean();
         }
-        self.output.flush()?;
         Ok(())
     }
 }
 
-impl Drop for PostingsSerializer<'_> {
+impl<W: Write> Drop for PostingsSerializer<'_, W> {
     fn drop(&mut self) {
         assert!(
             self.block.is_empty(),

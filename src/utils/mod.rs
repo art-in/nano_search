@@ -24,6 +24,9 @@ pub use format_number_si::*;
 mod get_dir_size;
 pub use get_dir_size::*;
 
+mod counting_writer;
+pub use counting_writer::CountingWriter;
+
 #[cfg(test)]
 pub mod test_docs_iterator;
 

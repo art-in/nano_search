@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{BufReader, BufWriter, Seek, Write};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 
@@ -17,6 +17,7 @@ use super::serializer::{BinarySerializable, PostingsSerializer};
 use crate::engines::nano::index::memory::{MemoryIndex, build_memory_index};
 use crate::engines::nano::index::model::IndexSegmentStats;
 use crate::model::doc::Doc;
+use crate::utils::CountingWriter;
 
 const SEGMENT_DIR_PREFIX: &str = "segment-";
 
@@ -111,27 +112,29 @@ fn build_disk_index_segment(
 
     let mut terms = HashMap::new();
 
+    let mut postings_writer = CountingWriter::new(postings_file);
+    let mut postings_serializer = PostingsSerializer::new(&mut postings_writer);
+
     for (term, posting_list) in memory_index.terms {
-        let start_byte = postings_file.stream_position()?;
-        // TODO: maybe it's better to reuse serializer for all lists, so we do
-        // need to reallocate block for each list
-        let mut serializer = PostingsSerializer::new(&mut postings_file);
+        let start_byte = postings_serializer.get_written_bytes();
         for posting in posting_list.values() {
-            serializer.write_posting(posting)?;
+            postings_serializer.write_posting(posting)?;
         }
-        serializer.flush()?;
-        drop(serializer);
-        let end_byte = postings_file.stream_position()?;
+        postings_serializer.flush()?;
+        let end_byte = postings_serializer.get_written_bytes();
 
         let address = TermPostingListFileAddress {
             postings_count: posting_list.len(),
-            start_byte: start_byte as usize,
-            end_byte: end_byte as usize,
+            start_byte,
+            end_byte,
         };
 
         terms.insert(term, address);
     }
 
+    drop(postings_serializer);
+
+    postings_file = postings_writer.into_inner();
     postings_file.flush()?;
     drop(postings_file);
 

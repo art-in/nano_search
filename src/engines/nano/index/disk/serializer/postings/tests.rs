@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 
 use super::serializer::{PostingsDeserializer, PostingsSerializer};
 use crate::engines::nano::index::model::DocPosting;
+use crate::utils::CountingWriter;
 
 #[test]
 fn test_postings_serializer() -> Result<()> {
@@ -13,11 +14,12 @@ fn test_postings_serializer() -> Result<()> {
 }
 
 fn assert_postings_serializer(postings_count: u32) -> Result<()> {
-    let mut storage = Vec::<u8>::new();
+    let storage = Vec::<u8>::new();
+    let mut storage_writer = CountingWriter::new(storage);
 
     // serialize
     {
-        let mut serializer = PostingsSerializer::new(&mut storage);
+        let mut serializer = PostingsSerializer::new(&mut storage_writer);
 
         for idx in 0..postings_count {
             serializer.write_posting(&DocPosting {
@@ -31,6 +33,7 @@ fn assert_postings_serializer(postings_count: u32) -> Result<()> {
 
     // deserialize
     {
+        let storage = storage_writer.into_inner();
         let deserializer = PostingsDeserializer::new(&storage[..]);
 
         let mut actual_postings_count = 0;
