@@ -17,8 +17,6 @@ impl<'a> DiskDocPostingsIterator<'a> {
         address: &TermPostingListFileAddress,
     ) -> Self {
         Self {
-            // TODO: find a way to reuse block buffer inside serializer to not
-            // allocate it for each search query
             deserializer: PostingsDeserializer::new(
                 &postings_file[address.start_byte..address.end_byte],
             ),

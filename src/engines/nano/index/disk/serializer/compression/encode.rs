@@ -1,3 +1,13 @@
+//! Integer compression procedures.
+//!
+//! For sorted arrays, it uses delta-encoding and bit-packing.
+//! For unsorted arrays, it directly bit-packs input numbers.
+//!
+//! Technique explanation: <https://fulmicoton.com/posts/bitpacking/>
+//!
+//! The current implementation intentionally prioritizes simplicity and
+//! readability over performance, so it does not use SIMD vectorization.
+
 use std::io::Write;
 
 use anyhow::{Context, Result, ensure};
@@ -7,40 +17,28 @@ use crate::engines::nano::index::disk::serializer::compression::bitpacker::{
     BitPacker, BitUnpacker,
 };
 
-// Encoding currently implemented as simple and understandable as possible, so
-// it doesn't leverage SIMD vectorization, which is standard for such task. It
-// allows us to use simple stateless routines, otherwise it would require to add
-// intermediate buffer wrapped into some Encoder struct, which would be nice not
-// to reallocated for each encode/decode operation, so it'll have to be reused
-// and passed along inside serializer
-
-pub fn encode_sorted(
-    nums: &[u32],
-    len: usize,
-    output: &mut dyn Write,
-) -> Result<()> {
-    ensure!(len > 0, "len should be greater than zero");
-    ensure!(nums.len() >= len, "len should be in bounds of input");
+pub fn encode_sorted(input: &[u32], output: &mut dyn Write) -> Result<()> {
+    debug_assert!(!input.is_empty(), "input nums should not be empty");
 
     // calculate max delta and its bit width.
     // we do not store deltas anywhere, and later will calculate them again,
     // only because recalculation is faster than writing/reading from memory
     let mut max_delta = 0u32;
-    for i in 1..len {
-        ensure!(nums[i] >= nums[i - 1], "input numbers should be sorted");
-        let delta = nums[i] - nums[i - 1];
+    for i in 1..input.len() {
+        ensure!(input[i] >= input[i - 1], "input numbers should be sorted");
+        let delta = input[i] - input[i - 1];
         max_delta = delta.max(max_delta);
     }
     let bit_width = max_delta.checked_ilog2().map_or(1, |log| log + 1) as u8;
 
     // serialize headers
-    nums[0].serialize(output)?;
+    input[0].serialize(output)?;
     bit_width.serialize(output)?;
 
     // pack deltas
-    let mut packer = BitPacker::new(output, bit_width);
-    for i in 1..len {
-        let delta = nums[i] - nums[i - 1];
+    let mut packer = BitPacker::new(bit_width, output);
+    for i in 1..input.len() {
+        let delta = input[i] - input[i - 1];
         packer.write_num(delta)?;
     }
     packer.flush()?;
@@ -48,14 +46,7 @@ pub fn encode_sorted(
     Ok(())
 }
 
-pub fn decode_sorted(
-    len: usize,
-    input: &mut &[u8],
-    output: &mut [u32],
-) -> Result<()> {
-    ensure!(len > 0, "len should be greater than zero");
-    ensure!(output.len() >= len, "len should be in bounds of output");
-
+pub fn decode_sorted(input: &mut &[u8], output: &mut [u32]) -> Result<()> {
     // deserialize headers
     let initial = u32::deserialize_from_slice(input)?;
     let bit_width = u8::deserialize_from_slice(input)?;
@@ -68,8 +59,8 @@ pub fn decode_sorted(
     output[0] = initial;
 
     // unpack numbers
-    let mut unpacker = BitUnpacker::new(input, bit_width);
-    for i in 1..len {
+    let mut unpacker = BitUnpacker::new(bit_width, input);
+    for i in 1..output.len() {
         let delta = unpacker.read_num()?.context("number should be read")?;
         output[i] = output[i - 1]
             .checked_add(delta)
@@ -79,17 +70,12 @@ pub fn decode_sorted(
     Ok(())
 }
 
-pub fn encode_unsorted(
-    nums: &[u32],
-    len: usize,
-    output: &mut dyn Write,
-) -> Result<()> {
-    ensure!(len > 0, "len should be greater than zero");
-    ensure!(nums.len() >= len, "len should be in bounds of input");
+pub fn encode_unsorted(input: &[u32], output: &mut dyn Write) -> Result<()> {
+    debug_assert!(!input.is_empty(), "input nums should not be empty");
 
     // find the max number and calculate its bit width
-    let mut max_num = nums[0];
-    for &num in nums.iter().take(len).skip(1) {
+    let mut max_num = input[0];
+    for &num in input.iter().skip(1) {
         max_num = num.max(max_num);
     }
     let bit_width = max_num.checked_ilog2().map_or(1, |log| log + 1) as u8;
@@ -98,8 +84,8 @@ pub fn encode_unsorted(
     bit_width.serialize(output)?;
 
     // pack numbers
-    let mut packer = BitPacker::new(output, bit_width);
-    for &num in nums.iter().take(len) {
+    let mut packer = BitPacker::new(bit_width, output);
+    for &num in input {
         packer.write_num(num)?;
     }
     packer.flush()?;
@@ -107,14 +93,7 @@ pub fn encode_unsorted(
     Ok(())
 }
 
-pub fn decode_unsorted(
-    len: usize,
-    input: &mut &[u8],
-    output: &mut [u32],
-) -> Result<()> {
-    ensure!(len > 0, "len should be greater than zero");
-    ensure!(output.len() >= len, "len should be in bounds of output");
-
+pub fn decode_unsorted(input: &mut &[u8], output: &mut [u32]) -> Result<()> {
     // deserialize headers
     let bit_width = u8::deserialize_from_slice(input)?;
 
@@ -124,8 +103,8 @@ pub fn decode_unsorted(
     );
 
     // unpack numbers
-    let mut unpacker = BitUnpacker::new(input, bit_width);
-    for num in output.iter_mut().take(len) {
+    let mut unpacker = BitUnpacker::new(bit_width, input);
+    for num in output {
         *num = unpacker.read_num()?.context("number should be read")?;
     }
 

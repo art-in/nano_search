@@ -116,6 +116,7 @@ impl IndexSegment for DiskIndexSegment {
             |addr| {
                 Ok(Some(DocPostingsForTerm {
                     count: addr.postings_count,
+                    // TODO: avoid heap-allocation on hot path - try enum
                     iterator: Box::new(DiskDocPostingsIterator::new(
                         &self.postings_file,
                         addr,

@@ -1,55 +1,54 @@
 use std::io::Write;
 
-use anyhow::{Result, bail, ensure};
+use anyhow::{Result, bail};
 
 use crate::engines::nano::index::disk::serializer::BinarySerializable;
 
+/// A streaming bit-packer that packs integers into a custom `bit_width`
+/// and writes them tightly into an `output` byte stream.
 pub struct BitPacker<'a> {
-    accumulator: u64,
-    bits_count: usize,
+    buffer: u64,
+    buffer_bits: usize,
     bit_width: usize,
     output: &'a mut dyn Write,
 }
 
 impl<'a> BitPacker<'a> {
-    pub fn new(output: &'a mut dyn Write, bit_width: u8) -> Self {
+    pub fn new(bit_width: u8, output: &'a mut dyn Write) -> Self {
         Self {
-            accumulator: 0,
-            bits_count: 0,
+            buffer: 0,
+            buffer_bits: 0,
             bit_width: bit_width as usize,
             output,
         }
     }
 
     pub fn write_num(&mut self, num: u32) -> Result<()> {
-        ensure!(
+        debug_assert!(
             self.bit_width == 32 || num < (1u32 << self.bit_width),
             "input number should fit into target bit width"
         );
 
-        self.accumulator |= (num as u64) << self.bits_count;
-        self.bits_count += self.bit_width;
+        self.buffer |= (num as u64) << self.buffer_bits;
+        self.buffer_bits += self.bit_width;
 
-        while self.bits_count >= 8 {
-            let n = self.accumulator as u8;
-            n.serialize(self.output)?;
-            self.accumulator >>= 8;
-            self.bits_count -= 8;
+        while self.buffer_bits >= 8 {
+            let byte = self.buffer as u8;
+            byte.serialize(self.output)?;
+            self.buffer >>= 8;
+            self.buffer_bits -= 8;
         }
 
         Ok(())
     }
 
     pub fn flush(&mut self) -> Result<()> {
-        if self.bits_count > 0 {
-            let n = self.accumulator as u8;
-            n.serialize(self.output)?;
-            self.bits_count = 0;
-            self.accumulator = 0;
+        if self.buffer_bits > 0 {
+            let byte = self.buffer as u8;
+            byte.serialize(self.output)?;
+            self.buffer_bits = 0;
+            self.buffer = 0;
         }
-
-        self.output.flush()?;
-
         Ok(())
     }
 }
@@ -57,38 +56,38 @@ impl<'a> BitPacker<'a> {
 impl Drop for BitPacker<'_> {
     fn drop(&mut self) {
         assert!(
-            self.bits_count == 0 && self.accumulator == 0,
+            self.buffer_bits == 0 && self.buffer == 0,
             "bitpacker should be explicitly flushed before drop"
         );
     }
 }
 
 pub struct BitUnpacker<'a, 'b> {
-    accumulator: u64,
-    bits_count: usize,
+    buffer: u64,
+    buffer_bits: usize,
     bit_width: usize,
     input: &'a mut &'b [u8],
 }
 
 impl<'a, 'b> BitUnpacker<'a, 'b> {
-    pub const fn new(input: &'a mut &'b [u8], bit_width: u8) -> Self {
+    pub const fn new(bit_width: u8, input: &'a mut &'b [u8]) -> Self {
         Self {
-            accumulator: 0,
-            bits_count: 0,
+            buffer: 0,
+            buffer_bits: 0,
             bit_width: bit_width as usize,
             input,
         }
     }
 
     pub fn read_num(&mut self) -> Result<Option<u32>> {
-        while self.bits_count < self.bit_width {
+        while self.buffer_bits < self.bit_width {
             if let Some((&next_byte, rest)) = self.input.split_first() {
                 *self.input = rest;
 
-                self.accumulator |= (next_byte as u64) << self.bits_count;
-                self.bits_count += 8;
+                self.buffer |= (next_byte as u64) << self.buffer_bits;
+                self.buffer_bits += 8;
             } else {
-                if self.bits_count == 0 {
+                if self.buffer_bits == 0 {
                     // input stream is exhausted
                     return Ok(None);
                 }
@@ -106,9 +105,9 @@ impl<'a, 'b> BitUnpacker<'a, 'b> {
             (1 << self.bit_width) - 1
         };
 
-        let num = (self.accumulator as u32) & mask;
-        self.accumulator >>= self.bit_width;
-        self.bits_count -= self.bit_width;
+        let num = (self.buffer as u32) & mask;
+        self.buffer >>= self.bit_width;
+        self.buffer_bits -= self.bit_width;
 
         Ok(Some(num))
     }

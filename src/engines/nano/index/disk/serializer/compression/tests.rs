@@ -30,12 +30,12 @@ fn test_encode_sorted() -> Result<()> {
 
         let original_nums = generate_sorted_numbers(len);
 
-        encode_sorted(&original_nums, len, &mut storage)?;
+        encode_sorted(&original_nums, &mut storage)?;
 
         let mut input: &[u8] = &storage[..];
         let mut decoded_nums = [0u32; 128];
 
-        decode_sorted(len, &mut input, &mut decoded_nums)?;
+        decode_sorted(&mut input, &mut decoded_nums[..len])?;
 
         assert_eq!(original_nums[..], decoded_nums[..len]);
         assert!(input.is_empty());
@@ -53,12 +53,12 @@ fn test_encode_unsorted() -> Result<()> {
 
         let original_nums = generate_unsorted_numbers(len);
 
-        encode_unsorted(&original_nums, len, &mut storage)?;
+        encode_unsorted(&original_nums, &mut storage)?;
 
         let mut input: &[u8] = &storage[..];
         let mut decoded_nums = [0u32; 128];
 
-        decode_unsorted(len, &mut input, &mut decoded_nums)?;
+        decode_unsorted(&mut input, &mut decoded_nums[..len])?;
 
         assert_eq!(original_nums[..], decoded_nums[..len],);
         assert!(input.is_empty());
@@ -77,17 +77,17 @@ fn test_encode_multiblock() -> Result<()> {
     let block_1_nums = generate_sorted_numbers(block_1_len);
     let block_2_nums = generate_unsorted_numbers(block_2_len);
 
-    encode_sorted(&block_1_nums, block_1_len, &mut storage)?;
-    encode_unsorted(&block_2_nums, block_2_len, &mut storage)?;
+    encode_sorted(&block_1_nums, &mut storage)?;
+    encode_unsorted(&block_2_nums, &mut storage)?;
 
     let mut input: &[u8] = &storage[..];
 
     let mut block_1_decoded = [0u32; 128];
-    decode_sorted(block_1_len, &mut input, &mut block_1_decoded)?;
+    decode_sorted(&mut input, &mut block_1_decoded[..block_1_len])?;
     assert_eq!(block_1_nums[..], block_1_decoded[..block_1_len]);
 
     let mut block_2_decoded = [0u32; 128];
-    decode_unsorted(block_2_len, &mut input, &mut block_2_decoded)?;
+    decode_unsorted(&mut input, &mut block_2_decoded[..block_2_len])?;
 
     assert_eq!(block_2_nums[..], block_2_decoded[..block_2_len]);
     assert!(input.is_empty());
@@ -100,12 +100,12 @@ fn test_encode_sorted_single_value_max_u32() -> Result<()> {
     let original_nums = [u32::MAX];
 
     let mut storage = Vec::new();
-    encode_sorted(&original_nums, 1, &mut storage)?;
+    encode_sorted(&original_nums, &mut storage)?;
 
     let mut input: &[u8] = &storage;
     let mut decoded_nums = [0u32; 1];
 
-    decode_sorted(1, &mut input, &mut decoded_nums)?;
+    decode_sorted(&mut input, &mut decoded_nums)?;
 
     assert_eq!(original_nums, decoded_nums);
     assert!(input.is_empty());
@@ -118,12 +118,12 @@ fn test_encode_sorted_max_delta_u32() -> Result<()> {
     let original_nums = [0, u32::MAX];
 
     let mut storage = Vec::new();
-    encode_sorted(&original_nums, 2, &mut storage)?;
+    encode_sorted(&original_nums, &mut storage)?;
 
     let mut input: &[u8] = &storage;
     let mut decoded_nums = [0u32; 2];
 
-    decode_sorted(2, &mut input, &mut decoded_nums)?;
+    decode_sorted(&mut input, &mut decoded_nums)?;
 
     assert_eq!(original_nums, decoded_nums);
     assert!(input.is_empty());
@@ -136,12 +136,12 @@ fn test_encode_unsorted_all_zeros() -> Result<()> {
     let original_nums = [0u32; 32];
 
     let mut storage = Vec::new();
-    encode_unsorted(&original_nums, original_nums.len(), &mut storage)?;
+    encode_unsorted(&original_nums, &mut storage)?;
 
     let mut input: &[u8] = &storage;
     let mut decoded_nums = [0u32; 32];
 
-    decode_unsorted(original_nums.len(), &mut input, &mut decoded_nums)?;
+    decode_unsorted(&mut input, &mut decoded_nums[..original_nums.len()])?;
 
     assert_eq!(original_nums, decoded_nums);
     assert!(input.is_empty());
@@ -154,12 +154,12 @@ fn test_encode_unsorted_single_bit_values() -> Result<()> {
     let original_nums = [0, 1, 0, 1, 1, 0, 1, 0, 1];
 
     let mut storage = Vec::new();
-    encode_unsorted(&original_nums, original_nums.len(), &mut storage)?;
+    encode_unsorted(&original_nums, &mut storage)?;
 
     let mut input: &[u8] = &storage;
     let mut decoded_nums = [0u32; 16];
 
-    decode_unsorted(original_nums.len(), &mut input, &mut decoded_nums)?;
+    decode_unsorted(&mut input, &mut decoded_nums[..original_nums.len()])?;
 
     assert_eq!(original_nums[..], decoded_nums[..original_nums.len()]);
     assert!(input.is_empty());
@@ -171,14 +171,14 @@ fn test_encode_unsorted_single_bit_values() -> Result<()> {
 fn test_decode_unsorted_input_exhaust() -> Result<()> {
     let mut storage = Vec::<u8>::new();
     let original_nums = generate_unsorted_numbers(10);
-    encode_unsorted(&original_nums, 10, &mut storage)?;
+    encode_unsorted(&original_nums, &mut storage)?;
 
     // intentionally truncate the buffer by hacking off the last byte
     let truncated_len = storage.len() - 1;
     let mut input: &[u8] = &storage[..truncated_len];
     let mut decoded_nums = [0u32; 128];
 
-    let result = decode_unsorted(10, &mut input, &mut decoded_nums);
+    let result = decode_unsorted(&mut input, &mut decoded_nums[..10]);
 
     assert!(result.is_err());
 
@@ -198,7 +198,7 @@ fn test_decode_unsorted_bit_width_zero() {
 
     let mut output = [0u32; 1];
 
-    let result = decode_unsorted(1, &mut input, &mut output);
+    let result = decode_unsorted(&mut input, &mut output);
 
     assert!(result.is_err());
 
@@ -212,7 +212,7 @@ fn test_encode_sorted_unsorted_input() {
     let nums = [10, 5];
 
     let mut storage = Vec::new();
-    let result = encode_sorted(&nums, nums.len(), &mut storage);
+    let result = encode_sorted(&nums, &mut storage);
 
     assert!(result.is_err());
 
@@ -220,26 +220,3 @@ fn test_encode_sorted_unsorted_input() {
         assert!(msg.to_string().contains("input numbers should be sorted"));
     }
 }
-
-#[test]
-fn test_decode_sorted_output_too_small() {
-    let original = [10, 20, 30];
-
-    let mut storage = Vec::new();
-    let _ = encode_sorted(&original, original.len(), &mut storage);
-
-    let mut input: &[u8] = &storage;
-    let mut output = [0u32; 2];
-
-    let result = decode_sorted(3, &mut input, &mut output);
-
-    assert!(result.is_err());
-
-    if let Err(msg) = result {
-        assert!(
-            msg.to_string()
-                .contains("len should be in bounds of output")
-        );
-    }
-}
-

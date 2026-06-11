@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use anyhow::{Result, bail};
+use anyhow::{Result, ensure};
 
 use crate::engines::nano::index::disk::serializer::binary::BinarySerializable;
 use crate::engines::nano::index::disk::serializer::compression::{
@@ -44,51 +44,53 @@ impl DocPostingsBlock {
         self.len == 0
     }
 
-    pub const fn clean(&mut self) {
+    pub const fn clear(&mut self) {
         self.len = 0;
     }
 
-    pub fn add_posting(&mut self, posting: &DocPosting) -> Result<()> {
-        if self.is_full() {
-            bail!("postings should not exceed block capacity");
-        }
+    pub fn add_posting(&mut self, posting: &DocPosting) {
+        debug_assert!(
+            !self.is_full(),
+            "postings should not exceed block capacity"
+        );
 
         self.docids[self.len] = posting.docid;
         self.term_freqs[self.len] = posting.term_freq;
 
         self.len += 1;
-
-        Ok(())
     }
 
-    pub fn get_posting(&self, idx: usize) -> Result<DocPosting> {
-        if idx >= self.len {
-            bail!("index of posting should be in bounds of the block");
-        }
+    pub fn get_posting(&self, idx: usize) -> DocPosting {
+        debug_assert!(
+            idx < self.len,
+            "index of posting should be in bounds of the block"
+        );
 
-        Ok(DocPosting {
+        DocPosting {
             docid: self.docids[idx],
             term_freq: self.term_freqs[idx],
-        })
+        }
     }
 
     pub fn serialize(&self, output: &mut dyn Write) -> Result<()> {
         (self.len as u16).serialize(output)?;
 
-        encode_sorted(&self.docids, self.len, output)?;
-        encode_unsorted(&self.term_freqs, self.len, output)?;
+        encode_sorted(&self.docids[..self.len], output)?;
+        encode_unsorted(&self.term_freqs[..self.len], output)?;
 
         Ok(())
     }
 
     pub fn deserialize_from_slice(&mut self, input: &mut &[u8]) -> Result<()> {
         self.len = u16::deserialize_from_slice(input)? as usize;
-        if self.len > BLOCK_CAPACITY {
-            bail!("block length should be in bounds");
-        }
 
-        decode_sorted(self.len, input, &mut self.docids)?;
-        decode_unsorted(self.len, input, &mut self.term_freqs)?;
+        ensure!(
+            self.len > 0 && self.len <= BLOCK_CAPACITY,
+            "length should be in block bounds"
+        );
+
+        decode_sorted(input, &mut self.docids[..self.len])?;
+        decode_unsorted(input, &mut self.term_freqs[..self.len])?;
 
         Ok(())
     }

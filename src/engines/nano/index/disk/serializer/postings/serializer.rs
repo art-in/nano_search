@@ -43,12 +43,11 @@ impl<'a, W: Write> PostingsSerializer<'a, W> {
     }
 
     pub fn write_posting(&mut self, posting: &DocPosting) -> Result<()> {
-        // TODO: make sure postings come sorted by docid for better compression
-        self.block.add_posting(posting)?;
+        self.block.add_posting(posting);
 
         if self.block.is_full() {
             self.block.serialize(self.output)?;
-            self.block.clean();
+            self.block.clear();
         }
 
         Ok(())
@@ -66,7 +65,7 @@ impl<'a, W: Write> PostingsSerializer<'a, W> {
     pub fn flush(&mut self) -> Result<()> {
         if !self.block.is_empty() {
             self.block.serialize(self.output)?;
-            self.block.clean();
+            self.block.clear();
         }
         Ok(())
     }
@@ -100,7 +99,7 @@ impl<'a> PostingsDeserializer<'a> {
         self.pos = 0;
 
         if self.input.is_empty() {
-            self.block.clean();
+            self.block.clear();
         } else {
             self.block.deserialize_from_slice(&mut self.input)?;
         }
@@ -128,6 +127,6 @@ impl Iterator for PostingsDeserializer<'_> {
 
         let item = self.block.get_posting(self.pos);
         self.pos += 1;
-        Some(item)
+        Some(Ok(item))
     }
 }

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 
 use crate::engines::nano::index::disk::model::TermPostingListFileAddress;
 use crate::engines::nano::index::model::{
@@ -15,82 +15,38 @@ pub trait BinarySerializable: Sized {
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self>;
 }
 
-impl BinarySerializable for u8 {
-    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
-        write.write_all(&self.to_le_bytes())?;
-        Ok(())
-    }
-    fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        #[allow(clippy::use_self)]
-        let mut buf: [u8; 1] = [0; 1];
-        read.read_exact(&mut buf)?;
-        Ok(Self::from_le_bytes(buf))
-    }
-    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        let (bytes, rest) = data
-            .split_first_chunk::<1>()
-            .context("should read u8 from slice")?;
-        *data = rest;
-        Ok(Self::from_le_bytes(*bytes))
-    }
+macro_rules! impl_binary_serializable_for_number {
+    ($type:ty) => {
+        impl BinarySerializable for $type {
+            fn serialize(&self, write: &mut dyn Write) -> Result<()> {
+                write.write_all(&self.to_le_bytes())?;
+                Ok(())
+            }
+            fn deserialize(read: &mut dyn Read) -> Result<Self> {
+                const SIZE: usize = size_of::<$type>();
+                let mut bytes: [u8; SIZE] = [0; SIZE];
+                read.read_exact(&mut bytes)?;
+                Ok(Self::from_le_bytes(bytes))
+            }
+            fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
+                const SIZE: usize = size_of::<$type>();
+                ensure!(
+                    data.len() >= SIZE,
+                    concat!("should read ", stringify!($type), " from slice")
+                );
+                let bytes = data[..SIZE].try_into()?;
+                *data = &data[SIZE..];
+                Ok(Self::from_le_bytes(bytes))
+            }
+        }
+    };
 }
 
-impl BinarySerializable for u16 {
-    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
-        write.write_all(&self.to_le_bytes())?;
-        Ok(())
-    }
-    fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        let mut buf: [u8; 2] = [0; 2];
-        read.read_exact(&mut buf)?;
-        Ok(Self::from_le_bytes(buf))
-    }
-    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        let (bytes, rest) = data
-            .split_first_chunk::<2>()
-            .context("should read u16 from slice")?;
-        *data = rest;
-        Ok(Self::from_le_bytes(*bytes))
-    }
-}
-
-impl BinarySerializable for u32 {
-    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
-        write.write_all(&self.to_le_bytes())?;
-        Ok(())
-    }
-    fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        let mut buf: [u8; 4] = [0; 4];
-        read.read_exact(&mut buf)?;
-        Ok(Self::from_le_bytes(buf))
-    }
-    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        let (bytes, rest) = data
-            .split_first_chunk::<4>()
-            .context("should read u32 from slice")?;
-        *data = rest;
-        Ok(Self::from_le_bytes(*bytes))
-    }
-}
-
-impl BinarySerializable for u64 {
-    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
-        write.write_all(&self.to_le_bytes())?;
-        Ok(())
-    }
-    fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        let mut buf: [u8; 8] = [0; 8];
-        read.read_exact(&mut buf)?;
-        Ok(Self::from_le_bytes(buf))
-    }
-    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        let (bytes, rest) = data
-            .split_first_chunk::<8>()
-            .context("should read u64 from slice")?;
-        *data = rest;
-        Ok(Self::from_le_bytes(*bytes))
-    }
-}
+impl_binary_serializable_for_number!(u8);
+impl_binary_serializable_for_number!(u16);
+impl_binary_serializable_for_number!(u32);
+impl_binary_serializable_for_number!(u64);
+impl_binary_serializable_for_number!(f64);
 
 impl BinarySerializable for usize {
     fn serialize(&self, write: &mut dyn Write) -> Result<()> {
@@ -101,25 +57,6 @@ impl BinarySerializable for usize {
     }
     fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
         Ok(u64::deserialize_from_slice(data)? as Self)
-    }
-}
-
-impl BinarySerializable for f64 {
-    fn serialize(&self, write: &mut dyn Write) -> Result<()> {
-        write.write_all(&self.to_le_bytes())?;
-        Ok(())
-    }
-    fn deserialize(read: &mut dyn Read) -> Result<Self> {
-        let mut buf: [u8; 8] = [0; 8];
-        read.read_exact(&mut buf)?;
-        Ok(Self::from_le_bytes(buf))
-    }
-    fn deserialize_from_slice(data: &mut &[u8]) -> Result<Self> {
-        let (bytes, rest) = data
-            .split_first_chunk::<8>()
-            .context("should read f64 from slice")?;
-        *data = rest;
-        Ok(Self::from_le_bytes(*bytes))
     }
 }
 
