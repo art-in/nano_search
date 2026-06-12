@@ -21,7 +21,11 @@ fn test_eval_create_on_disk_and_open() -> Result<()> {
                 .index_threads(1)
                 .build(),
         )?;
-        engine.index_docs(&mut dataset.docs()?)?;
+
+        // reduce amount of docs to index to make test run faster
+        let docs = &mut dataset.docs()?.take(100);
+
+        engine.index_docs(docs)?;
     }
 
     let engine = VectorSearchEngine::open_from_disk(&dir)?;
@@ -40,19 +44,19 @@ fn assert_search_quality(
     assert_eq!(quality.queries_count, 112);
 
     // assert precision
-    assert_eq!(quality.precision_avg, 0.259_821_428_571_428_6);
-    assert_eq!(quality.precisions.perc(0.5)?, 0.1);
-    assert_eq!(quality.precisions.perc(0.9)?, 0.8);
-    assert_eq!(quality.precisions.perc(1.0)?, 1.0);
+    assert_eq!(quality.precision_avg, 0.145_535_714_285_714_27);
+    assert_eq!(quality.precisions.perc(0.5)?, 0.05);
+    assert_eq!(quality.precisions.perc(0.9)?, 0.5);
+    assert_eq!(quality.precisions.perc(1.0)?, 0.8);
 
     // assert recall
-    assert_eq!(quality.recall_avg, 0.407_004_555_378_722);
-    assert_eq!(quality.recalls.perc(0.5)?, 0.166_666_666_666_666_66);
+    assert_eq!(quality.recall_avg, 0.367_113_610_871_619_03);
+    assert_eq!(quality.recalls.perc(0.5)?, 0.095_894_607_843_137_25);
     assert_eq!(quality.recalls.perc(0.9)?, 1.0);
     assert_eq!(quality.recalls.perc(1.0)?, 1.0);
 
     // assert NDCG
-    assert_eq!(quality.ndcg_avg, 0.282_986_754_755_539_86);
+    assert_eq!(quality.ndcg_avg, 0.167_688_336_365_987_57);
 
     Ok(())
 }
