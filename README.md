@@ -1,25 +1,17 @@
 Nano Search
 ===
 
-An experimental search engine written in Rust for learning how search engines work.
+A sandbox for learning [Information Retrieval](https://en.wikipedia.org/wiki/Information_retrieval) by building a search engine from scratch.
 
-This is a sandbox for implementing and experimenting with information retrieval techniques inspired by projects like [Tantivy](https://github.com/quickwit-oss/tantivy), [Meilisearch](https://github.com/meilisearch/meilisearch), and [Lucene](https://github.com/apache/lucene). The focus is on understanding ideas by building them from scratch, measuring their impact, and comparing the results.
+Inspired by projects like [Lucene](https://github.com/apache/lucene), [Tantivy](https://github.com/quickwit-oss/tantivy) and [Meilisearch](https://github.com/meilisearch/meilisearch).
 
-The project prioritizes simplicity, readability, and experimentation over raw performance or production readiness.
-
-Goals
----
-
-- Learn how modern search engines are built.
-- Experiment with indexing and retrieval algorithms.
-- Compare search quality and performance against existing engines.
-- Keep implementation simple, readable, and easy to modify.
+Prioritizes simplicity, readability, and experimentation over raw performance or production readiness.
 
 Learning Resources
 ---
 
-- Search fundamentals: [Information Retrieval: Implementing and Evaluating Search Engines](https://www.amazon.com/Information-Retrieval-Implementing-Evaluating-Engines/dp/0262528878) by Buttcher, Clarke, Cormack
-- Lucene internals: [Inside Apache Solr and Lucene: Algorithms and Engineering Deep Dive](https://www.amazon.com/dp/B0FVGK63XT) by Rauf Aliev
+- Fundamentals: [Information Retrieval: Implementing and Evaluating Search Engines](https://www.amazon.com/Information-Retrieval-Implementing-Evaluating-Engines/dp/0262528878) by Buttcher
+- Lucene internals: [Inside Apache Solr and Lucene: Algorithms and Engineering Deep Dive](https://www.amazon.com/dp/B0FVGK63XT) by Aliev
 - Tantivy internals: Paul Masurel's [blog](https://fulmicoton.com/)
 - Meilisearch internals: Clément Renault's [blog](https://blog.kerollmops.com/)
 
