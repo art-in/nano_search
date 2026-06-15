@@ -18,54 +18,88 @@ Goals
 Features
 ---
 
-- [x] Pluggable search engine interface
+- Pluggable search engine interface
   - `nano` - this implementation
   - `tantivy` - reference lexical engine built on [Tantivy](https://github.com/quickwit-oss/tantivy)
   - `vector` - reference semantic engine (see [lexical search vs semantic search](https://github.com/art-in/nano_search/issues/6))
-- [x] [LSM](https://en.wikipedia.org/wiki/Log-structured_merge-tree)-based inverted index for lexical search
-  - [x] On-disk and in-memory modes
+
+- Index
+  - [x] In-memory and on-disk modes
   - [x] Multi-segment index
   - [x] Multi-threaded indexing
-- [ ] Text analysis
-  - [x] Tokenization
-  - [x] Stop-word removal
-  - [ ] Normalization
-    - [ ] Stemming
-    - [ ] Lemmatization
-- [ ] Query types
-  - [x] Term query
-  - [ ] Boolean query (AND, OR, NOT)
-  - [ ] Phrase query
-  - [ ] Range query
-- [x] Ranking
-  - [x] [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf)
-  - [x] [BM25](https://en.wikipedia.org/wiki/Okapi_BM25)
-- [ ] Index compression
-  - [x] Delta encoding and [bit packing](https://fulmicoton.com/posts/bitpacking/) for posting lists
-  - [ ] [FST](https://burntsushi.net/transducers/) for term dictionary
-  - [ ] Skip lists
-- [ ] Document operations
-  - [x] Add
-  - [ ] Update / Delete
-- [ ] Dynamic indexing
-  - [ ] Background segment merging
-- [ ] HTTP API
-- [x] Search quality evaluation
-  - [x] Precision
-  - [x] Recall
+  - Text analysis
+    - [x] Stop-word removal
+    - Tokenization
+      - [x] Whitespace tokenization
+      - [ ] Punctuation-aware tokenization
+      - [ ] Unicode-aware tokenization
+    - Normalization
+      - [x] Lowercasing
+      - [ ] Stemming
+      - [ ] Lemmatization
+  - Index compression
+    - [x] Delta encoding and [bit packing](https://fulmicoton.com/posts/bitpacking/) for posting lists
+    - [ ] [VByte / Varint](https://lemire.me/blog/2017/09/27/stream-vbyte-breaking-new-speed-records-for-integer-compression/) encoding for posting lists
+    - [ ] [FST](https://burntsushi.net/transducers/) for term dictionary
+    - [ ] Skip lists
+  - Dynamic / incremental / [LSM](https://en.wikipedia.org/wiki/Log-structured_merge-tree)-based indexing
+    - [ ] Background segment merging
+    - [ ] Concurrent search during indexing
+  - Document management
+    - [x] Add
+    - [ ] Update / Delete
+  - Columnar storage
+    - [ ] Field schemas
+    - [ ] Doc values
+
+- Search
+  - Query types
+    - [x] Term query
+    - [ ] Boolean query (AND, OR, NOT)
+    - [ ] Phrase query
+    - [ ] Range query
+  - Query expansion
+    - [ ] Synonym expansion
+    - [ ] Spelling correction
+  - Ranking
+    - [x] [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf)
+    - [x] [BM25](https://en.wikipedia.org/wiki/Okapi_BM25)
+    - [ ] Custom scorer
+  - Faceting
+    - [ ] Term facets
+    - [ ] Range facets
+
+- Vector / semantic search
+  - [ ] [HNSW](https://en.wikipedia.org/wiki/Hierarchical_navigable_small_world) index
+  - [ ] Hybrid retrieval (lexical + semantic fusion)
+
+- Interfaces
+  - [ ] CLI
+  - [ ] HTTP API
+
+- Evaluation
+  - [x] [Precision / Recall](https://en.wikipedia.org/wiki/Precision_and_recall)
   - [x] [nDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain)
-- [x] Dataset readers
+  - [ ] MAP
+  - [ ] MRR
+
+- Datasets
   - [x] CISI
   - [x] Wikipedia
   - [x] [BEIR](https://github.com/beir-cellar/beir)
-- [x] Benchmarking and profiling
-- [x] Regression tests
-- [ ] Documentation
+
+- Tooling
+  - Performance
     - [x] Benchmarking
     - [x] Profiling
-    - [ ] Architecture
-    - [ ] How to install/run
-- [ ] Vector search
-  - [ ] [HNSW](https://en.wikipedia.org/wiki/Hierarchical_navigable_small_world)
-  - [ ] Hybrid retrieval (lexical + semantic fusion)
+  - Testing
+    - [x] Unit tests
+    - [x] Integration tests
+  - Debugging
+    - [ ] Index inspection
 
+- Documentation
+  - [x] Benchmarking
+  - [x] Profiling
+  - [ ] Architecture
+  - [ ] Installation / running
