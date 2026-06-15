@@ -15,6 +15,14 @@ Goals
 - Compare search quality and performance against existing engines.
 - Keep implementation simple, readable, and easy to modify.
 
+Learning Resources
+---
+
+- Search fundamentals: [Information Retrieval: Implementing and Evaluating Search Engines](https://www.amazon.com/Information-Retrieval-Implementing-Evaluating-Engines/dp/0262528878) by Buttcher, Clarke, Cormack
+- Lucene internals: [Inside Apache Solr and Lucene: Algorithms and Engineering Deep Dive](https://www.amazon.com/dp/B0FVGK63XT) by Rauf Aliev
+- Tantivy internals: Paul Masurel's [blog](https://fulmicoton.com/)
+- Meilisearch internals: Clément Renault's [blog](https://blog.kerollmops.com/)
+
 Features
 ---
 
