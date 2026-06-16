@@ -19,6 +19,7 @@ impl<'a> DiskDocPostingsIterator<'a> {
         Self {
             deserializer: PostingsDeserializer::new(
                 &postings_file[address.start_byte..address.end_byte],
+                address.postings_count,
             ),
         }
     }

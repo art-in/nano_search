@@ -13,7 +13,7 @@ fn test_postings_serializer() -> Result<()> {
     Ok(())
 }
 
-fn assert_postings_serializer(postings_count: u32) -> Result<()> {
+fn assert_postings_serializer(postings_count: usize) -> Result<()> {
     let storage = Vec::<u8>::new();
     let mut storage_writer = CountingWriter::new(storage);
 
@@ -23,8 +23,8 @@ fn assert_postings_serializer(postings_count: u32) -> Result<()> {
 
         for idx in 0..postings_count {
             serializer.write_posting(&DocPosting {
-                docid: idx * 2,
-                term_freq: idx * 3,
+                docid: (idx * 2) as u32,
+                term_freq: (idx * 3) as u32,
             })?;
         }
 
@@ -34,15 +34,16 @@ fn assert_postings_serializer(postings_count: u32) -> Result<()> {
     // deserialize
     {
         let storage = storage_writer.into_inner();
-        let deserializer = PostingsDeserializer::new(&storage[..]);
+        let deserializer =
+            PostingsDeserializer::new(&storage[..], postings_count);
 
         let mut actual_postings_count = 0;
 
         for (idx, posting) in deserializer.enumerate() {
             let posting = posting.context("posting should be valid")?;
 
-            assert_eq!(posting.docid as usize, idx * 2);
-            assert_eq!(posting.term_freq as usize, idx * 3);
+            assert_eq!(posting.docid, (idx * 2) as u32);
+            assert_eq!(posting.term_freq, (idx * 3) as u32);
 
             actual_postings_count += 1;
         }

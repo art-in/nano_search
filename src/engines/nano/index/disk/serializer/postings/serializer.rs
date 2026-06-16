@@ -10,9 +10,8 @@ use crate::utils::CountingWriter;
 ///
 /// Data Layout:
 ///
-/// [Block 1 [length][docids][freqs]] [Block 2 [length][docids][freqs]] ...
+/// [Block 1 [docids][freqs]] [Block 2 [docids][freqs]] ...
 ///
-/// - `[length]` - The number of docids/freqs in this block.
 /// - `[docids]` - Delta-encoded and bit-packed series of sorted document IDs.
 /// - `[freqs]`  - Bit-packed series of unsorted term frequencies.
 ///
@@ -30,24 +29,24 @@ use crate::utils::CountingWriter;
 ///
 /// Lucene and Tantivy use same IDs+freqs interleaved block layout + skip lists.
 pub struct PostingsSerializer<'a, W: Write> {
-    block: DocPostingsBlock,
+    buffer: DocPostingsBlock,
     output: &'a mut CountingWriter<W>,
 }
 
 impl<'a, W: Write> PostingsSerializer<'a, W> {
     pub const fn new(output: &'a mut CountingWriter<W>) -> Self {
         Self {
-            block: DocPostingsBlock::new(),
+            buffer: DocPostingsBlock::new(),
             output,
         }
     }
 
     pub fn write_posting(&mut self, posting: &DocPosting) -> Result<()> {
-        self.block.add_posting(posting);
+        self.buffer.add_posting(posting);
 
-        if self.block.is_full() {
-            self.block.serialize(self.output)?;
-            self.block.clear();
+        if self.buffer.is_full() {
+            self.buffer.serialize(self.output)?;
+            self.buffer.clear();
         }
 
         Ok(())
@@ -63,9 +62,9 @@ impl<'a, W: Write> PostingsSerializer<'a, W> {
     /// serializer will panic. This allows to propogate errors if something goes
     /// wrong while flushing and not to forget some postings inside buffer.
     pub fn flush(&mut self) -> Result<()> {
-        if !self.block.is_empty() {
-            self.block.serialize(self.output)?;
-            self.block.clear();
+        if !self.buffer.is_empty() {
+            self.buffer.serialize(self.output)?;
+            self.buffer.clear();
         }
         Ok(())
     }
@@ -74,34 +73,39 @@ impl<'a, W: Write> PostingsSerializer<'a, W> {
 impl<W: Write> Drop for PostingsSerializer<'_, W> {
     fn drop(&mut self) {
         assert!(
-            self.block.is_empty(),
+            self.buffer.is_empty(),
             "serializer should be explicitly flushed before drop"
         );
     }
 }
 
 pub struct PostingsDeserializer<'a> {
-    block: DocPostingsBlock,
-    pos: usize,
+    buffer: DocPostingsBlock,
+    buffer_pos: usize,
     input: &'a [u8],
+    input_left: usize,
 }
 
 impl<'a> PostingsDeserializer<'a> {
-    pub const fn new(input: &'a [u8]) -> Self {
+    pub const fn new(input: &'a [u8], postings_count: usize) -> Self {
         Self {
-            block: DocPostingsBlock::new(),
-            pos: 0,
+            buffer: DocPostingsBlock::new(),
+            buffer_pos: 0,
             input,
+            input_left: postings_count,
         }
     }
 
     fn read_next_block(&mut self) -> Result<()> {
-        self.pos = 0;
+        self.buffer_pos = 0;
 
-        if self.input.is_empty() {
-            self.block.clear();
+        if self.input_left == 0 {
+            debug_assert!(self.input.is_empty());
+            self.buffer.clear();
         } else {
-            self.block.deserialize_from_slice(&mut self.input)?;
+            let len = self.buffer.capacity().min(self.input_left);
+            self.input_left -= len;
+            self.buffer.deserialize_from_slice(&mut self.input, len)?;
         }
 
         Ok(())
@@ -112,7 +116,7 @@ impl Iterator for PostingsDeserializer<'_> {
     type Item = Result<DocPosting>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.pos == self.block.len() {
+        if self.buffer_pos == self.buffer.len() {
             match self.read_next_block() {
                 Ok(()) => {}
                 Err(e) => {
@@ -121,12 +125,12 @@ impl Iterator for PostingsDeserializer<'_> {
             }
         }
 
-        if self.block.is_empty() {
+        if self.buffer.is_empty() {
             return None;
         }
 
-        let item = self.block.get_posting(self.pos);
-        self.pos += 1;
+        let item = self.buffer.get_posting(self.buffer_pos);
+        self.buffer_pos += 1;
         Some(Ok(item))
     }
 }

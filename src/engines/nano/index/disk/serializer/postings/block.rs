@@ -1,8 +1,7 @@
 use std::io::Write;
 
-use anyhow::{Result, ensure};
+use anyhow::Result;
 
-use crate::engines::nano::index::disk::serializer::binary::BinarySerializable;
 use crate::engines::nano::index::disk::serializer::compression::{
     decode_sorted, decode_unsorted, encode_sorted, encode_unsorted,
 };
@@ -30,6 +29,12 @@ impl DocPostingsBlock {
             term_freqs: [0; BLOCK_CAPACITY],
             len: 0,
         }
+    }
+
+    #[inline]
+    #[allow(clippy::unused_self)]
+    pub const fn capacity(&self) -> usize {
+        BLOCK_CAPACITY
     }
 
     pub const fn len(&self) -> usize {
@@ -73,21 +78,23 @@ impl DocPostingsBlock {
     }
 
     pub fn serialize(&self, output: &mut dyn Write) -> Result<()> {
-        (self.len as u16).serialize(output)?;
-
         encode_sorted(&self.docids[..self.len], output)?;
         encode_unsorted(&self.term_freqs[..self.len], output)?;
 
         Ok(())
     }
 
-    pub fn deserialize_from_slice(&mut self, input: &mut &[u8]) -> Result<()> {
-        self.len = u16::deserialize_from_slice(input)? as usize;
-
-        ensure!(
-            self.len > 0 && self.len <= BLOCK_CAPACITY,
+    pub fn deserialize_from_slice(
+        &mut self,
+        input: &mut &[u8],
+        len: usize,
+    ) -> Result<()> {
+        debug_assert!(
+            len > 0 && len <= BLOCK_CAPACITY,
             "length should be in block bounds"
         );
+
+        self.len = len;
 
         decode_sorted(input, &mut self.docids[..self.len])?;
         decode_unsorted(input, &mut self.term_freqs[..self.len])?;
