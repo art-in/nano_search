@@ -3,7 +3,10 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
-use tantivy::schema::{Field, NumericOptions, Schema, TEXT, Value};
+use tantivy::schema::{
+    Field, IndexRecordOption, NumericOptions, Schema, TextFieldIndexing,
+    TextOptions, Value,
+};
 use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
 
 use crate::model::doc::{Doc, ExternalDocId};
@@ -57,7 +60,19 @@ impl TantivySearchEngine {
 fn create_schema() -> Schema {
     let mut schema_builder = Schema::builder();
     schema_builder.add_u64_field("id", NumericOptions::default().set_stored());
-    schema_builder.add_text_field("text", TEXT);
+    schema_builder.add_text_field(
+        "text",
+        // explicitly configure text field instead of using `TEXT` preset.
+        // this switches record format from `WithFreqsAndPositions` to
+        // `WithFreqs`, which removes positional indexing and disables
+        // phrase query support in `QueryParser`, to match nano behavior
+        TextOptions::default().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer("default")
+                .set_fieldnorms(true)
+                .set_index_option(IndexRecordOption::WithFreqs),
+        ),
+    );
     schema_builder.build()
 }
 
