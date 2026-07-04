@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use anyhow::{Result, bail, ensure};
 
-use crate::engines::nano::search::query::lexer::Token;
+use super::lexer::Token;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueryAst<'a> {
@@ -14,41 +14,42 @@ pub enum QueryAst<'a> {
     Not(Box<Self>),
 }
 
-// Search query parser that turns token stream into abstract syntax tree (AST).
-//
-// Implemented as simple recursive descent, which should be enough for search
-// query grammar, even if it grows to more complex features like fields, ranges,
-// etc.
-//
-// Grammar (EBNF):
-//
-//   ```
-//   expression ::= or
-//
-//   or ::= and ("OR" and )*
-//
-//   and ::= unary ("AND" unary )*
-//
-//   unary ::= "NOT" unary
-//           | primary
-//
-//   primary ::= WORD
-//             | "(" expression ")"
-//   ```
-//
-// Notes:
-//
-// Implicit OR rule: adjacent primary expressions are treated as OR.
-// Examples:
-// - "a b"     => "a OR b"
-// - "a (b c)" => "a OR (b OR c)"
-//
-// NOT operator is allowed to be root AST node and be part of OR expressions.
-// Forcing NOT to only be part of AND expression is not syntax parser's job,
-// and should happen on later semantic analysis stage.
-// Examples:
-// - "NOT a"      - syntax OK
-// - "a OR NOT b" - syntax OK
+/// Search query parser that turns a token stream into an abstract syntax
+/// tree (AST).
+///
+/// Implemented as simple recursive descent, which should be sufficient for
+/// the search query grammar, even if it grows to support more complex
+/// features like fields, ranges, etc.
+///
+/// Grammar:
+///
+///   ```ebnf
+///   expression ::= or
+///
+///   or ::= and ("OR" and )*
+///
+///   and ::= unary ("AND" unary )*
+///
+///   unary ::= "NOT" unary
+///           | primary
+///
+///   primary ::= WORD
+///             | "(" expression ")"
+///   ```
+///
+/// Notes:
+///
+/// - Operator precedence (high to low): NOT, AND, OR.
+///   - "a OR NOT b AND c" => "a OR ((NOT b) AND c)"
+///
+/// - Implicit OR rule: adjacent primary expressions are treated as OR.
+///   - "a b"     => "a OR b"
+///   - "a (b c)" => "a OR (b OR c)"
+///
+/// - Restricting NOT to only appear within an AND expression is not the syntax
+///   parser's job - that belongs to a later semantic analysis stage.
+///   - "NOT a"      => valid syntax, at root
+///   - "a OR NOT b" => valid syntax, within OR operand
 struct Parser<I: Iterator> {
     tokens: Peekable<I>,
 }
@@ -155,8 +156,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::super::lexer::Lexer;
     use super::*;
-    use crate::engines::nano::search::query::lexer::Lexer;
 
     fn parse(input: &str) -> Result<QueryAst<'_>> {
         Parser::new(Lexer::new(input)).parse()
