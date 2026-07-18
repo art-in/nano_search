@@ -54,7 +54,7 @@ pub trait Index {
 pub trait IndexSegment {
     fn get_doc_postings_for_term<'a>(
         &'a self,
-        term: &Term,
+        term: &str,
     ) -> Result<Option<DocPostingsForTerm<'a>>>;
 
     fn get_doc_terms_count(&self, docid: SegmentDocId) -> Result<Cow<'_, u16>>;

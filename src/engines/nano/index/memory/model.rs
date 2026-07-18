@@ -32,7 +32,7 @@ impl Index for MemoryIndex {
 impl IndexSegment for MemoryIndex {
     fn get_doc_postings_for_term<'a>(
         &'a self,
-        term: &Term,
+        term: &str,
     ) -> Result<Option<DocPostingsForTerm<'a>>> {
         let term_posting_list = self.terms.get(term);
 

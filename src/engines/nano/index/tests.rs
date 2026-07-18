@@ -70,7 +70,7 @@ fn assert_one_segment_index(index: &dyn Index) -> Result<()> {
 
     // assert no postings for unknown term
     {
-        let res = segment.get_doc_postings_for_term(&"xxx".to_string())?;
+        let res = segment.get_doc_postings_for_term("xxx")?;
         assert!(res.is_none(), "postings for term 'xxx' should not be found");
     }
 
@@ -265,7 +265,7 @@ fn assert_postings_for_term(
     expected_postings: &[DocPosting],
 ) -> Result<()> {
     let postings_it = segment
-        .get_doc_postings_for_term(&term.to_string())?
+        .get_doc_postings_for_term(term)?
         .context(format!("postings for term '{term}' should be found"))?;
     let postings = postings_it
         .iterator

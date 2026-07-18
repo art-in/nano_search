@@ -107,7 +107,7 @@ impl Index for DiskIndex {
 impl IndexSegment for DiskIndexSegment {
     fn get_doc_postings_for_term<'a>(
         &'a self,
-        term: &Term,
+        term: &str,
     ) -> Result<Option<DocPostingsForTerm<'a>>> {
         let term_posting_list_addr = self.terms.get(term);
 
