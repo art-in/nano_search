@@ -27,6 +27,9 @@ pub use get_dir_size::*;
 mod counting_writer;
 pub use counting_writer::CountingWriter;
 
+mod tree;
+pub use tree::TreeNode;
+
 #[cfg(test)]
 pub mod test_docs_iterator;
 
