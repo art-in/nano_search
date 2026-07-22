@@ -2,6 +2,7 @@ use anyhow::{Ok, Result, bail};
 
 use super::model::{DocIdIterator, ItDocId, ItScore, ScoringDocIdIterator};
 use crate::engines::nano::index::model::SegmentDocId;
+use crate::utils::TreeNode;
 
 /// Iterator over document IDs, that returns only IDs present in all `inputs`
 pub struct IntersectingDocIdIterator<'a> {
@@ -60,11 +61,12 @@ impl<'a> IntersectingDocIdIterator<'a> {
             return Ok(());
         }
 
-        // TODO: use leader-based iteration approach: sort iterators by length
-        // (in some kind of query planner), and use shortest one as a leader,
-        // advancing all other iterators to current leader docid. this works
-        // better when iterator sizes are much different and there's ability to
-        // quickly skip gaps - term iterator should support skip lists
+        // TODO: use leader-based iteration approach: sort iterators by
+        // length/cost (in some kind of query planner or right here in
+        // new()), and use shortest one as a leader, advancing all other
+        // iterators to current leader docid. this works better when
+        // iterator sizes are much different and they have ability to
+        // quickly skip gaps - term iterator should use skip lists
 
         loop {
             let candidate = self.max_docid()?;
@@ -106,6 +108,14 @@ impl DocIdIterator for IntersectingDocIdIterator<'_> {
 
     fn current_docid(&self) -> Result<ItDocId> {
         Ok(self.current_docid)
+    }
+
+    fn explain(&self) -> TreeNode {
+        let mut tree = TreeNode::new("Intersection");
+        for input in &self.inputs {
+            tree.add_child(input.explain());
+        }
+        tree
     }
 }
 

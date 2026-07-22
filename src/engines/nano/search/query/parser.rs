@@ -2,17 +2,8 @@ use std::iter::Peekable;
 
 use anyhow::{Result, bail, ensure};
 
+use super::ast::QueryAst;
 use super::lexer::Token;
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum QueryAst<'a> {
-    Word(&'a str),
-
-    // operators
-    And(Vec<Self>),
-    Or(Vec<Self>),
-    Not(Box<Self>),
-}
 
 /// Search query parser that turns a token stream into an abstract syntax
 /// tree (AST).
@@ -50,7 +41,7 @@ pub enum QueryAst<'a> {
 ///   parser's job - that belongs to a later semantic analysis stage.
 ///   - "NOT a"      => valid syntax, at root
 ///   - "a OR NOT b" => valid syntax, within OR operand
-struct Parser<I: Iterator> {
+pub struct Parser<I: Iterator> {
     tokens: Peekable<I>,
 }
 
@@ -163,8 +154,8 @@ mod tests {
         Parser::new(Lexer::new(input)).parse()
     }
 
-    fn parse_err(input: &str) -> Result<String> {
-        match Parser::new(Lexer::new(input)).parse() {
+    fn err<T>(input: Result<T>) -> Result<String> {
+        match input {
             Ok(_) => bail!("should return error"),
             Err(message) => Ok(message.to_string()),
         }
@@ -374,45 +365,45 @@ mod tests {
 
     #[test]
     fn test_empty_input() -> Result<()> {
-        assert_eq!(parse_err("")?, "should receive word or '('");
+        assert_eq!(err(parse(""))?, "should receive word or '('");
         Ok(())
     }
 
     #[test]
     fn test_missing_rhs_binary_operators() -> Result<()> {
-        assert_eq!(parse_err("a AND")?, "should receive word or '('");
-        assert_eq!(parse_err("a OR")?, "should receive word or '('");
+        assert_eq!(err(parse("a AND"))?, "should receive word or '('");
+        assert_eq!(err(parse("a OR"))?, "should receive word or '('");
         Ok(())
     }
 
     #[test]
     fn test_missing_rhs_unary_operator() -> Result<()> {
-        assert_eq!(parse_err("NOT")?, "should receive word or '('");
-        assert_eq!(parse_err("a AND NOT")?, "should receive word or '('");
+        assert_eq!(err(parse("NOT"))?, "should receive word or '('");
+        assert_eq!(err(parse("a AND NOT"))?, "should receive word or '('");
         Ok(())
     }
 
     #[test]
     fn test_parentheses_mismatch_errors() -> Result<()> {
-        assert_eq!(parse_err("(a")?, "should receive ')'");
-        assert_eq!(parse_err("((a AND b)")?, "should receive ')'");
-        assert_eq!(parse_err("a)")?, "should consume all tokens");
-        assert_eq!(parse_err("()")?, "should receive word or '('");
+        assert_eq!(err(parse("(a"))?, "should receive ')'");
+        assert_eq!(err(parse("((a AND b)"))?, "should receive ')'");
+        assert_eq!(err(parse("a)"))?, "should consume all tokens");
+        assert_eq!(err(parse("()"))?, "should receive word or '('");
         Ok(())
     }
 
     #[test]
     fn test_unexpected_operators_at_start() -> Result<()> {
-        assert_eq!(parse_err("AND a")?, "should receive word or '('");
-        assert_eq!(parse_err("OR a")?, "should receive word or '('");
+        assert_eq!(err(parse("AND a"))?, "should receive word or '('");
+        assert_eq!(err(parse("OR a"))?, "should receive word or '('");
         Ok(())
     }
 
     #[test]
     fn test_consecutive_binary_operators() -> Result<()> {
-        assert_eq!(parse_err("a AND AND b")?, "should receive word or '('");
-        assert_eq!(parse_err("a OR OR b")?, "should receive word or '('");
-        assert_eq!(parse_err("a AND OR b")?, "should receive word or '('");
+        assert_eq!(err(parse("a AND AND b"))?, "should receive word or '('");
+        assert_eq!(err(parse("a OR OR b"))?, "should receive word or '('");
+        assert_eq!(err(parse("a AND OR b"))?, "should receive word or '('");
         Ok(())
     }
 }

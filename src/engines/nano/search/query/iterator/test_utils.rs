@@ -6,6 +6,7 @@ use super::intersect::IntersectingDocIdIterator;
 use super::model::{DocIdIterator, ItDocId, ItScore, ScoringDocIdIterator};
 use crate::engines::nano::index::model::SegmentDocId;
 use crate::engines::nano::search::query::iterator::union::UnionDocIdIterator;
+use crate::utils::TreeNode;
 
 pub struct TestScoringDocIdIterator {
     docids: Vec<SegmentDocId>,
@@ -53,6 +54,10 @@ impl DocIdIterator for TestScoringDocIdIterator {
                 }
             },
         ))
+    }
+
+    fn explain(&self) -> TreeNode {
+        TreeNode::new("Test")
     }
 }
 
@@ -113,6 +118,10 @@ impl DocIdIterator for TestDocIdIterator {
                 }
             },
         ))
+    }
+
+    fn explain(&self) -> TreeNode {
+        TreeNode::new("Test")
     }
 }
 

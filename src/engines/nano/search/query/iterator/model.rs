@@ -1,6 +1,7 @@
 use anyhow::{Result, bail};
 
 use crate::engines::nano::index::model::SegmentDocId;
+use crate::utils::TreeNode;
 
 /// Iterator over document IDs.
 ///
@@ -17,6 +18,7 @@ pub trait DocIdIterator {
     fn advance(&mut self) -> Result<()>;
     fn advance_to(&mut self, target: SegmentDocId) -> Result<()>;
     fn current_docid(&self) -> Result<ItDocId>;
+    fn explain(&self) -> TreeNode;
 }
 
 /// Iterator over document IDs with ability to score current document.

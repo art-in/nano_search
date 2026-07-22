@@ -2,26 +2,27 @@ use anyhow::Result;
 
 use super::model::{DocIdIterator, ItDocId, ItScore, ScoringDocIdIterator};
 use crate::engines::nano::index::model::SegmentDocId;
+use crate::utils::TreeNode;
 
-/// Iterator over document IDs, that filters `input` iterator by removing any
+/// Iterator over document IDs, that filters `include` iterator by removing any
 /// IDs also present in `exclude` iterator.
 ///
 /// The excluding has no impact on scoring.
 ///
 /// It's called `ReqExclScorer` in Lucene and `Exclude` in Tantivy.
 pub struct ExcludingDocIdIterator<'a> {
-    input: Box<dyn ScoringDocIdIterator + 'a>,
+    include: Box<dyn ScoringDocIdIterator + 'a>,
     exclude: Box<dyn DocIdIterator + 'a>,
     current_docid: ItDocId,
 }
 
 impl<'a> ExcludingDocIdIterator<'a> {
     pub fn new(
-        input: Box<dyn ScoringDocIdIterator + 'a>,
+        include: Box<dyn ScoringDocIdIterator + 'a>,
         exclude: Box<dyn DocIdIterator + 'a>,
     ) -> Self {
         Self {
-            input,
+            include,
             exclude,
             current_docid: ItDocId::NotStarted,
         }
@@ -33,27 +34,27 @@ impl<'a> ExcludingDocIdIterator<'a> {
         }
 
         if let Some(target) = target {
-            self.input.advance_to(target)?;
+            self.include.advance_to(target)?;
             self.exclude.advance_to(target)?;
         } else {
-            if self.input.current_docid()?.is_not_started()
+            if self.include.current_docid()?.is_not_started()
                 // advance previously matched iterator
-                || self.input.current_docid()? == self.current_docid
+                || self.include.current_docid()? == self.current_docid
             {
-                self.input.advance()?;
+                self.include.advance()?;
             }
             if self.exclude.current_docid()?.is_not_started() {
                 self.exclude.advance()?;
             }
         }
 
-        if self.input.current_docid()?.is_exhausted() {
+        if self.include.current_docid()?.is_exhausted() {
             self.current_docid = ItDocId::Exhausted;
             return Ok(());
         }
 
         loop {
-            let candidate = self.input.current_docid()?.expect_docid()?;
+            let candidate = self.include.current_docid()?.expect_docid()?;
 
             if matches!(self.exclude.current_docid()?, ItDocId::Active(d) if d < candidate)
             {
@@ -62,9 +63,9 @@ impl<'a> ExcludingDocIdIterator<'a> {
 
             if matches!(self.exclude.current_docid()?, ItDocId::Active(d) if d == candidate)
             {
-                // candidate is excluded, keep advancing input
-                self.input.advance()?;
-                if self.input.current_docid()?.is_exhausted() {
+                // candidate is excluded, keep advancing
+                self.include.advance()?;
+                if self.include.current_docid()?.is_exhausted() {
                     self.current_docid = ItDocId::Exhausted;
                     return Ok(());
                 }
@@ -88,11 +89,17 @@ impl DocIdIterator for ExcludingDocIdIterator<'_> {
     fn current_docid(&self) -> Result<ItDocId> {
         Ok(self.current_docid)
     }
+
+    fn explain(&self) -> TreeNode {
+        TreeNode::new("Exclusion")
+            .with_keyed_child("include", self.include.explain())
+            .with_keyed_child("exclude", self.exclude.explain())
+    }
 }
 
 impl ScoringDocIdIterator for ExcludingDocIdIterator<'_> {
     fn current_score(&self) -> Result<ItScore> {
-        self.input.current_score()
+        self.include.current_score()
     }
 }
 
@@ -209,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn test_exclude_iterator_extends_past_input() -> Result<()> {
+    fn test_exclude_iterator_extends_past_include_iterator() -> Result<()> {
         assert_eq!(
             create_excluding_it_and_collect(
                 (vec![1, 2], vec![1.0, 2.0]),
@@ -221,7 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn test_exclude_docid_before_first_input_docid() -> Result<()> {
+    fn test_exclude_docid_before_first_include_docid() -> Result<()> {
         assert_eq!(
             create_excluding_it_and_collect(
                 (vec![5, 6, 7], vec![5.0, 6.0, 7.0]),
@@ -233,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_exclude_iterator_sparser_than_input() -> Result<()> {
+    fn test_exclude_iterator_sparser_than_include_iterator() -> Result<()> {
         assert_eq!(
             create_excluding_it_and_collect(
                 (

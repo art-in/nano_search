@@ -2,6 +2,7 @@ use anyhow::Result;
 
 use super::model::{DocIdIterator, ItDocId, ItScore, ScoringDocIdIterator};
 use crate::engines::nano::index::model::SegmentDocId;
+use crate::utils::TreeNode;
 
 /// Iterator over document IDs, that returns all IDs present in `inputs`
 pub struct UnionDocIdIterator<'a> {
@@ -59,11 +60,21 @@ impl DocIdIterator for UnionDocIdIterator<'_> {
     fn advance(&mut self) -> Result<()> {
         self.advance_internal(None)
     }
+
     fn advance_to(&mut self, target: SegmentDocId) -> Result<()> {
         self.advance_internal(Some(target))
     }
+
     fn current_docid(&self) -> Result<ItDocId> {
         Ok(self.current_docid)
+    }
+
+    fn explain(&self) -> TreeNode {
+        let mut tree = TreeNode::new("Union");
+        for input in &self.inputs {
+            tree.add_child(input.explain());
+        }
+        tree
     }
 }
 
