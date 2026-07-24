@@ -8,7 +8,6 @@ use crate::engines::utils::engine_open_from_disk_by_names;
 use crate::eval::evaluate_search_quality;
 use crate::eval::model::{Query, SearchQuality};
 use crate::model::engine::SearchEngine;
-use crate::utils::GetPercentile;
 
 pub fn eval(
     engines: &[String],
@@ -42,12 +41,12 @@ fn evaluate(
     );
 
     println!("search quality for {} engine:", engine.get_name());
-    print_quality(&quality)?;
+    print_quality(&quality);
 
     Ok(())
 }
 
-fn print_quality(quality: &SearchQuality) -> Result<()> {
+fn print_quality(quality: &SearchQuality) {
     println!("queries count: {}", quality.queries_count);
 
     println!(
@@ -55,9 +54,9 @@ fn print_quality(quality: &SearchQuality) -> Result<()> {
         "Precision",
         format!("@{}", quality.search_limit),
         quality.precision_avg,
-        quality.precisions.perc(0.5)?,
-        quality.precisions.perc(0.9)?,
-        quality.precisions.perc(1.0)?
+        quality.precision_p50,
+        quality.precision_p90,
+        quality.precision_p100
     );
 
     println!(
@@ -65,9 +64,9 @@ fn print_quality(quality: &SearchQuality) -> Result<()> {
         "Recall",
         format!("@{}", quality.search_limit),
         quality.recall_avg,
-        quality.recalls.perc(0.5)?,
-        quality.recalls.perc(0.9)?,
-        quality.recalls.perc(1.0)?
+        quality.recall_p50,
+        quality.recall_p90,
+        quality.recall_p100
     );
 
     println!(
@@ -76,6 +75,4 @@ fn print_quality(quality: &SearchQuality) -> Result<()> {
         format!("@{}", quality.search_limit),
         format!("{:<6.3}", quality.ndcg_avg).cyan()
     );
-
-    Ok(())
 }

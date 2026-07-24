@@ -28,14 +28,22 @@ pub trait QueriesSource {
 }
 
 // Search quality evaluation results summarized for entire query set
+#[derive(Debug, PartialEq)]
 pub struct SearchQuality {
     pub queries_count: u64,
     pub search_limit: u64,
-    pub precision_avg: f64,
-    pub recall_avg: f64,
+
     pub ndcg_avg: f64,
-    pub precisions: inc_stats::Percentiles<f64>,
-    pub recalls: inc_stats::Percentiles<f64>,
+
+    pub precision_avg: f64,
+    pub precision_p50: f64,
+    pub precision_p90: f64,
+    pub precision_p100: f64,
+
+    pub recall_avg: f64,
+    pub recall_p50: f64,
+    pub recall_p90: f64,
+    pub recall_p100: f64,
 }
 
 // Search quality evaluation results for particular query

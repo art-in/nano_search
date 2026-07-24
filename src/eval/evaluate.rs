@@ -8,6 +8,7 @@ use crate::eval::metrics::ndcg;
 use crate::eval::model::{Query, Relevance};
 use crate::model::doc::ExternalDocId;
 use crate::model::engine::SearchEngine;
+use crate::utils::GetPercentile;
 
 pub fn evaluate_search_quality(
     queries: &mut dyn Iterator<Item = Result<Query>>,
@@ -55,11 +56,18 @@ pub fn evaluate_search_quality(
     Ok(SearchQuality {
         queries_count,
         search_limit,
-        precision_avg,
-        recall_avg,
+
         ndcg_avg,
-        precisions,
-        recalls,
+
+        precision_avg,
+        precision_p50: precisions.perc(0.5)?,
+        precision_p90: precisions.perc(0.9)?,
+        precision_p100: precisions.perc(1.0)?,
+
+        recall_avg,
+        recall_p50: recalls.perc(0.5)?,
+        recall_p90: recalls.perc(0.9)?,
+        recall_p100: recalls.perc(1.0)?,
     })
 }
 

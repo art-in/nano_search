@@ -8,7 +8,6 @@ use crate::eval::evaluate_search_quality;
 use crate::eval::model::QueriesSource;
 use crate::model::doc::DocsSource;
 use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
-use crate::utils::GetPercentile;
 
 #[test]
 fn test_eval_create_in_memory() -> Result<()> {
@@ -67,21 +66,19 @@ fn assert_search_quality(engine: &impl SearchEngine) -> Result<()> {
     let quality = evaluate_search_quality(&mut dataset.queries()?, engine, 10)?;
 
     assert_eq!(quality.queries_count, 112);
+    assert_eq!(quality.search_limit, 10);
 
-    // assert precision
-    assert_eq!(quality.precision_avg, 0.158_928_571_428_571_4);
-    assert_eq!(quality.precisions.perc(0.5)?, 0.1);
-    assert_eq!(quality.precisions.perc(0.9)?, 0.490_000_000_000_000_55);
-    assert_eq!(quality.precisions.perc(1.0)?, 0.7);
+    assert_float_relative_eq!(quality.ndcg_avg, 0.179_194_254_335_665_13, 0.01);
 
-    // assert recall
-    assert_eq!(quality.recall_avg, 0.381_079_248_316_754_6);
-    assert_eq!(quality.recalls.perc(0.5)?, 0.096_875);
-    assert_eq!(quality.recalls.perc(0.9)?, 1.0);
-    assert_eq!(quality.recalls.perc(1.0)?, 1.0);
+    assert_float_relative_eq!(quality.precision_avg, 0.158_928_571_428_571_4);
+    assert_float_relative_eq!(quality.precision_p50, 0.1);
+    assert_float_relative_eq!(quality.precision_p90, 0.490_000_000_000_000_55);
+    assert_float_relative_eq!(quality.precision_p100, 0.7);
 
-    // assert NDCG
-    assert_float_relative_eq!(quality.ndcg_avg, 0.179, 0.01);
+    assert_float_relative_eq!(quality.recall_avg, 0.381_079_248_316_754_6);
+    assert_float_relative_eq!(quality.recall_p50, 0.096_875);
+    assert_float_relative_eq!(quality.recall_p90, 1.0);
+    assert_float_relative_eq!(quality.recall_p100, 1.0);
 
     Ok(())
 }
