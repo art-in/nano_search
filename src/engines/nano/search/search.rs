@@ -35,10 +35,11 @@ pub fn search(
 fn search_segment(
     query: &str,
     segment: &dyn IndexSegment,
-) -> Result<Vec<DocCandidate>> {
+) -> Result<Vec<DocCandidate<ExternalDocId>>> {
     let words: Vec<&str> = query.split_whitespace().collect();
 
-    let mut candidates: HashMap<SegmentDocId, DocCandidate> = HashMap::new();
+    let mut candidates: HashMap<SegmentDocId, DocCandidate<ExternalDocId>> =
+        HashMap::new();
 
     for word in words {
         let term = crate::utils::normalize_word(word);
