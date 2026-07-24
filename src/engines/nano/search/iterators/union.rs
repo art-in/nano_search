@@ -91,7 +91,7 @@ impl ScoringDocIdIterator for UnionDocIdIterator<'_> {
                         it.current_docid()?,
                         ItDocId::Active(docid) if docid == current_docid)
                     {
-                        total_score += it.current_score()?.expect_score()?;
+                        total_score += it.current_score()?.expect_val()?;
                     }
                 }
 

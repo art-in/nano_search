@@ -9,8 +9,9 @@ use crate::engines::nano::index::model::{
 use crate::engines::nano::search::scoring;
 use crate::utils::TreeNode;
 
-// TODO: rename PostingListIterator (?)
-pub struct TermDocIdIterator<'a> {
+// Iterator over document IDs, that reads posting list of concrete term from
+// index segment.
+pub struct PostingListIterator<'a> {
     segment: &'a dyn IndexSegment,
     term: String,
     postings: Option<DocPostingsForTerm<'a>>,
@@ -18,20 +19,20 @@ pub struct TermDocIdIterator<'a> {
     is_exhausted: bool,
 }
 
-impl<'a> TermDocIdIterator<'a> {
+impl<'a> PostingListIterator<'a> {
     pub fn create_for_segment(
         segment: &'a dyn IndexSegment,
         term: &str,
     ) -> Result<Self> {
+        // TODO: ignore stop words
         let postings = segment.get_doc_postings_for_term(term)?;
-        let is_exhausted = postings.is_none();
 
         Ok(Self {
             segment,
             term: term.to_string(),
             postings,
             current_posting: None,
-            is_exhausted,
+            is_exhausted: false,
         })
     }
 
@@ -40,6 +41,33 @@ impl<'a> TermDocIdIterator<'a> {
             return Ok(());
         }
 
+        if self.postings.is_none() {
+            self.is_exhausted = true;
+            return Ok(());
+        }
+
+        // TODO: optimize non-scoring iteration.
+        //
+        // reading scoring data (e.g. term frequencies) may require additional
+        // work while advancing docids. when scores are not needed (e.g. NOT
+        // branches or a counting collector), it should be possible to skip
+        // reading them.
+        //
+        // approaches:
+        //
+        // - runtime ScoringMode::On/Off flag propagated through the iterator
+        //   tree. non-scoring branches (such as the excluded side of Exclusion)
+        //   would always use Off. simple, but current_score() remains callable
+        //   and would have to fail at runtime
+        //
+        // - encode scoring capability in the type system, making
+        //   current_score() unavailable on non-scoring iterators. more
+        //   type-safe, but requires additional iterator/planner abstractions
+        //   and lots of boilerplate
+        //
+        // Lucene and Tantivy use a runtime flag approach, but calling score()
+        // when scoring is disabled does not fail; it returns a constant (dummy)
+        // score instead
         let postings = self.postings.as_mut().context("should exist")?;
 
         if let Some(target) = target {
@@ -66,7 +94,7 @@ impl<'a> TermDocIdIterator<'a> {
     }
 }
 
-impl DocIdIterator for TermDocIdIterator<'_> {
+impl DocIdIterator for PostingListIterator<'_> {
     fn advance(&mut self) -> Result<()> {
         self.advance_internal(None)
     }
@@ -90,14 +118,14 @@ impl DocIdIterator for TermDocIdIterator<'_> {
             TreeNode::new("Term").with_attr("term", self.term.clone());
 
         if self.postings.is_none() {
-            node.add_attr("unknown", "true");
+            node.add_attr("unknown_term", "true");
         }
 
         node
     }
 }
 
-impl ScoringDocIdIterator for TermDocIdIterator<'_> {
+impl ScoringDocIdIterator for PostingListIterator<'_> {
     fn current_score(&self) -> Result<ItScore> {
         if self.is_exhausted {
             return Ok(ItScore::Exhausted);
@@ -134,10 +162,10 @@ mod tests {
     fn test_unknown_term() -> Result<()> {
         let segment = MemoryIndex::default();
         let mut it =
-            TermDocIdIterator::create_for_segment(&segment, "unknown")?;
+            PostingListIterator::create_for_segment(&segment, "unknown")?;
 
-        assert!(matches!(it.current_docid()?, ItDocId::Exhausted));
-        assert!(matches!(it.current_score()?, ItScore::Exhausted));
+        assert!(matches!(it.current_docid()?, ItDocId::NotStarted));
+        assert!(matches!(it.current_score()?, ItScore::NotStarted));
 
         it.advance()?;
 

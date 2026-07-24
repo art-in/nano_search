@@ -30,7 +30,7 @@ impl<'a> IntersectingDocIdIterator<'a> {
     fn max_docid(&self) -> Result<SegmentDocId> {
         let mut max = SegmentDocId::MIN;
         for it in &self.inputs {
-            max = max.max(it.current_docid()?.expect_docid()?);
+            max = max.max(it.current_docid()?.expect_val()?);
         }
         Ok(max)
     }
@@ -74,7 +74,7 @@ impl<'a> IntersectingDocIdIterator<'a> {
             let mut matched = true;
 
             for it in &mut self.inputs {
-                if it.current_docid()?.expect_docid()? < candidate {
+                if it.current_docid()?.expect_val()? < candidate {
                     it.advance_to(candidate)?;
                 }
 
@@ -83,7 +83,7 @@ impl<'a> IntersectingDocIdIterator<'a> {
                     return Ok(());
                 }
 
-                if it.current_docid()?.expect_docid()? != candidate {
+                if it.current_docid()?.expect_val()? != candidate {
                     // docid is greater than candidate
                     matched = false;
                 }

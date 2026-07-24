@@ -1,13 +1,16 @@
 mod exclude;
-mod intersect;
-mod model;
-mod term;
-mod union;
-
 pub use exclude::ExcludingDocIdIterator;
+
+mod intersect;
 pub use intersect::IntersectingDocIdIterator;
+
+mod model;
 pub use model::ScoringDocIdIterator;
-pub use term::TermDocIdIterator;
+
+mod posting_list;
+pub use posting_list::PostingListIterator;
+
+mod union;
 pub use union::UnionDocIdIterator;
 
 #[cfg(test)]

@@ -51,7 +51,7 @@ impl ItDocId {
         self == Self::Exhausted
     }
 
-    pub fn expect_docid(self) -> Result<SegmentDocId> {
+    pub fn expect_val(self) -> Result<SegmentDocId> {
         if let Self::Active(docid) = self {
             Ok(docid)
         } else {
@@ -61,7 +61,7 @@ impl ItDocId {
 }
 
 impl ItScore {
-    pub fn expect_score(self) -> Result<f64> {
+    pub fn expect_val(self) -> Result<f64> {
         if let Self::Active(score) = self {
             Ok(score)
         } else {

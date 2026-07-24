@@ -54,7 +54,7 @@ impl<'a> ExcludingDocIdIterator<'a> {
         }
 
         loop {
-            let candidate = self.include.current_docid()?.expect_docid()?;
+            let candidate = self.include.current_docid()?.expect_val()?;
 
             if matches!(self.exclude.current_docid()?, ItDocId::Active(d) if d < candidate)
             {

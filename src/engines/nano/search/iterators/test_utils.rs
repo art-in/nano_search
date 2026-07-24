@@ -4,8 +4,8 @@ use anyhow::{Result, ensure};
 use super::exclude::ExcludingDocIdIterator;
 use super::intersect::IntersectingDocIdIterator;
 use super::model::{DocIdIterator, ItDocId, ItScore, ScoringDocIdIterator};
+use super::union::UnionDocIdIterator;
 use crate::engines::nano::index::model::SegmentDocId;
-use crate::engines::nano::search::query::iterator::union::UnionDocIdIterator;
 use crate::utils::TreeNode;
 
 pub struct TestScoringDocIdIterator {
@@ -136,8 +136,8 @@ pub fn collect_from_it(
 
     while !it.current_docid()?.is_exhausted() {
         res.push((
-            it.current_docid()?.expect_docid()?,
-            it.current_score()?.expect_score()?,
+            it.current_docid()?.expect_val()?,
+            it.current_score()?.expect_val()?,
         ));
         it.advance()?;
     }

@@ -1,10 +1,10 @@
 use anyhow::{Context, Result, bail, ensure};
 
-use super::ast::QueryAst;
-use super::iterator::{
-    ExcludingDocIdIterator, IntersectingDocIdIterator, ScoringDocIdIterator,
-    TermDocIdIterator, UnionDocIdIterator,
+use super::iterators::{
+    ExcludingDocIdIterator, IntersectingDocIdIterator, PostingListIterator,
+    ScoringDocIdIterator, UnionDocIdIterator,
 };
+use super::query::QueryAst;
 use crate::engines::nano::index::model::IndexSegment;
 use crate::utils::normalize_word;
 
@@ -43,7 +43,7 @@ fn plan_word<'a>(
     segment: &'a dyn IndexSegment,
 ) -> Result<Box<dyn ScoringDocIdIterator + 'a>> {
     let term = normalize_word(word);
-    let it = TermDocIdIterator::create_for_segment(segment, &term)?;
+    let it = PostingListIterator::create_for_segment(segment, &term)?;
     Ok(Box::new(it))
 }
 
@@ -121,10 +121,9 @@ mod tests {
     use indoc::indoc;
     use pretty_assertions::assert_eq;
 
-    use super::super::lexer::Lexer;
-    use super::super::parser::Parser;
     use super::*;
     use crate::engines::nano::index::MemoryIndex;
+    use crate::engines::nano::search::query::{Lexer, Parser};
 
     fn create_segment() -> Box<dyn IndexSegment> {
         let mut segment = MemoryIndex::default();
@@ -165,7 +164,7 @@ mod tests {
     fn test_word_unknown() -> Result<()> {
         assert_eq!(
             plan_query_and_explain("x")?,
-            "Term (term = x, unknown = true)\n"
+            "Term (term = x, unknown_term = true)\n"
         );
         Ok(())
     }
@@ -252,7 +251,8 @@ mod tests {
 
     #[test]
     fn test_and_all_excluding_nested() -> Result<()> {
-        // this potentially can be supported by removing nesting
+        // TODO: support this by removing nesting in some AST normalization
+        // layer between parser and planner
         assert_eq!(
             err(plan_query_and_explain("c AND (NOT a AND NOT b)"))?,
             "AND should contain at least one including operand"
