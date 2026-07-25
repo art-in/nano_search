@@ -13,7 +13,7 @@ mod iterators;
 mod query;
 
 #[allow(dead_code)] // TODO: remove unused code silencer
-mod planner;
+mod plan;
 
 #[expect(clippy::module_inception)]
 mod search;

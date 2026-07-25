@@ -1,11 +1,9 @@
-/// This is a set of utilities to support unit testing of iterators.
+//! Set of utilities to support unit testing of iterators.
 use anyhow::{Result, ensure};
 
-use super::exclude::ExcludingDocIdIterator;
-use super::intersect::IntersectingDocIdIterator;
 use super::model::{DocIdIterator, ItDocId, ItScore, ScoringDocIdIterator};
-use super::union::UnionDocIdIterator;
 use crate::engines::nano::index::model::SegmentDocId;
+use crate::eval::model::Relevance;
 use crate::utils::TreeNode;
 
 pub struct TestScoringDocIdIterator {
@@ -57,7 +55,7 @@ impl DocIdIterator for TestScoringDocIdIterator {
     }
 
     fn explain(&self) -> TreeNode {
-        TreeNode::new("Test")
+        TreeNode::new("Test").with_attr("scoring", "true")
     }
 }
 
@@ -121,77 +119,40 @@ impl DocIdIterator for TestDocIdIterator {
     }
 
     fn explain(&self) -> TreeNode {
-        TreeNode::new("Test")
+        TreeNode::new("Test").with_attr("scoring", "false")
     }
 }
 
-pub fn collect_from_it(
+pub fn collect(
     mut it: impl ScoringDocIdIterator,
-) -> Result<Vec<(SegmentDocId, f64)>> {
-    let mut res = Vec::new();
+) -> Result<Vec<(SegmentDocId, Relevance)>> {
+    // make sure it is in not-started state before first advance
+    assert!(it.current_docid()?.is_not_started());
+    assert!(it.current_score()?.is_not_started());
 
-    if it.current_docid()?.is_not_started() {
-        it.advance()?;
-    }
+    it.advance()?;
+
+    collect_rest(it)
+}
+
+pub fn collect_rest(
+    mut it: impl ScoringDocIdIterator,
+) -> Result<Vec<(SegmentDocId, Relevance)>> {
+    let mut res = Vec::new();
 
     while !it.current_docid()?.is_exhausted() {
         res.push((
-            it.current_docid()?.expect_val()?,
-            it.current_score()?.expect_val()?,
+            it.current_docid()?.expect()?,
+            it.current_score()?.expect()?,
         ));
         it.advance()?;
     }
 
+    // make sure it stays exhausted on further advances
+    it.advance()?;
+
+    assert!(it.current_docid()?.is_exhausted());
+    assert!(it.current_score()?.is_exhausted());
+
     Ok(res)
-}
-
-pub fn create_intersecting_it(
-    docids_and_scores: Vec<(Vec<SegmentDocId>, Vec<f64>)>,
-) -> Result<IntersectingDocIdIterator<'static>> {
-    let mut input: Vec<Box<dyn ScoringDocIdIterator>> = Vec::new();
-    for (docids, scores) in docids_and_scores {
-        let it = Box::new(TestScoringDocIdIterator::new(docids, scores)?);
-        input.push(it);
-    }
-    Ok(IntersectingDocIdIterator::new(input))
-}
-
-pub fn create_interecting_it_and_collect(
-    docids_and_scores: Vec<(Vec<SegmentDocId>, Vec<f64>)>,
-) -> Result<Vec<(SegmentDocId, f64)>> {
-    collect_from_it(create_intersecting_it(docids_and_scores)?)
-}
-
-pub fn create_excluding_it(
-    docids_and_scores: (Vec<SegmentDocId>, Vec<f64>),
-    exclude_docids: Vec<SegmentDocId>,
-) -> Result<ExcludingDocIdIterator<'static>> {
-    let (docids, scores) = docids_and_scores;
-    let input = Box::new(TestScoringDocIdIterator::new(docids, scores)?);
-    let exclude = Box::new(TestDocIdIterator::new(exclude_docids));
-    Ok(ExcludingDocIdIterator::new(input, exclude))
-}
-
-pub fn create_excluding_it_and_collect(
-    docids_and_scores: (Vec<SegmentDocId>, Vec<f64>),
-    exclude_docids: Vec<SegmentDocId>,
-) -> Result<Vec<(SegmentDocId, f64)>> {
-    collect_from_it(create_excluding_it(docids_and_scores, exclude_docids)?)
-}
-
-pub fn create_union_it(
-    docids_and_scores: Vec<(Vec<SegmentDocId>, Vec<f64>)>,
-) -> Result<UnionDocIdIterator<'static>> {
-    let mut input: Vec<Box<dyn ScoringDocIdIterator>> = Vec::new();
-    for (docids, scores) in docids_and_scores {
-        let it = Box::new(TestScoringDocIdIterator::new(docids, scores)?);
-        input.push(it);
-    }
-    Ok(UnionDocIdIterator::new(input))
-}
-
-pub fn create_union_it_and_collect(
-    docids_and_scores: Vec<(Vec<SegmentDocId>, Vec<f64>)>,
-) -> Result<Vec<(SegmentDocId, f64)>> {
-    collect_from_it(create_union_it(docids_and_scores)?)
 }

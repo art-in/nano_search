@@ -14,4 +14,4 @@ mod union;
 pub use union::UnionDocIdIterator;
 
 #[cfg(test)]
-pub mod test_utils;
+mod test_utils;

@@ -1,5 +1,5 @@
-/// Reference to document that matches search query, but needs to go through
-/// some triage before including into search results.
+/// Reference to document that matches search query, but still needs to go
+/// through some triage before including into search results.
 #[derive(Debug, PartialEq, Clone)]
 pub struct DocCandidate<TID> {
     pub id: TID,

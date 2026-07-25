@@ -115,7 +115,7 @@ impl DocIdIterator for PostingListIterator<'_> {
 
     fn explain(&self) -> TreeNode {
         let mut node =
-            TreeNode::new("Term").with_attr("term", self.term.clone());
+            TreeNode::new("PostingList").with_attr("term", self.term.clone());
 
         if self.postings.is_none() {
             node.add_attr("unknown_term", "true");
@@ -155,22 +155,60 @@ impl ScoringDocIdIterator for PostingListIterator<'_> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
+    use super::super::test_utils::collect;
     use super::*;
     use crate::engines::nano::index::MemoryIndex;
+    use crate::eval::model::Relevance;
+
+    fn create_segment(doc_count: usize) -> MemoryIndex {
+        let mut segment = MemoryIndex::default();
+        let mut posting_list = BTreeMap::new();
+
+        for i in 0..doc_count {
+            let docid = i as SegmentDocId;
+            posting_list.insert(
+                docid,
+                DocPosting {
+                    docid,
+                    term_freq: 1,
+                },
+            );
+            segment.doc_term_counts.push(10);
+        }
+
+        segment.terms.insert("a".to_string(), posting_list);
+
+        segment.stats.indexed_docs_count = doc_count as u64;
+        segment.stats.terms_count_per_doc_avg = 10.0;
+        segment.stats.max_posting_list_size = doc_count as u64;
+
+        segment
+    }
+
+    #[test]
+    fn test_basic() -> Result<()> {
+        let segment = create_segment(5);
+        let it = PostingListIterator::create_for_segment(&segment, "a")?;
+
+        let (docids, scores): (Vec<SegmentDocId>, Vec<Relevance>) =
+            collect(it)?.into_iter().unzip();
+
+        assert_eq!(docids, vec![0, 1, 2, 3, 4]);
+
+        // do not care much about concrete score values in this test
+        assert!(scores.iter().all(|s| *s > 0.0));
+
+        Ok(())
+    }
 
     #[test]
     fn test_unknown_term() -> Result<()> {
         let segment = MemoryIndex::default();
-        let mut it =
-            PostingListIterator::create_for_segment(&segment, "unknown")?;
+        let it = PostingListIterator::create_for_segment(&segment, "unknown")?;
 
-        assert!(matches!(it.current_docid()?, ItDocId::NotStarted));
-        assert!(matches!(it.current_score()?, ItScore::NotStarted));
-
-        it.advance()?;
-
-        assert!(matches!(it.current_docid()?, ItDocId::Exhausted));
-        assert!(matches!(it.current_score()?, ItScore::Exhausted));
+        assert!(collect(it)?.is_empty());
 
         Ok(())
     }

@@ -30,7 +30,7 @@ impl<'a> IntersectingDocIdIterator<'a> {
     fn max_docid(&self) -> Result<SegmentDocId> {
         let mut max = SegmentDocId::MIN;
         for it in &self.inputs {
-            max = max.max(it.current_docid()?.expect_val()?);
+            max = max.max(it.current_docid()?.expect()?);
         }
         Ok(max)
     }
@@ -74,7 +74,7 @@ impl<'a> IntersectingDocIdIterator<'a> {
             let mut matched = true;
 
             for it in &mut self.inputs {
-                if it.current_docid()?.expect_val()? < candidate {
+                if it.current_docid()?.expect()? < candidate {
                     it.advance_to(candidate)?;
                 }
 
@@ -83,7 +83,7 @@ impl<'a> IntersectingDocIdIterator<'a> {
                     return Ok(());
                 }
 
-                if it.current_docid()?.expect_val()? != candidate {
+                if it.current_docid()?.expect()? != candidate {
                     // docid is greater than candidate
                     matched = false;
                 }
@@ -146,77 +146,72 @@ impl ScoringDocIdIterator for IntersectingDocIdIterator<'_> {
 mod tests {
     use super::super::test_utils::*;
     use super::*;
+    use crate::eval::model::Relevance;
+
+    pub fn create_it(
+        inputs: Vec<(Vec<SegmentDocId>, Vec<Relevance>)>,
+    ) -> Result<IntersectingDocIdIterator<'static>> {
+        let mut inputs_it: Vec<Box<dyn ScoringDocIdIterator>> = Vec::new();
+        for (docids, scores) in inputs {
+            let it = Box::new(TestScoringDocIdIterator::new(docids, scores)?);
+            inputs_it.push(it);
+        }
+        Ok(IntersectingDocIdIterator::new(inputs_it))
+    }
 
     #[test]
     fn test_empty_input() -> Result<()> {
-        let mut it = IntersectingDocIdIterator::new(vec![]);
-
-        assert_eq!(it.current_docid()?, ItDocId::NotStarted);
-        assert_eq!(it.current_score()?, ItScore::NotStarted);
-
-        it.advance()?;
-
-        assert_eq!(it.current_docid()?, ItDocId::Exhausted);
-        assert_eq!(it.current_score()?, ItScore::Exhausted);
-
+        let it = create_it(vec![])?;
+        assert!(collect(it)?.is_empty());
         Ok(())
     }
 
     #[test]
     fn test_single_input() -> Result<()> {
         assert_eq!(
-            create_interecting_it_and_collect(vec![(
-                vec![1, 2],     // docids
-                vec![1.0, 2.0]  // scores
-            )])?,
+            collect(create_it(vec![
+                (vec![1, 2], vec![1.0, 2.0]) // 1st input
+            ])?)?,
             &[(1, 1.0), (2, 2.0)]
         );
-
         Ok(())
     }
 
     #[test]
     fn test_multiple_inputs() -> Result<()> {
         assert_eq!(
-            create_interecting_it_and_collect(vec![
+            collect(create_it(vec![
                 (vec![1, 2, 3], vec![1.0, 2.0, 3.0]), // 1st input
                 (vec![2, 3, 4], vec![2.0, 3.0, 4.0])  // 2nd input
-            ])?,
-            &[(2, 4.0), (3, 6.0)] // intersection
+            ])?)?,
+            &[(2, 4.0), (3, 6.0)]
         );
         Ok(())
     }
 
     #[test]
     fn test_advance_to() -> Result<()> {
-        let mut it = create_intersecting_it(vec![
+        let mut it = create_it(vec![
             (vec![1, 2, 3], vec![1.0, 2.0, 3.0]),
             (vec![2, 3, 4], vec![2.0, 3.0, 4.0]),
         ])?;
 
         it.advance_to(3)?;
 
-        assert_eq!(it.current_docid()?, ItDocId::Active(3));
-        assert_eq!(it.current_score()?, ItScore::Active(6.0));
-
-        it.advance()?;
-
-        assert_eq!(it.current_docid()?, ItDocId::Exhausted);
-        assert_eq!(it.current_score()?, ItScore::Exhausted);
+        assert_eq!(collect_rest(it)?, &[(3, 6.0)]);
 
         Ok(())
     }
 
     #[test]
-    fn test_no_intersecting_items() -> Result<()> {
-        assert_eq!(
-            create_interecting_it_and_collect(vec![
+    fn test_no_intersection() -> Result<()> {
+        assert!(
+            collect(create_it(vec![
                 (vec![1, 2, 3], vec![1.0, 2.0, 3.0]),
                 (vec![4, 5, 6], vec![4.0, 5.0, 6.0])
-            ])?,
-            &[]
+            ])?)?
+            .is_empty()
         );
-
         Ok(())
     }
 }

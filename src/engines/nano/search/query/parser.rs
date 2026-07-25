@@ -147,6 +147,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
+    use pretty_assertions::assert_eq;
+
     use super::super::lexer::Lexer;
     use super::*;
 
@@ -161,7 +164,7 @@ mod tests {
         }
     }
 
-    // --- BASIC & STRUCTURAL ---
+    // --- BASIC ---
 
     #[test]
     fn test_single_word() -> Result<()> {
@@ -180,10 +183,12 @@ mod tests {
     #[test]
     fn test_double_not() -> Result<()> {
         assert_eq!(
-            parse("NOT NOT word")?,
-            QueryAst::Not(Box::new(QueryAst::Not(Box::new(QueryAst::Word(
-                "word"
-            )))))
+            parse("NOT NOT word")?.explain().to_string(),
+            indoc! {"
+                NOT
+                └── NOT
+                    └── Word (word = word)
+            "}
         );
         Ok(())
     }
@@ -191,11 +196,13 @@ mod tests {
     #[test]
     fn test_not_over_parentheses() -> Result<()> {
         assert_eq!(
-            parse("NOT (a OR b)")?,
-            QueryAst::Not(Box::new(QueryAst::Or(vec![
-                QueryAst::Word("a"),
-                QueryAst::Word("b"),
-            ])))
+            parse("NOT (a OR b)")?.explain().to_string(),
+            indoc! {"
+                NOT
+                └── OR
+                    ├── Word (word = a)
+                    └── Word (word = b)
+            "}
         );
         Ok(())
     }
@@ -203,33 +210,38 @@ mod tests {
     #[test]
     fn test_not_ouside_and() -> Result<()> {
         assert_eq!(
-            parse("a NOT b")?,
-            QueryAst::Or(vec![
-                QueryAst::Word("a"),
-                QueryAst::Not(Box::new(QueryAst::Word("b")))
-            ])
+            parse("a NOT b")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── Word (word = a)
+                └── NOT
+                    └── Word (word = b)
+            "}
         );
         assert_eq!(
-            parse("NOT a b")?,
-            QueryAst::Or(vec![
-                QueryAst::Not(Box::new(QueryAst::Word("a"))),
-                QueryAst::Word("b"),
-            ])
+            parse("NOT a b")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── NOT
+                │   └── Word (word = a)
+                └── Word (word = b)
+            "}
         );
         Ok(())
     }
 
-    // --- EXPLICIT CHAINS ---
+    // --- CHAINS ---
 
     #[test]
     fn test_and_chain() -> Result<()> {
         assert_eq!(
-            parse("a AND b AND c")?,
-            QueryAst::And(vec![
-                QueryAst::Word("a"),
-                QueryAst::Word("b"),
-                QueryAst::Word("c"),
-            ])
+            parse("a AND b AND c")?.explain().to_string(),
+            indoc! {"
+                AND
+                ├── Word (word = a)
+                ├── Word (word = b)
+                └── Word (word = c)
+            "}
         );
         Ok(())
     }
@@ -237,12 +249,13 @@ mod tests {
     #[test]
     fn test_or_chain() -> Result<()> {
         assert_eq!(
-            parse("a OR b OR c")?,
-            QueryAst::Or(vec![
-                QueryAst::Word("a"),
-                QueryAst::Word("b"),
-                QueryAst::Word("c"),
-            ])
+            parse("a OR b OR c")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── Word (word = a)
+                ├── Word (word = b)
+                └── Word (word = c)
+            "}
         );
         Ok(())
     }
@@ -252,12 +265,13 @@ mod tests {
     #[test]
     fn test_implicit_or_words() -> Result<()> {
         assert_eq!(
-            parse("a b c")?,
-            QueryAst::Or(vec![
-                QueryAst::Word("a"),
-                QueryAst::Word("b"),
-                QueryAst::Word("c"),
-            ])
+            parse("a b c")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── Word (word = a)
+                ├── Word (word = b)
+                └── Word (word = c)
+            "}
         );
         Ok(())
     }
@@ -265,11 +279,14 @@ mod tests {
     #[test]
     fn test_implicit_or_parenthesized() -> Result<()> {
         assert_eq!(
-            parse("a (b AND c)")?,
-            QueryAst::Or(vec![
-                QueryAst::Word("a"),
-                QueryAst::And(vec![QueryAst::Word("b"), QueryAst::Word("c")]),
-            ])
+            parse("a (b AND c)")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── Word (word = a)
+                └── AND
+                    ├── Word (word = b)
+                    └── Word (word = c)
+            "}
         );
         Ok(())
     }
@@ -277,12 +294,15 @@ mod tests {
     #[test]
     fn test_implicit_or_after_parentheses() -> Result<()> {
         assert_eq!(
-            parse("(a AND b) c d")?,
-            QueryAst::Or(vec![
-                QueryAst::And(vec![QueryAst::Word("a"), QueryAst::Word("b")]),
-                QueryAst::Word("c"),
-                QueryAst::Word("d"),
-            ])
+            parse("(a AND b) c d")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── AND
+                │   ├── Word (word = a)
+                │   └── Word (word = b)
+                ├── Word (word = c)
+                └── Word (word = d)
+            "}
         );
         Ok(())
     }
@@ -292,11 +312,14 @@ mod tests {
     #[test]
     fn test_and_before_or() -> Result<()> {
         assert_eq!(
-            parse("a OR b AND c")?,
-            QueryAst::Or(vec![
-                QueryAst::Word("a"),
-                QueryAst::And(vec![QueryAst::Word("b"), QueryAst::Word("c")]),
-            ])
+            parse("a OR b AND c")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── Word (word = a)
+                └── AND
+                    ├── Word (word = b)
+                    └── Word (word = c)
+            "}
         );
         Ok(())
     }
@@ -304,11 +327,14 @@ mod tests {
     #[test]
     fn test_or_after_and() -> Result<()> {
         assert_eq!(
-            parse("a AND b OR c")?,
-            QueryAst::Or(vec![
-                QueryAst::And(vec![QueryAst::Word("a"), QueryAst::Word("b")]),
-                QueryAst::Word("c"),
-            ])
+            parse("a AND b OR c")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── AND
+                │   ├── Word (word = a)
+                │   └── Word (word = b)
+                └── Word (word = c)
+            "}
         );
         Ok(())
     }
@@ -316,11 +342,13 @@ mod tests {
     #[test]
     fn test_not_before_and() -> Result<()> {
         assert_eq!(
-            parse("NOT a AND b")?,
-            QueryAst::And(vec![
-                QueryAst::Not(Box::new(QueryAst::Word("a"))),
-                QueryAst::Word("b"),
-            ])
+            parse("NOT a AND b")?.explain().to_string(),
+            indoc! {"
+                AND
+                ├── NOT
+                │   └── Word (word = a)
+                └── Word (word = b)
+            "}
         );
         Ok(())
     }
@@ -328,11 +356,14 @@ mod tests {
     #[test]
     fn test_parentheses_override_precedence() -> Result<()> {
         assert_eq!(
-            parse("(a OR b) AND c")?,
-            QueryAst::And(vec![
-                QueryAst::Or(vec![QueryAst::Word("a"), QueryAst::Word("b")]),
-                QueryAst::Word("c"),
-            ])
+            parse("(a OR b) AND c")?.explain().to_string(),
+            indoc! {"
+                AND
+                ├── OR
+                │   ├── Word (word = a)
+                │   └── Word (word = b)
+                └── Word (word = c)
+            "}
         );
         Ok(())
     }
@@ -340,11 +371,16 @@ mod tests {
     #[test]
     fn test_mixed_explicit_and_implicit_or() -> Result<()> {
         assert_eq!(
-            parse("a AND b c AND d")?,
-            QueryAst::Or(vec![
-                QueryAst::And(vec![QueryAst::Word("a"), QueryAst::Word("b")]),
-                QueryAst::And(vec![QueryAst::Word("c"), QueryAst::Word("d")]),
-            ])
+            parse("a AND b c AND d")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── AND
+                │   ├── Word (word = a)
+                │   └── Word (word = b)
+                └── AND
+                    ├── Word (word = c)
+                    └── Word (word = d)
+            "}
         );
         Ok(())
     }
@@ -352,11 +388,14 @@ mod tests {
     #[test]
     fn test_implicit_or_yields_to_explicit_and() -> Result<()> {
         assert_eq!(
-            parse("a b AND c")?,
-            QueryAst::Or(vec![
-                QueryAst::Word("a"),
-                QueryAst::And(vec![QueryAst::Word("b"), QueryAst::Word("c")]),
-            ])
+            parse("a b AND c")?.explain().to_string(),
+            indoc! {"
+                OR
+                ├── Word (word = a)
+                └── AND
+                    ├── Word (word = b)
+                    └── Word (word = c)
+            "}
         );
         Ok(())
     }

@@ -10,8 +10,8 @@ use crate::utils::normalize_word;
 
 /// Builds document ID iterators tree out of query AST for one index segment.
 ///
-/// This is the place for constructing optimal execution plan, e.g. reordering
-/// iterators, choosing right iterators, etc.
+/// This is the place for constructing optimal execution plan, e.g. choosing
+/// right iterators, reordering them if needed, etc.
 ///
 /// Invariants for input query AST:
 /// - `NOT` may only appear as operand of `AND` expression (e.g. "x AND NOT y")
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn test_word() -> Result<()> {
-        assert_eq!(plan_query_and_explain("a")?, "Term (term = a)\n");
+        assert_eq!(plan_query_and_explain("a")?, "PostingList (term = a)\n");
         Ok(())
     }
 
@@ -164,7 +164,7 @@ mod tests {
     fn test_word_unknown() -> Result<()> {
         assert_eq!(
             plan_query_and_explain("x")?,
-            "Term (term = x, unknown_term = true)\n"
+            "PostingList (term = x, unknown_term = true)\n"
         );
         Ok(())
     }
@@ -175,8 +175,8 @@ mod tests {
             plan_query_and_explain("a AND b")?,
             indoc! {"
                 Intersection
-                ├── Term (term = a)
-                └── Term (term = b)
+                ├── PostingList (term = a)
+                └── PostingList (term = b)
             "}
         );
         Ok(())
@@ -188,8 +188,8 @@ mod tests {
             plan_query_and_explain("a AND NOT b")?,
             indoc! {"
                 Exclusion
-                ├── include = Term (term = a)
-                └── exclude = Term (term = b)
+                ├── include = PostingList (term = a)
+                └── exclude = PostingList (term = b)
             "}
         );
         Ok(())
@@ -202,9 +202,9 @@ mod tests {
             indoc! {"
                 Exclusion
                 ├── include = Union
-                │   ├── Term (term = a)
-                │   └── Term (term = b)
-                └── exclude = Term (term = c)
+                │   ├── PostingList (term = a)
+                │   └── PostingList (term = b)
+                └── exclude = PostingList (term = c)
             "}
         );
         Ok(())
@@ -217,9 +217,9 @@ mod tests {
             indoc! {"
                 Exclusion
                 ├── include = Intersection
-                │   ├── Term (term = a)
-                │   └── Term (term = b)
-                └── exclude = Term (term = c)
+                │   ├── PostingList (term = a)
+                │   └── PostingList (term = b)
+                └── exclude = PostingList (term = c)
             "}
         );
         Ok(())
@@ -231,10 +231,10 @@ mod tests {
             plan_query_and_explain("a AND NOT b AND NOT c")?,
             indoc! {"
                 Exclusion
-                ├── include = Term (term = a)
+                ├── include = PostingList (term = a)
                 └── exclude = Union
-                    ├── Term (term = b)
-                    └── Term (term = c)
+                    ├── PostingList (term = b)
+                    └── PostingList (term = c)
             "}
         );
         Ok(())
@@ -286,8 +286,8 @@ mod tests {
             plan_query_and_explain("a OR b")?,
             indoc! {"
                 Union
-                ├── Term (term = a)
-                └── Term (term = b)
+                ├── PostingList (term = a)
+                └── PostingList (term = b)
             "}
         );
         Ok(())
@@ -328,10 +328,10 @@ mod tests {
             plan_query_and_explain("a AND NOT (b OR c)")?,
             indoc! {"
                 Exclusion
-                ├── include = Term (term = a)
+                ├── include = PostingList (term = a)
                 └── exclude = Union
-                    ├── Term (term = b)
-                    └── Term (term = c)
+                    ├── PostingList (term = b)
+                    └── PostingList (term = c)
             "}
         );
         Ok(())
@@ -343,10 +343,10 @@ mod tests {
             plan_query_and_explain("a AND NOT (b AND c)")?,
             indoc! {"
                 Exclusion
-                ├── include = Term (term = a)
+                ├── include = PostingList (term = a)
                 └── exclude = Intersection
-                    ├── Term (term = b)
-                    └── Term (term = c)
+                    ├── PostingList (term = b)
+                    └── PostingList (term = c)
             "}
         );
         Ok(())
@@ -377,13 +377,13 @@ mod tests {
             indoc! {"
                 Exclusion
                 ├── include = Intersection
-                │   ├── Term (term = a)
+                │   ├── PostingList (term = a)
                 │   └── Union
                 │       ├── Exclusion
-                │       │   ├── include = Term (term = b)
-                │       │   └── exclude = Term (term = c)
-                │       └── Term (term = d)
-                └── exclude = Term (term = e)
+                │       │   ├── include = PostingList (term = b)
+                │       │   └── exclude = PostingList (term = c)
+                │       └── PostingList (term = d)
+                └── exclude = PostingList (term = e)
             "}
         );
         Ok(())

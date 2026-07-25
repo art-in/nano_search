@@ -1,6 +1,11 @@
 use std::iter::Peekable;
 use std::str::CharIndices;
 
+/// Lexer splits search query string into series of typed pieces, a.k.a. tokens.
+/// Each token has specific semantic type, thus this is lexer and not just
+/// tokenizer. It serves as first stage of query parsing, allowing later stages
+/// not to think about individual characters, but operate on higher level of
+/// meaningful tokens.
 pub struct Lexer<'a> {
     input: &'a str,
     chars: Peekable<CharIndices<'a>>,

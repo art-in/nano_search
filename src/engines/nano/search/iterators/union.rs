@@ -38,8 +38,8 @@ impl<'a> UnionDocIdIterator<'a> {
 
         // TODO: use min-heap for finding next candidate (?).
         // still hesitant, since it only matters with lots of input iterators.
-        // e.g. tantivy used min-heap initially, but later removed it and now
-        // uses alternative optimization paths. needs deeper investigation
+        // e.g. tantivy was using min-heap initially, but later replaced it with
+        // alternative optimization paths. needs deeper investigation
         for it in &self.inputs {
             if let ItDocId::Active(docid) = it.current_docid()? {
                 candidate = Some(candidate.map_or(docid, |c| c.min(docid)));
@@ -91,7 +91,7 @@ impl ScoringDocIdIterator for UnionDocIdIterator<'_> {
                         it.current_docid()?,
                         ItDocId::Active(docid) if docid == current_docid)
                     {
-                        total_score += it.current_score()?.expect_val()?;
+                        total_score += it.current_score()?.expect()?;
                     }
                 }
 
@@ -105,28 +105,32 @@ impl ScoringDocIdIterator for UnionDocIdIterator<'_> {
 mod tests {
     use super::super::test_utils::*;
     use super::*;
+    use crate::eval::model::Relevance;
+
+    pub fn create_it(
+        inputs: Vec<(Vec<SegmentDocId>, Vec<Relevance>)>,
+    ) -> Result<UnionDocIdIterator<'static>> {
+        let mut inputs_it: Vec<Box<dyn ScoringDocIdIterator>> = Vec::new();
+        for (docids, scores) in inputs {
+            let it = Box::new(TestScoringDocIdIterator::new(docids, scores)?);
+            inputs_it.push(it);
+        }
+        Ok(UnionDocIdIterator::new(inputs_it))
+    }
 
     #[test]
     fn test_empty_input() -> Result<()> {
-        let mut it = UnionDocIdIterator::new(vec![]);
-
-        assert_eq!(it.current_docid()?, ItDocId::NotStarted);
-        assert_eq!(it.current_score()?, ItScore::NotStarted);
-
-        it.advance()?;
-
-        assert_eq!(it.current_docid()?, ItDocId::Exhausted);
-        assert_eq!(it.current_score()?, ItScore::Exhausted);
-
+        let it = create_it(vec![])?;
+        assert!(collect(it)?.is_empty());
         Ok(())
     }
 
     #[test]
     fn test_single_input() -> Result<()> {
         assert_eq!(
-            create_union_it_and_collect(vec![
+            collect(create_it(vec![
                 (vec![1, 2], vec![1.0, 2.0]) // 1st input
-            ])?,
+            ])?)?,
             &[(1, 1.0), (2, 2.0)]
         );
 
@@ -136,11 +140,11 @@ mod tests {
     #[test]
     fn test_multiple_inputs() -> Result<()> {
         assert_eq!(
-            create_union_it_and_collect(vec![
+            collect(create_it(vec![
                 (vec![1, 2], vec![1.0, 2.0]), // 1st input
                 (vec![2, 3], vec![2.0, 3.0]), // 2nd input
                 (vec![2, 4], vec![2.0, 4.0]), // 3rd input
-            ])?,
+            ])?)?,
             &[(1, 1.0), (2, 6.0), (3, 3.0), (4, 4.0)]
         );
         Ok(())
@@ -148,25 +152,14 @@ mod tests {
 
     #[test]
     fn test_advance_to() -> Result<()> {
-        let mut it = create_union_it(vec![
+        let mut it = create_it(vec![
             (vec![1, 2, 3], vec![1.0, 2.0, 3.0]),
             (vec![2, 3, 4], vec![2.0, 3.0, 4.0]),
         ])?;
 
         it.advance_to(3)?;
 
-        assert_eq!(it.current_docid()?, ItDocId::Active(3));
-        assert_eq!(it.current_score()?, ItScore::Active(6.0));
-
-        it.advance()?;
-
-        assert_eq!(it.current_docid()?, ItDocId::Active(4));
-        assert_eq!(it.current_score()?, ItScore::Active(4.0));
-
-        it.advance()?;
-
-        assert_eq!(it.current_docid()?, ItDocId::Exhausted);
-        assert_eq!(it.current_score()?, ItScore::Exhausted);
+        assert_eq!(collect_rest(it)?, &[(3, 6.0), (4, 4.0)]);
 
         Ok(())
     }
@@ -174,10 +167,10 @@ mod tests {
     #[test]
     fn test_one_input_exhausts_early() -> Result<()> {
         assert_eq!(
-            create_union_it_and_collect(vec![
+            collect(create_it(vec![
                 (vec![1], vec![1.0]),
                 (vec![1, 2, 3], vec![1.0, 2.0, 3.0]),
-            ])?,
+            ])?)?,
             &[(1, 2.0), (2, 2.0), (3, 3.0)]
         );
         Ok(())
@@ -186,10 +179,10 @@ mod tests {
     #[test]
     fn test_empty_input_among_others() -> Result<()> {
         assert_eq!(
-            create_union_it_and_collect(vec![
+            collect(create_it(vec![
                 (vec![], vec![]),
                 (vec![1, 2], vec![1.0, 2.0]),
-            ])?,
+            ])?)?,
             &[(1, 1.0), (2, 2.0)]
         );
         Ok(())
