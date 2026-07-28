@@ -44,6 +44,9 @@ fn search_segment(
     for word in words {
         let term = crate::utils::normalize_word(word);
 
+        let Some(term) = term else {
+            continue;
+        };
         if STOP_WORDS.contains(&term) {
             continue;
         }

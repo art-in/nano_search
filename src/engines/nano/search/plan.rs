@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Context, Result, bail};
 
 use super::iterators::{
     ExcludingDocIdIterator, IntersectingDocIdIterator, PostingListIterator,
@@ -6,18 +6,11 @@ use super::iterators::{
 };
 use super::query::QueryAst;
 use crate::engines::nano::index::model::IndexSegment;
-use crate::utils::normalize_word;
 
 /// Builds document ID iterators tree out of query AST for one index segment.
 ///
-/// This is the place for constructing optimal execution plan, e.g. choosing
-/// right iterators, reordering them if needed, etc.
-///
-/// Invariants for input query AST:
-/// - `NOT` may only appear as operand of `AND` expression (e.g. "x AND NOT y")
-/// - `AND` expression should contain at least one including operand and at
-///   least two operands total (e.g. "x AND y" or "x AND NOT y")
-/// - `OR` should contain at least two operands (e.g. "x OR y")
+/// It receives semantically validated and normalized query AST, so it should
+/// not perform any structural rewrites and validations.
 ///
 /// Implementation note:
 /// Lucene and Tantivy distribute this planning logic across their `Query`
@@ -29,21 +22,18 @@ pub fn plan_query_for_segment<'a>(
     segment: &'a dyn IndexSegment,
 ) -> Result<Box<dyn ScoringDocIdIterator + 'a>> {
     Ok(match query_ast {
-        QueryAst::Word(word) => plan_word(word, segment)?,
+        QueryAst::Word(term) => plan_word(term, segment)?,
         QueryAst::And(operands) => plan_and(operands, segment)?,
         QueryAst::Or(operands) => plan_or(operands, segment)?,
-        QueryAst::Not(_) => {
-            bail!("NOT should only appear as direct operand of AND")
-        }
+        QueryAst::Not(_) => bail!("NOT should only be handled as part of AND"),
     })
 }
 
 fn plan_word<'a>(
-    word: &str,
+    term: &str,
     segment: &'a dyn IndexSegment,
 ) -> Result<Box<dyn ScoringDocIdIterator + 'a>> {
-    let term = normalize_word(word);
-    let it = PostingListIterator::create_for_segment(segment, &term)?;
+    let it = PostingListIterator::create_for_segment(segment, term)?;
     Ok(Box::new(it))
 }
 
@@ -61,16 +51,6 @@ fn plan_and<'a>(
             includes.push(plan_query_for_segment(operand, segment)?);
         }
     }
-
-    ensure!(
-        !includes.is_empty(),
-        "AND should contain at least one including operand"
-    );
-
-    ensure!(
-        operands.len() >= 2,
-        "AND should contain at least two operands"
-    );
 
     let includes_it: Box<dyn ScoringDocIdIterator + 'a> = if includes.len() == 1
     {
@@ -96,17 +76,9 @@ fn plan_or<'a>(
     operands: &[QueryAst],
     segment: &'a dyn IndexSegment,
 ) -> Result<Box<dyn ScoringDocIdIterator + 'a>> {
-    ensure!(
-        operands.len() >= 2,
-        "OR should contain at least two operands"
-    );
-
     let mut inputs = Vec::new();
+
     for operand in operands {
-        ensure!(
-            !matches!(operand, QueryAst::Not(_)),
-            "NOT should not be a part of OR expression"
-        );
         let it = plan_query_for_segment(operand, segment)?;
         inputs.push(it);
     }
@@ -123,7 +95,7 @@ mod tests {
 
     use super::*;
     use crate::engines::nano::index::MemoryIndex;
-    use crate::engines::nano::search::query::{Lexer, Parser};
+    use crate::engines::nano::search::query::test_utils::*;
 
     fn create_segment() -> Box<dyn IndexSegment> {
         let mut segment = MemoryIndex::default();
@@ -133,15 +105,7 @@ mod tests {
         Box::new(segment)
     }
 
-    fn plan_query_and_explain(query: &str) -> Result<String> {
-        let tokens = Lexer::new(query);
-        let query_ast = Parser::new(tokens).parse()?;
-        let segment = create_segment();
-        let it = plan_query_for_segment(&query_ast, segment.as_ref())?;
-        Ok(it.explain().to_string())
-    }
-
-    fn plan_query_ast_and_explain(query_ast: &QueryAst) -> Result<String> {
+    fn plan_and_explain(query_ast: &QueryAst) -> Result<String> {
         let segment = create_segment();
         let it = plan_query_for_segment(query_ast, segment.as_ref())?;
         Ok(it.explain().to_string())
@@ -156,14 +120,16 @@ mod tests {
 
     #[test]
     fn test_word() -> Result<()> {
-        assert_eq!(plan_query_and_explain("a")?, "PostingList (term = a)\n");
+        let query = word("a");
+        assert_eq!(plan_and_explain(&query)?, "PostingList (term = a)\n");
         Ok(())
     }
 
     #[test]
     fn test_word_unknown() -> Result<()> {
+        let query = word("x");
         assert_eq!(
-            plan_query_and_explain("x")?,
+            plan_and_explain(&query)?,
             "PostingList (term = x, unknown_term = true)\n"
         );
         Ok(())
@@ -171,8 +137,9 @@ mod tests {
 
     #[test]
     fn test_and() -> Result<()> {
+        let query = and([word("a"), word("b")]);
         assert_eq!(
-            plan_query_and_explain("a AND b")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Intersection
                 ├── PostingList (term = a)
@@ -184,8 +151,12 @@ mod tests {
 
     #[test]
     fn test_and_single_include_single_exclude() -> Result<()> {
+        let query = and([
+            word("a"),      // include
+            not(word("b")), // exclude
+        ]);
         assert_eq!(
-            plan_query_and_explain("a AND NOT b")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Exclusion
                 ├── include = PostingList (term = a)
@@ -197,8 +168,12 @@ mod tests {
 
     #[test]
     fn test_and_single_include_nested_single_exclude() -> Result<()> {
+        let query = and([
+            or([word("a"), word("b")]), // include
+            not(word("c")),             // exclude
+        ]);
         assert_eq!(
-            plan_query_and_explain("(a OR b) AND NOT c")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Exclusion
                 ├── include = Union
@@ -212,8 +187,13 @@ mod tests {
 
     #[test]
     fn test_and_multiple_includes_single_exclude() -> Result<()> {
+        let query = and([
+            word("a"),      // include
+            word("b"),      // include
+            not(word("c")), // exclude
+        ]);
         assert_eq!(
-            plan_query_and_explain("a AND b AND NOT c")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Exclusion
                 ├── include = Intersection
@@ -227,8 +207,13 @@ mod tests {
 
     #[test]
     fn test_and_single_include_multiple_excludes() -> Result<()> {
+        let query = and([
+            word("a"),      // include
+            not(word("b")), // exclude
+            not(word("c")), // exclude
+        ]);
         assert_eq!(
-            plan_query_and_explain("a AND NOT b AND NOT c")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Exclusion
                 ├── include = PostingList (term = a)
@@ -241,49 +226,10 @@ mod tests {
     }
 
     #[test]
-    fn test_and_all_excluding() -> Result<()> {
-        assert_eq!(
-            err(plan_query_and_explain("NOT a AND NOT b"))?,
-            "AND should contain at least one including operand"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_and_all_excluding_nested() -> Result<()> {
-        // TODO: support this by removing nesting in some AST normalization
-        // layer between parser and planner
-        assert_eq!(
-            err(plan_query_and_explain("c AND (NOT a AND NOT b)"))?,
-            "AND should contain at least one including operand"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_and_no_operands() -> Result<()> {
-        assert_eq!(
-            err(plan_query_ast_and_explain(&QueryAst::And(vec![])))?,
-            "AND should contain at least one including operand"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_and_single_operand() -> Result<()> {
-        assert_eq!(
-            err(plan_query_ast_and_explain(&QueryAst::And(vec![
-                QueryAst::Word("a")
-            ])))?,
-            "AND should contain at least two operands"
-        );
-        Ok(())
-    }
-
-    #[test]
     fn test_or() -> Result<()> {
+        let query = or([word("a"), word("b")]);
         assert_eq!(
-            plan_query_and_explain("a OR b")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Union
                 ├── PostingList (term = a)
@@ -294,38 +240,16 @@ mod tests {
     }
 
     #[test]
-    fn test_or_no_operands() -> Result<()> {
-        assert_eq!(
-            err(plan_query_ast_and_explain(&QueryAst::Or(vec![])))?,
-            "OR should contain at least two operands"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_or_single_operand() -> Result<()> {
-        assert_eq!(
-            err(plan_query_ast_and_explain(&QueryAst::Or(vec![
-                QueryAst::Word("a")
-            ])))?,
-            "OR should contain at least two operands"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_or_not() -> Result<()> {
-        assert_eq!(
-            err(plan_query_and_explain("a OR NOT b"))?,
-            "NOT should not be a part of OR expression"
-        );
-        Ok(())
-    }
-
-    #[test]
     fn test_not_nested_or() -> Result<()> {
+        let query = and([
+            word("a"),
+            not(or([
+                word("b"), // nested
+                word("c"),
+            ])),
+        ]);
         assert_eq!(
-            plan_query_and_explain("a AND NOT (b OR c)")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Exclusion
                 ├── include = PostingList (term = a)
@@ -339,8 +263,15 @@ mod tests {
 
     #[test]
     fn test_not_nested_and() -> Result<()> {
+        let query = and([
+            word("a"),
+            not(and([
+                word("b"), // nested
+                word("c"),
+            ])),
+        ]);
         assert_eq!(
-            plan_query_and_explain("a AND NOT (b AND c)")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Exclusion
                 ├── include = PostingList (term = a)
@@ -353,27 +284,17 @@ mod tests {
     }
 
     #[test]
-    fn test_not_not() -> Result<()> {
-        assert_eq!(
-            err(plan_query_and_explain("a AND NOT NOT b"))?,
-            "NOT should only appear as direct operand of AND"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_not_root() -> Result<()> {
-        assert_eq!(
-            err(plan_query_and_explain("NOT a"))?,
-            "NOT should only appear as direct operand of AND"
-        );
-        Ok(())
-    }
-
-    #[test]
     fn test_complex() -> Result<()> {
+        let query = and([
+            word("a"),
+            or([
+                and([word("b"), not(word("c"))]), // nested
+                word("d"),
+            ]),
+            not(word("e")),
+        ]);
         assert_eq!(
-            plan_query_and_explain("a AND ((b AND NOT c) OR d) AND NOT e")?,
+            plan_and_explain(&query)?,
             indoc! {"
                 Exclusion
                 ├── include = Intersection

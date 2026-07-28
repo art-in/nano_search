@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::iter::Peekable;
 
 use anyhow::{Result, bail, ensure};
@@ -133,7 +134,7 @@ where
 
     fn parse_primary(&mut self) -> Result<QueryAst<'a>> {
         match self.tokens.next() {
-            Some(Token::Word(word)) => Ok(QueryAst::Word(word)),
+            Some(Token::Word(word)) => Ok(QueryAst::Word(Cow::Borrowed(word))),
             Some(Token::LParen) => {
                 let ast = self.parse_expression()?;
                 self.expect_token(&Token::RParen, "should receive ')'")?;
@@ -147,6 +148,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use indoc::indoc;
     use pretty_assertions::assert_eq;
 
@@ -168,13 +171,13 @@ mod tests {
 
     #[test]
     fn test_single_word() -> Result<()> {
-        assert_eq!(parse("word")?, QueryAst::Word("word"));
+        assert_eq!(parse("word")?, QueryAst::Word(Cow::Borrowed("word")));
         Ok(())
     }
 
     #[test]
     fn test_nested_parentheses() -> Result<()> {
-        assert_eq!(parse("(((word)))")?, QueryAst::Word("word"));
+        assert_eq!(parse("(((word)))")?, QueryAst::Word(Cow::Borrowed("word")));
         Ok(())
     }
 

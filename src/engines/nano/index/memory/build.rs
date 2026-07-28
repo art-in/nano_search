@@ -17,10 +17,7 @@ pub fn build_memory_index(
         let doc = doc.context("doc should be valid")?;
         let words = doc.text.split_whitespace();
 
-        let terms = words.filter_map(|word| {
-            let term = crate::utils::normalize_word(word);
-            if term.is_empty() { None } else { Some(term) }
-        });
+        let terms = words.filter_map(crate::utils::normalize_word);
 
         let mut doc_terms_count = 0_u16;
 
