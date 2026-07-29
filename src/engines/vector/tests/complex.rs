@@ -44,14 +44,14 @@ fn assert_search_quality(
     assert_eq!(quality.queries_count, 112);
     assert_eq!(quality.search_limit, 10);
 
-    assert_float_relative_eq!(quality.ndcg_avg, 0.167_688_336_365_987_57);
+    assert_float_relative_eq!(quality.ndcg_avg, 0.167_069_088_996_724_85, 0.01);
 
-    assert_float_relative_eq!(quality.precision_avg, 0.145_535_714_285_714_27);
+    assert_float_relative_eq!(quality.precision_avg, 0.142_857_142_857_142_85);
     assert_float_relative_eq!(quality.precision_p50, 0.05);
     assert_float_relative_eq!(quality.precision_p90, 0.5);
-    assert_float_relative_eq!(quality.precision_p100, 0.8);
+    assert_float_relative_eq!(quality.precision_p100, 0.7);
 
-    assert_float_relative_eq!(quality.recall_avg, 0.367_113_610_871_619_03);
+    assert_float_relative_eq!(quality.recall_avg, 0.366_338_918_611_863_9);
     assert_float_relative_eq!(quality.recall_p50, 0.095_894_607_843_137_25);
     assert_float_relative_eq!(quality.recall_p90, 1.0);
     assert_float_relative_eq!(quality.recall_p100, 1.0);

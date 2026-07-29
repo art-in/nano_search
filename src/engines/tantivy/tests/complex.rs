@@ -68,15 +68,15 @@ fn assert_search_quality(engine: &impl SearchEngine) -> Result<()> {
     assert_eq!(quality.queries_count, 112);
     assert_eq!(quality.search_limit, 10);
 
-    assert_float_relative_eq!(quality.ndcg_avg, 0.179_194_254_335_665_13, 0.01);
+    assert_float_relative_eq!(quality.ndcg_avg, 0.183_004_074_811_264_68, 0.01);
 
-    assert_float_relative_eq!(quality.precision_avg, 0.158_928_571_428_571_4);
+    assert_float_relative_eq!(quality.precision_avg, 0.164_285_714_285_714_23);
     assert_float_relative_eq!(quality.precision_p50, 0.1);
-    assert_float_relative_eq!(quality.precision_p90, 0.490_000_000_000_000_55);
+    assert_float_relative_eq!(quality.precision_p90, 0.5);
     assert_float_relative_eq!(quality.precision_p100, 0.7);
 
-    assert_float_relative_eq!(quality.recall_avg, 0.381_079_248_316_754_6);
-    assert_float_relative_eq!(quality.recall_p50, 0.096_875);
+    assert_float_relative_eq!(quality.recall_avg, 0.382_841_911_804_789);
+    assert_float_relative_eq!(quality.recall_p50, 0.093_386_627_906_976_74);
     assert_float_relative_eq!(quality.recall_p90, 1.0);
     assert_float_relative_eq!(quality.recall_p100, 1.0);
 

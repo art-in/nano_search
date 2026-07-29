@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, ensure};
 
 use super::metrics::{precision, recall};
 use super::model::{QuerySearchQuality, SearchQuality};
@@ -15,9 +15,9 @@ pub fn evaluate_search_quality(
     engine: &dyn SearchEngine,
     search_limit: u64,
 ) -> Result<SearchQuality> {
+    let mut ndcg_sum: f64 = 0.0;
     let mut precision_sum: f64 = 0.0;
     let mut recall_sum: f64 = 0.0;
-    let mut ndcg_sum: f64 = 0.0;
 
     let mut precisions = inc_stats::Percentiles::new();
     let mut recalls = inc_stats::Percentiles::new();
@@ -27,7 +27,11 @@ pub fn evaluate_search_quality(
     for query in queries {
         let query = query.context("query should be valid")?;
 
-        let found_docids = engine.search(&query.text, search_limit)?;
+        let query_text = strip_query_syntax(&query.text);
+
+        let found_docids = engine
+            .search(&query_text, search_limit)
+            .with_context(|| format!("query: '{query_text}'"))?;
 
         let quality = evaluate_search_quality_for_query(
             &found_docids,
@@ -45,13 +49,11 @@ pub fn evaluate_search_quality(
         queries_count += 1;
     }
 
-    if queries_count == 0 {
-        bail!("no queries to evaluate search quality");
-    }
+    ensure!(queries_count > 0, "queries source should not be empty");
 
+    let ndcg_avg = ndcg_sum / queries_count as f64;
     let precision_avg = precision_sum / queries_count as f64;
     let recall_avg = recall_sum / queries_count as f64;
-    let ndcg_avg = ndcg_sum / queries_count as f64;
 
     Ok(SearchQuality {
         queries_count,
@@ -76,13 +78,37 @@ pub fn evaluate_search_quality_for_query(
     relevant_docs: &HashMap<ExternalDocId, Relevance>,
     search_limit: u64,
 ) -> Result<QuerySearchQuality> {
+    let ndcg = ndcg(found_docids, relevant_docs, search_limit)?;
     let precision = precision(found_docids, relevant_docs);
     let recall = recall(found_docids, relevant_docs);
-    let ndcg = ndcg(found_docids, relevant_docs, search_limit)?;
 
     Ok(QuerySearchQuality {
+        ndcg,
         precision,
         recall,
-        ndcg,
     })
+}
+
+// strip query syntax, because evaluation queries are arbitrary texts that may
+// accidentally contain operators or grouping characters.
+// e.g. "1) GUNS AND ROSES 2) BEATLES" contains the boolean operator AND and an
+// unmatched parenthesis. it should be interpreted as ordinary text, not as
+// query-language syntax. otherwise it will silently affect search results or
+// fail with "invalid syntax" error
+// TODO: pass "parsing_mode" arg to search() and explicitly disable syntax
+// parsing in each engine, instead of rewriting queries
+#[must_use]
+fn strip_query_syntax(query: &str) -> String {
+    query
+        // parsers usually are case-sensitive, so lowercasing AND/OR/NOT/etc
+        // operators disables them
+        .to_lowercase()
+        // strip special characters
+        .replace(
+            [
+                '(', ')', '+', '-', '*', '?', '"', '\'', ':', '^', '~', '[',
+                ']', '{', '}',
+            ],
+            "",
+        )
 }

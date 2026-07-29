@@ -48,7 +48,7 @@ pub struct SearchQuality {
 
 // Search quality evaluation results for particular query
 pub struct QuerySearchQuality {
+    pub ndcg: f64,
     pub precision: f64,
     pub recall: f64,
-    pub ndcg: f64,
 }
