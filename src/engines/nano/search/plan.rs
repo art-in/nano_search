@@ -4,7 +4,7 @@ use super::iterators::{
     ExcludingDocIdIterator, IntersectingDocIdIterator, PostingListIterator,
     ScoringDocIdIterator, UnionDocIdIterator,
 };
-use super::query::QueryAst;
+use super::query::{QueryAst, QueryAstWord};
 use crate::engines::nano::index::model::IndexSegment;
 
 /// Builds document ID iterators tree out of query AST for one index segment.
@@ -30,10 +30,14 @@ pub fn plan_query_for_segment<'a>(
 }
 
 fn plan_word<'a>(
-    term: &str,
+    word: &QueryAstWord,
     segment: &'a dyn IndexSegment,
 ) -> Result<Box<dyn ScoringDocIdIterator + 'a>> {
-    let it = PostingListIterator::create_for_segment(segment, term)?;
+    let it = PostingListIterator::create_for_segment(
+        segment,
+        &word.value,
+        word.frequency,
+    )?;
     Ok(Box::new(it))
 }
 

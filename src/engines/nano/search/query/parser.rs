@@ -3,7 +3,7 @@ use std::iter::Peekable;
 
 use anyhow::{Result, bail, ensure};
 
-use super::ast::QueryAst;
+use super::ast::{QueryAst, QueryAstWord};
 use super::lexer::Token;
 
 /// Search query parser that turns a token stream into an abstract syntax
@@ -134,7 +134,10 @@ where
 
     fn parse_primary(&mut self) -> Result<QueryAst<'a>> {
         match self.tokens.next() {
-            Some(Token::Word(word)) => Ok(QueryAst::Word(Cow::Borrowed(word))),
+            Some(Token::Word(word)) => Ok(QueryAst::Word(QueryAstWord {
+                value: Cow::Borrowed(word),
+                frequency: 1,
+            })),
             Some(Token::LParen) => {
                 let ast = self.parse_expression()?;
                 self.expect_token(&Token::RParen, "should receive ')'")?;
@@ -148,13 +151,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
 
     use indoc::indoc;
     use pretty_assertions::assert_eq;
 
     use super::super::lexer::Lexer;
     use super::*;
+    use crate::engines::nano::search::query::test_utils::word;
 
     fn parse(input: &str) -> Result<QueryAst<'_>> {
         Parser::new(Lexer::new(input)).parse()
@@ -171,13 +174,13 @@ mod tests {
 
     #[test]
     fn test_single_word() -> Result<()> {
-        assert_eq!(parse("word")?, QueryAst::Word(Cow::Borrowed("word")));
+        assert_eq!(parse("value")?, word("value"));
         Ok(())
     }
 
     #[test]
     fn test_nested_parentheses() -> Result<()> {
-        assert_eq!(parse("(((word)))")?, QueryAst::Word(Cow::Borrowed("word")));
+        assert_eq!(parse("(((value)))")?, word("value"));
         Ok(())
     }
 
@@ -186,11 +189,11 @@ mod tests {
     #[test]
     fn test_double_not() -> Result<()> {
         assert_eq!(
-            parse("NOT NOT word")?.explain().to_string(),
+            parse("NOT NOT a")?.explain().to_string(),
             indoc! {"
                 NOT
                 └── NOT
-                    └── Word (word = word)
+                    └── Word (value = a)
             "}
         );
         Ok(())
@@ -203,8 +206,8 @@ mod tests {
             indoc! {"
                 NOT
                 └── OR
-                    ├── Word (word = a)
-                    └── Word (word = b)
+                    ├── Word (value = a)
+                    └── Word (value = b)
             "}
         );
         Ok(())
@@ -216,9 +219,9 @@ mod tests {
             parse("a NOT b")?.explain().to_string(),
             indoc! {"
                 OR
-                ├── Word (word = a)
+                ├── Word (value = a)
                 └── NOT
-                    └── Word (word = b)
+                    └── Word (value = b)
             "}
         );
         assert_eq!(
@@ -226,8 +229,8 @@ mod tests {
             indoc! {"
                 OR
                 ├── NOT
-                │   └── Word (word = a)
-                └── Word (word = b)
+                │   └── Word (value = a)
+                └── Word (value = b)
             "}
         );
         Ok(())
@@ -241,9 +244,9 @@ mod tests {
             parse("a AND b AND c")?.explain().to_string(),
             indoc! {"
                 AND
-                ├── Word (word = a)
-                ├── Word (word = b)
-                └── Word (word = c)
+                ├── Word (value = a)
+                ├── Word (value = b)
+                └── Word (value = c)
             "}
         );
         Ok(())
@@ -255,9 +258,9 @@ mod tests {
             parse("a OR b OR c")?.explain().to_string(),
             indoc! {"
                 OR
-                ├── Word (word = a)
-                ├── Word (word = b)
-                └── Word (word = c)
+                ├── Word (value = a)
+                ├── Word (value = b)
+                └── Word (value = c)
             "}
         );
         Ok(())
@@ -271,9 +274,9 @@ mod tests {
             parse("a b c")?.explain().to_string(),
             indoc! {"
                 OR
-                ├── Word (word = a)
-                ├── Word (word = b)
-                └── Word (word = c)
+                ├── Word (value = a)
+                ├── Word (value = b)
+                └── Word (value = c)
             "}
         );
         Ok(())
@@ -285,10 +288,10 @@ mod tests {
             parse("a (b AND c)")?.explain().to_string(),
             indoc! {"
                 OR
-                ├── Word (word = a)
+                ├── Word (value = a)
                 └── AND
-                    ├── Word (word = b)
-                    └── Word (word = c)
+                    ├── Word (value = b)
+                    └── Word (value = c)
             "}
         );
         Ok(())
@@ -301,10 +304,10 @@ mod tests {
             indoc! {"
                 OR
                 ├── AND
-                │   ├── Word (word = a)
-                │   └── Word (word = b)
-                ├── Word (word = c)
-                └── Word (word = d)
+                │   ├── Word (value = a)
+                │   └── Word (value = b)
+                ├── Word (value = c)
+                └── Word (value = d)
             "}
         );
         Ok(())
@@ -318,10 +321,10 @@ mod tests {
             parse("a OR b AND c")?.explain().to_string(),
             indoc! {"
                 OR
-                ├── Word (word = a)
+                ├── Word (value = a)
                 └── AND
-                    ├── Word (word = b)
-                    └── Word (word = c)
+                    ├── Word (value = b)
+                    └── Word (value = c)
             "}
         );
         Ok(())
@@ -334,9 +337,9 @@ mod tests {
             indoc! {"
                 OR
                 ├── AND
-                │   ├── Word (word = a)
-                │   └── Word (word = b)
-                └── Word (word = c)
+                │   ├── Word (value = a)
+                │   └── Word (value = b)
+                └── Word (value = c)
             "}
         );
         Ok(())
@@ -349,8 +352,8 @@ mod tests {
             indoc! {"
                 AND
                 ├── NOT
-                │   └── Word (word = a)
-                └── Word (word = b)
+                │   └── Word (value = a)
+                └── Word (value = b)
             "}
         );
         Ok(())
@@ -363,9 +366,9 @@ mod tests {
             indoc! {"
                 AND
                 ├── OR
-                │   ├── Word (word = a)
-                │   └── Word (word = b)
-                └── Word (word = c)
+                │   ├── Word (value = a)
+                │   └── Word (value = b)
+                └── Word (value = c)
             "}
         );
         Ok(())
@@ -378,11 +381,11 @@ mod tests {
             indoc! {"
                 OR
                 ├── AND
-                │   ├── Word (word = a)
-                │   └── Word (word = b)
+                │   ├── Word (value = a)
+                │   └── Word (value = b)
                 └── AND
-                    ├── Word (word = c)
-                    └── Word (word = d)
+                    ├── Word (value = c)
+                    └── Word (value = d)
             "}
         );
         Ok(())
@@ -394,10 +397,10 @@ mod tests {
             parse("a b AND c")?.explain().to_string(),
             indoc! {"
                 OR
-                ├── Word (word = a)
+                ├── Word (value = a)
                 └── AND
-                    ├── Word (word = b)
-                    └── Word (word = c)
+                    ├── Word (value = b)
+                    └── Word (value = c)
             "}
         );
         Ok(())

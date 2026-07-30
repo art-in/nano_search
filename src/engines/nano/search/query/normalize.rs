@@ -1,9 +1,9 @@
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use anyhow::{Result, bail};
 
-use super::QueryAst;
+use super::{QueryAst, QueryAstWord};
 use crate::engines::nano::search::stop_words::STOP_WORDS;
 use crate::utils::normalize_word;
 
@@ -22,7 +22,7 @@ use crate::utils::normalize_word;
 /// - removes double NOT-s, e.g. "NOT NOT a" => "a"
 /// - removes AND and OR operators without operands
 /// - flattens AND and OR operands, e.g. "a AND (b AND c)" => "a AND b AND c"
-/// - deduplicates words, e.g. "a AND a AND b" => "a AND b"
+/// - deduplicates words, e.g. "a AND a AND b" => "a^2 AND b"
 ///
 /// Validations:
 /// - NOT is only allowed to be part of AND expression like in "a AND NOT b", so
@@ -63,8 +63,10 @@ fn normalize_node(query: &QueryAst) -> Result<Option<QueryAst<'static>>> {
     }
 }
 
-fn normalize_word_node(word: &str) -> Result<Option<QueryAst<'static>>> {
-    let term = normalize_word(word);
+fn normalize_word_node(
+    word: &QueryAstWord,
+) -> Result<Option<QueryAst<'static>>> {
+    let term = normalize_word(&word.value);
 
     term.map_or_else(
         || Ok(None),
@@ -72,7 +74,10 @@ fn normalize_word_node(word: &str) -> Result<Option<QueryAst<'static>>> {
             if STOP_WORDS.contains(&term) {
                 Ok(None)
             } else {
-                Ok(Some(QueryAst::Word(Cow::Owned(term))))
+                Ok(Some(QueryAst::Word(QueryAstWord {
+                    value: Cow::Owned(term),
+                    frequency: 1,
+                })))
             }
         },
     )
@@ -175,14 +180,33 @@ fn normalize_not(operand: &QueryAst) -> Result<Option<QueryAst<'static>>> {
 // deduplicates direct words only. subtrees like in "(a AND b) OR (a AND b)"
 // are not deduplicated, since detecting them is costly and not worth it
 fn deduplicate_words(operands: Vec<QueryAst>) -> Vec<QueryAst> {
+    let mut word_freqs: HashMap<Cow<'_, str>, usize> = HashMap::new();
+
+    for op in &operands {
+        if let QueryAst::Word(word) = &op {
+            let freq = word_freqs.entry(word.value.clone()).or_insert(0);
+
+            // accumulate frequency from deeper levels in case the word bubbled
+            // up from nested expressions, instead of just counting this level.
+            // e.g. in "a AND (a OR a)" frequency of "a" is 3, not 2.
+            // this way frequency can be used as a scoring multiplier, and final
+            // score will be the same as if deduplication never happened
+            *freq += word.frequency;
+        }
+    }
+
     let mut res = Vec::new();
 
-    let mut unique: HashSet<String> = HashSet::new();
-
+    // do second pass to preserve order of operands
     for op in operands {
-        if let QueryAst::Word(word) = &op {
-            if unique.insert(word.to_string()) {
-                res.push(op);
+        if let QueryAst::Word(word) = op {
+            let freq = word_freqs.get(&word.value).copied();
+            if let Some(count) = freq {
+                word_freqs.remove(&word.value);
+                res.push(QueryAst::Word(QueryAstWord {
+                    value: word.value,
+                    frequency: count,
+                }));
             }
         } else {
             res.push(op);
@@ -207,6 +231,8 @@ fn is_all_nots(operands: &[QueryAst]) -> bool {
 #[cfg(test)]
 mod tests {
     use std::sync::LazyLock;
+
+    use pretty_assertions::assert_eq;
 
     use super::super::ast::test_utils::*;
     use super::*;
@@ -312,11 +338,21 @@ mod tests {
     #[test]
     fn test_and_duplicate_words() -> Result<()> {
         let original = and([
-            word(" First  "),
+            word("first"),
             word("second"),
-            word("  First "), // duplicate
+            word("third"),
+            or([
+                word("  SeCoNd "), // duplicate
+                word(" SeCoNd  "), // duplicate
+            ]),
+            word("fourth"),
         ]);
-        let expected = and([word("first"), word("second")]);
+        let expected = and([
+            word("first"),
+            word_with_freq("second", 3),
+            word("third"),
+            word("fourth"),
+        ]);
         assert_eq!(normalize(&original)?, Some(expected));
         Ok(())
     }
@@ -334,14 +370,6 @@ mod tests {
             not(word("second")),
             not(word("second")), // duplicate
         ]);
-        assert_eq!(normalize(&original)?, Some(expected));
-        Ok(())
-    }
-
-    #[test]
-    fn test_and_duplicate_words_nested() -> Result<()> {
-        let original = and([word("first"), and([word("first")])]);
-        let expected = word("first");
         assert_eq!(normalize(&original)?, Some(expected));
         Ok(())
     }
@@ -438,22 +466,21 @@ mod tests {
     #[test]
     fn test_or_duplicate_words() -> Result<()> {
         let original = or([
-            word(" First  "),
-            word("second"),
-            word("  First "), // duplicate
-        ]);
-        let expected = or([word("first"), word("second")]);
-        assert_eq!(normalize(&original)?, Some(expected));
-        Ok(())
-    }
-
-    #[test]
-    fn test_or_duplicate_words_nested() -> Result<()> {
-        let original = or([
             word("first"),
-            or([word("first")]), // nested duplicate
+            word("second"),
+            word("third"),
+            and([
+                word("  SeCoNd "), // duplicate
+                word(" SeCoNd  "), // duplicate
+            ]),
+            word("fourth"),
         ]);
-        let expected = word("first");
+        let expected = or([
+            word("first"),
+            word_with_freq("second", 3),
+            word("third"),
+            word("fourth"),
+        ]);
         assert_eq!(normalize(&original)?, Some(expected));
         Ok(())
     }
@@ -673,7 +700,7 @@ mod tests {
             word(" FIRST "),
         ]);
         let expected = or([
-            word("first"),
+            word_with_freq("first", 3),
             word("second"),
             and([word("third"), not(word("z"))]),
         ]);

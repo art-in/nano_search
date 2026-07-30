@@ -14,6 +14,7 @@ use crate::utils::TreeNode;
 pub struct PostingListIterator<'a> {
     segment: &'a dyn IndexSegment,
     term: String,
+    term_frequency: usize,
     postings: Option<DocPostingsForTerm<'a>>,
     current_posting: Option<Cow<'a, DocPosting>>,
     is_exhausted: bool,
@@ -23,13 +24,14 @@ impl<'a> PostingListIterator<'a> {
     pub fn create_for_segment(
         segment: &'a dyn IndexSegment,
         term: &str,
+        term_frequency: usize,
     ) -> Result<Self> {
-        // TODO: ignore stop words
         let postings = segment.get_doc_postings_for_term(term)?;
 
         Ok(Self {
             segment,
             term: term.to_string(),
+            term_frequency,
             postings,
             current_posting: None,
             is_exhausted: false,
@@ -121,6 +123,10 @@ impl DocIdIterator for PostingListIterator<'_> {
             node.add_attr("unknown_term", "true");
         }
 
+        if self.term_frequency > 1 {
+            node.add_attr("freq", self.term_frequency.to_string());
+        }
+
         node
     }
 }
@@ -149,7 +155,7 @@ impl ScoringDocIdIterator for PostingListIterator<'_> {
             self.segment.get_stats().terms_count_per_doc_avg,
         );
 
-        Ok(ItScore::Active(score))
+        Ok(ItScore::Active(score * self.term_frequency as f64))
     }
 }
 
@@ -190,7 +196,7 @@ mod tests {
     #[test]
     fn test_basic() -> Result<()> {
         let segment = create_segment(5);
-        let it = PostingListIterator::create_for_segment(&segment, "a")?;
+        let it = PostingListIterator::create_for_segment(&segment, "a", 1)?;
 
         let (docids, scores): (Vec<SegmentDocId>, Vec<Relevance>) =
             collect(it)?.into_iter().unzip();
@@ -204,9 +210,37 @@ mod tests {
     }
 
     #[test]
+    fn test_term_frequency() -> Result<()> {
+        let segment = create_segment(5);
+
+        let it_one = PostingListIterator::create_for_segment(&segment, "a", 1)?;
+        let it_two = PostingListIterator::create_for_segment(&segment, "a", 2)?;
+
+        let (docids_one, scores_one): (Vec<SegmentDocId>, Vec<Relevance>) =
+            collect(it_one)?.into_iter().unzip();
+        let (docids_two, scores_two): (Vec<SegmentDocId>, Vec<Relevance>) =
+            collect(it_two)?.into_iter().unzip();
+
+        // docids are the same
+        assert_eq!(docids_one, docids_two);
+
+        // scores are doubled
+        assert!(
+            scores_one
+                .iter()
+                .zip(scores_two)
+                .into_iter()
+                .all(|(score_one, score_two)| (score_two / *score_one) == 2.0)
+        );
+
+        Ok(())
+    }
+
+    #[test]
     fn test_unknown_term() -> Result<()> {
         let segment = MemoryIndex::default();
-        let it = PostingListIterator::create_for_segment(&segment, "unknown")?;
+        let it =
+            PostingListIterator::create_for_segment(&segment, "unknown", 1)?;
 
         assert!(collect(it)?.is_empty());
 

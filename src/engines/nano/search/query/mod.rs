@@ -1,7 +1,7 @@
 mod ast;
-pub use ast::QueryAst;
 #[cfg(test)]
 pub use ast::test_utils;
+pub use ast::{QueryAst, QueryAstWord};
 
 mod lexer;
 #[allow(unused_imports)] // TODO: remove unused code silencer
