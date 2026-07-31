@@ -1,11 +1,10 @@
-use std::collections::HashMap;
+use anyhow::Result;
 
-use anyhow::{Context, Result};
-
-use super::model::DocCandidate;
-use super::scoring;
-use super::stop_words::STOP_WORDS;
-use crate::engines::nano::index::model::{Index, IndexSegment, SegmentDocId};
+use super::collectors::{SegmentCollector, collect};
+use super::plan::plan_query_for_segment;
+use super::query::{Lexer, Parser, normalize};
+use crate::engines::nano::index::model::Index;
+use crate::engines::nano::search::collectors::{Collector, TopCollector};
 use crate::model::doc::ExternalDocId;
 
 pub fn search(
@@ -13,73 +12,29 @@ pub fn search(
     index: &dyn Index,
     limit: u64,
 ) -> Result<Vec<ExternalDocId>> {
-    let mut candidates = Vec::new();
+    let tokens = Lexer::new(query);
+    let query_ast = Parser::new(tokens).parse()?;
+    let query_ast = normalize(&query_ast)?;
+
+    let Some(query_ast) = query_ast else {
+        return Ok(vec![]);
+    };
+
+    let collector = TopCollector::new(limit as usize);
+
+    let mut segment_outputs = Vec::new();
 
     for segment in index.get_segments() {
-        let mut segment_candidates = search_segment(query, segment)?;
-        candidates.append(&mut segment_candidates);
+        let mut it = plan_query_for_segment(&query_ast, segment)?;
+        let mut col = collector.create_segment_collector(segment)?;
+
+        collect(&mut col, it.as_mut())?;
+        let output = col.extract_output()?;
+
+        segment_outputs.push(output);
     }
 
-    if candidates.len() > limit as usize {
-        candidates.select_nth_unstable(limit as usize);
-        candidates.truncate(limit as usize);
-    }
+    let output = collector.merge_segment_outputs(segment_outputs)?;
 
-    candidates.sort();
-
-    let docids = candidates.iter().map(|c| c.id).collect();
-
-    Ok(docids)
-}
-
-fn search_segment(
-    query: &str,
-    segment: &dyn IndexSegment,
-) -> Result<Vec<DocCandidate<ExternalDocId>>> {
-    let words: Vec<&str> = query.split_whitespace().collect();
-
-    let mut candidates: HashMap<SegmentDocId, DocCandidate<ExternalDocId>> =
-        HashMap::new();
-
-    for word in words {
-        let term = crate::utils::normalize_word(word);
-
-        let Some(term) = term else {
-            continue;
-        };
-        if STOP_WORDS.contains(&term) {
-            continue;
-        }
-
-        if let Some(postings) = segment.get_doc_postings_for_term(&term)? {
-            for posting in postings.iterator {
-                let posting = posting?;
-                let relevance = scoring::calc_bm25(
-                    scoring::ScoringParams {
-                        doc_term_freq: posting.term_freq,
-                        doc_total_terms_count: *segment
-                            .get_doc_terms_count(posting.docid)?,
-                        docs_with_term_count: postings.count as u64,
-                        docs_total_count: segment
-                            .get_stats()
-                            .indexed_docs_count,
-                    },
-                    segment.get_stats().terms_count_per_doc_avg,
-                );
-
-                candidates
-                    .entry(posting.docid)
-                    .and_modify(|c| c.relevance += relevance)
-                    .or_insert(DocCandidate {
-                        id: segment
-                            .get_stored_doc(posting.docid)
-                            .context("stored doc should exist")?
-                            .docid,
-                        relevance,
-                    });
-            }
-        }
-    }
-
-    Ok(candidates.values().cloned().collect())
+    Ok(output)
 }

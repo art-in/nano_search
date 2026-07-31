@@ -155,3 +155,30 @@ fn test_search_with_multiple_words_query() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_search_with_boolean_expression() -> Result<()> {
+    // setup
+    let dir = TempDir::new()?;
+    let mut engine = NanoSearchEngine::create_on_disk(
+        CreateOnDiskOptions::builder()
+            .index_dir(dir.path())
+            .index_threads(1)
+            .build(),
+    )?;
+    engine.index_docs(&mut create_cat_mouse_docs_iterator())?;
+
+    // execute
+    let docids = engine.search("(cat OR dog) AND NOT mouse", 10)?;
+
+    // assert
+    assert_eq!(
+        docids,
+        vec![
+            CAT_DOG.id, // 1st - contains two query terms
+            DOG.id,     // 2nd - match with less frequent term in corpus
+            CAT.id,     // 3rd - match with more frequent term in corpus
+        ]
+    );
+    Ok(())
+}

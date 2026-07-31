@@ -19,6 +19,8 @@ pub fn build_memory_index(
 
         let terms = words.filter_map(crate::utils::normalize_word);
 
+        // TODO: skip stop-words
+
         let mut doc_terms_count = 0_u16;
 
         for term in terms {

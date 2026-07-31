@@ -19,6 +19,7 @@ pub trait DocIdIterator {
     fn advance(&mut self) -> Result<()>;
     fn advance_to(&mut self, target: SegmentDocId) -> Result<()>;
     fn current_docid(&self) -> Result<ItDocId>;
+    #[allow(unused)]
     fn explain(&self) -> TreeNode;
 }
 
@@ -68,10 +69,12 @@ impl ItDocId {
 }
 
 impl ItScore {
+    #[allow(unused)]
     pub fn is_not_started(self) -> bool {
         self == Self::NotStarted
     }
 
+    #[allow(unused)]
     pub fn is_exhausted(self) -> bool {
         self == Self::Exhausted
     }

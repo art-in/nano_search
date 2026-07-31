@@ -25,6 +25,7 @@ pub struct QueryAstWord<'a> {
 }
 
 impl QueryAst<'_> {
+    #[allow(unused)]
     pub fn explain(&self) -> TreeNode {
         match self {
             QueryAst::Word(word) => {

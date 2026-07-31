@@ -1,19 +1,10 @@
+mod collectors;
+mod iterators;
 mod model;
-
+mod plan;
+mod query;
 mod scoring;
 mod stop_words;
-
-#[allow(dead_code)] // TODO: remove unused code silencer
-mod collectors;
-
-#[allow(dead_code)] // TODO: remove unused code silencer
-mod iterators;
-
-#[allow(dead_code)] // TODO: remove unused code silencer
-mod query;
-
-#[allow(dead_code)] // TODO: remove unused code silencer
-mod plan;
 
 #[expect(clippy::module_inception)]
 mod search;

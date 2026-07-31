@@ -115,13 +115,6 @@ mod tests {
         Ok(it.explain().to_string())
     }
 
-    fn err<T>(input: Result<T>) -> Result<String> {
-        match input {
-            Ok(_) => bail!("should return error"),
-            Err(message) => Ok(message.to_string()),
-        }
-    }
-
     #[test]
     fn test_word() -> Result<()> {
         let query = word("a");
