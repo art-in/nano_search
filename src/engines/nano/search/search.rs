@@ -5,7 +5,7 @@ use super::plan::plan_query_for_segment;
 use super::query::{Lexer, Parser, normalize};
 use crate::engines::nano::index::model::Index;
 use crate::engines::nano::search::collectors::{Collector, TopCollector};
-use crate::model::doc::ExternalDocId;
+use crate::model::ExternalDocId;
 
 pub fn search(
     query: &str,

@@ -7,7 +7,7 @@ use super::docs_parquet::BeirDocsParquetReader;
 use super::queries_json::BeirQueriesJsonReader;
 use super::queries_parquet::BeirQueriesParquetReader;
 use crate::eval::model::{QueriesSource, Query};
-use crate::model::doc::{Doc, DocsSource};
+use crate::model::{Doc, DocsSource};
 use crate::utils::{download_hf_dir, download_hf_file};
 
 pub struct BeirDatasetReader {

@@ -105,10 +105,10 @@ impl ScoringDocIdIterator for UnionDocIdIterator<'_> {
 mod tests {
     use super::super::test_utils::*;
     use super::*;
-    use crate::eval::model::Relevance;
+    use crate::model::Score;
 
     pub fn create_it(
-        inputs: Vec<(Vec<SegmentDocId>, Vec<Relevance>)>,
+        inputs: Vec<(Vec<SegmentDocId>, Vec<Score>)>,
     ) -> Result<UnionDocIdIterator<'static>> {
         let mut inputs_it: Vec<Box<dyn ScoringDocIdIterator>> = Vec::new();
         for (docids, scores) in inputs {

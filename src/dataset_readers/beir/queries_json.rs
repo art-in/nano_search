@@ -6,8 +6,8 @@ use serde_json::{Map, Value};
 
 use super::qrels::load_qrels;
 use super::utils::{extract_string_from_json, parse_id};
-use crate::eval::model::{QueriesSource, Query, QueryId, Relevance};
-use crate::model::doc::ExternalDocId;
+use crate::eval::model::{QueriesSource, Query, QueryId};
+use crate::model::{ExternalDocId, Score};
 use crate::utils::get_file_lines;
 
 pub struct BeirQueriesJsonReader {
@@ -34,7 +34,7 @@ impl QueriesSource for BeirQueriesJsonReader {
 
 struct BeirQueriesJsonIterator {
     lines: Box<dyn Iterator<Item = std::io::Result<String>>>,
-    qrels: HashMap<QueryId, HashMap<ExternalDocId, Relevance>>,
+    qrels: HashMap<QueryId, HashMap<ExternalDocId, Score>>,
 }
 
 impl Iterator for BeirQueriesJsonIterator {
@@ -47,7 +47,7 @@ impl Iterator for BeirQueriesJsonIterator {
 
 fn get_next_query(
     lines: &mut dyn Iterator<Item = std::io::Result<String>>,
-    qrels: &mut HashMap<QueryId, HashMap<ExternalDocId, Relevance>>,
+    qrels: &mut HashMap<QueryId, HashMap<ExternalDocId, Score>>,
 ) -> Result<Option<Query>> {
     // skip queries lacking relevant docs to ensure evaluation is possible.
     // since reduced qrels, like test.tsv, may not have lines for each query
@@ -65,7 +65,7 @@ fn get_next_query(
 
 fn parse_query_from_json(
     line: &str,
-    qrels: &mut HashMap<u64, HashMap<ExternalDocId, Relevance>>,
+    qrels: &mut HashMap<u64, HashMap<ExternalDocId, Score>>,
 ) -> Result<Query> {
     let json: Map<String, Value> = serde_json::from_str(line)?;
 

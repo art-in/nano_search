@@ -5,9 +5,8 @@ use anyhow::{Context, Result, ensure};
 use super::metrics::{precision, recall};
 use super::model::{QuerySearchQuality, SearchQuality};
 use crate::eval::metrics::ndcg;
-use crate::eval::model::{Query, Relevance};
-use crate::model::doc::ExternalDocId;
-use crate::model::engine::SearchEngine;
+use crate::eval::model::Query;
+use crate::model::{ExternalDocId, Score, SearchEngine};
 use crate::utils::GetPercentile;
 
 pub fn evaluate_search_quality(
@@ -75,7 +74,7 @@ pub fn evaluate_search_quality(
 
 pub fn evaluate_search_quality_for_query(
     found_docids: &[ExternalDocId],
-    relevant_docs: &HashMap<ExternalDocId, Relevance>,
+    relevant_docs: &HashMap<ExternalDocId, Score>,
     search_limit: u64,
 ) -> Result<QuerySearchQuality> {
     let ndcg = ndcg(found_docids, relevant_docs, search_limit)?;

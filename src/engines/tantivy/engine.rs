@@ -9,8 +9,7 @@ use tantivy::schema::{
 };
 use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
 
-use crate::model::doc::{Doc, ExternalDocId};
-use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
+use crate::model::{CreateOnDiskOptions, Doc, ExternalDocId, SearchEngine};
 
 pub struct TantivySearchEngine {
     index: Index,

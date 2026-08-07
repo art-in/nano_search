@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 
 use super::model::WikiDatasetReader;
-use crate::model::doc::{Doc, DocsSource};
+use crate::model::{Doc, DocsSource};
 use crate::utils::wikidump::WikiPagesIterator;
 
 pub struct WikiDocsIterator {

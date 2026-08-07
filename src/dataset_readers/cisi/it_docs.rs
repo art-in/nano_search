@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail};
 
 use super::model::CisiDatasetReader;
-use crate::model::doc::{Doc, DocsSource};
+use crate::model::{Doc, DocsSource};
 use crate::utils::get_file_lines;
 
 pub struct CisiDocsIterator {

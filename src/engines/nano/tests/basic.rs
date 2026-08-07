@@ -2,7 +2,7 @@ use anyhow::Result;
 use tempfile::TempDir;
 
 use crate::engines::nano::engine::NanoSearchEngine;
-use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
+use crate::model::{CreateOnDiskOptions, SearchEngine};
 use crate::utils::test_docs::create_cat_mouse_docs_iterator;
 use crate::utils::test_docs::docs::*;
 

@@ -66,7 +66,9 @@ impl<'a> IntersectingDocIdIterator<'a> {
         // new()), and use shortest one as a leader, advancing all other
         // iterators to current leader docid. this works better when
         // iterator sizes are much different and they have ability to
-        // quickly skip gaps - term iterator should use skip lists
+        // quickly skip gaps
+        // - postings iterator should use skip lists for efficient advance_to()
+        // - each iterator should expose estimated cost() of traversing
 
         loop {
             let candidate = self.max_docid()?;
@@ -146,10 +148,10 @@ impl ScoringDocIdIterator for IntersectingDocIdIterator<'_> {
 mod tests {
     use super::super::test_utils::*;
     use super::*;
-    use crate::eval::model::Relevance;
+    use crate::model::Score;
 
     pub fn create_it(
-        inputs: Vec<(Vec<SegmentDocId>, Vec<Relevance>)>,
+        inputs: Vec<(Vec<SegmentDocId>, Vec<Score>)>,
     ) -> Result<IntersectingDocIdIterator<'static>> {
         let mut inputs_it: Vec<Box<dyn ScoringDocIdIterator>> = Vec::new();
         for (docids, scores) in inputs {

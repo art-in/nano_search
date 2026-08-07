@@ -4,7 +4,7 @@ use anyhow::{Context, Result, bail};
 use parquet::record::Row;
 
 use super::utils::{extract_string_from_parquet, parse_id};
-use crate::model::doc::{Doc, DocsSource};
+use crate::model::{Doc, DocsSource};
 use crate::utils::get_parquet_rows;
 
 pub struct BeirDocsParquetReader {

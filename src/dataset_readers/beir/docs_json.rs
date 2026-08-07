@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
 use super::utils::{extract_string_from_json, parse_id};
-use crate::model::doc::{Doc, DocsSource};
+use crate::model::{Doc, DocsSource};
 use crate::utils::get_file_lines;
 
 pub struct BeirDocsJsonReader {

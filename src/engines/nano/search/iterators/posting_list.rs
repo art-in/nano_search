@@ -7,6 +7,7 @@ use crate::engines::nano::index::model::{
     DocPosting, DocPostingsForTerm, IndexSegment, SegmentDocId,
 };
 use crate::engines::nano::search::scoring;
+use crate::model::Score;
 use crate::utils::TreeNode;
 
 // Iterator over document IDs, that reads posting list of concrete term from
@@ -155,7 +156,7 @@ impl ScoringDocIdIterator for PostingListIterator<'_> {
             self.segment.get_stats().terms_count_per_doc_avg,
         );
 
-        Ok(ItScore::Active(score * self.term_frequency as f64))
+        Ok(ItScore::Active(score * self.term_frequency as Score))
     }
 }
 
@@ -166,7 +167,7 @@ mod tests {
     use super::super::test_utils::collect;
     use super::*;
     use crate::engines::nano::index::MemoryIndex;
-    use crate::eval::model::Relevance;
+    use crate::model::Score;
 
     fn create_segment(doc_count: usize) -> MemoryIndex {
         let mut segment = MemoryIndex::default();
@@ -198,7 +199,7 @@ mod tests {
         let segment = create_segment(5);
         let it = PostingListIterator::create_for_segment(&segment, "a", 1)?;
 
-        let (docids, scores): (Vec<SegmentDocId>, Vec<Relevance>) =
+        let (docids, scores): (Vec<SegmentDocId>, Vec<Score>) =
             collect(it)?.into_iter().unzip();
 
         assert_eq!(docids, vec![0, 1, 2, 3, 4]);
@@ -216,9 +217,9 @@ mod tests {
         let it_one = PostingListIterator::create_for_segment(&segment, "a", 1)?;
         let it_two = PostingListIterator::create_for_segment(&segment, "a", 2)?;
 
-        let (docids_one, scores_one): (Vec<SegmentDocId>, Vec<Relevance>) =
+        let (docids_one, scores_one): (Vec<SegmentDocId>, Vec<Score>) =
             collect(it_one)?.into_iter().unzip();
-        let (docids_two, scores_two): (Vec<SegmentDocId>, Vec<Relevance>) =
+        let (docids_two, scores_two): (Vec<SegmentDocId>, Vec<Score>) =
             collect(it_two)?.into_iter().unzip();
 
         // docids are the same

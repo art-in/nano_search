@@ -3,8 +3,7 @@ use anyhow::{Context, Result};
 use super::index::model::{Index, IndexMedium};
 use super::index::{DiskIndexOptions, build_index, open_index};
 use super::search::search;
-use crate::model::doc::{Doc, ExternalDocId};
-use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
+use crate::model::{CreateOnDiskOptions, Doc, ExternalDocId, SearchEngine};
 
 pub struct NanoSearchEngine {
     index_medium: IndexMedium,

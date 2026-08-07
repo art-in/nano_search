@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
 use crate::eval::metrics::hits::hits;
-use crate::eval::model::Relevance;
-use crate::model::doc::ExternalDocId;
+use crate::model::{ExternalDocId, Score};
 
 #[must_use]
 pub fn precision(
     found_docids: &[ExternalDocId],
-    relevant_docs: &HashMap<ExternalDocId, Relevance>,
+    relevant_docs: &HashMap<ExternalDocId, Score>,
 ) -> f64 {
     let found_relevant_docids_count = hits(found_docids, relevant_docs);
 

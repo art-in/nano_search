@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 
 use super::model::{MemoryIndex, TermPostingList};
 use crate::engines::nano::index::model::{DocPosting, SegmentDocId, StoredDoc};
-use crate::model::doc::Doc;
+use crate::model::Doc;
 
 pub fn build_memory_index(
     docs: &mut dyn Iterator<Item = Result<Doc>>,

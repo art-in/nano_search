@@ -2,16 +2,9 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::model::doc::ExternalDocId;
+use crate::model::{ExternalDocId, Score};
 
 pub type QueryId = u64;
-// TODO: rename to Score and add the same to nano/search/
-//  /// A Score that represents the relevance of the document to the query.
-//  ///
-//  /// The larger the number, the more relevant the document to the search
-//  /// query
-//  pub type Score = f64;
-pub type Relevance = f64;
 
 #[derive(Default, Clone)]
 pub struct Query {
@@ -20,7 +13,7 @@ pub struct Query {
 
     // IDs of documents considered relevant to this query, and thus expected to
     // be in search results
-    pub relevant_docs: HashMap<ExternalDocId, Relevance>,
+    pub relevant_docs: HashMap<ExternalDocId, Score>,
 }
 
 pub trait QueriesSource {

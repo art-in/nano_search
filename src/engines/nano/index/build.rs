@@ -3,7 +3,7 @@ use anyhow::{Result, bail};
 use super::disk::{build_disk_index, open_disk_index};
 use super::memory::build_memory_index;
 use super::model::{Index, IndexMedium};
-use crate::model::doc::Doc;
+use crate::model::Doc;
 
 pub fn build_index(
     index_medium: &IndexMedium,

@@ -2,6 +2,7 @@ use anyhow::{Result, bail, ensure};
 
 use crate::engines::nano::index::model::{IndexSegment, SegmentDocId};
 use crate::engines::nano::search::iterators::ScoringDocIdIterator;
+use crate::model::Score;
 
 /// Collector aggregates partial search results from multiple index segments
 /// into single index-wide search result.
@@ -61,7 +62,7 @@ pub trait SegmentCollector {
     fn add_docid_and_score(
         &mut self,
         _docid: SegmentDocId,
-        _score: f64,
+        _score: Score,
     ) -> Result<()> {
         bail!("score should not be passed");
     }

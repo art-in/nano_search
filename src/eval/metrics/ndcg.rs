@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Result, bail};
 use itertools::Itertools;
 
-use crate::eval::model::Relevance;
-use crate::model::doc::ExternalDocId;
+use crate::model::{ExternalDocId, Score};
 
 /// Calculates Normalized Discounted Cumulative Gain (NDCG), which is a measure
 /// of search result quality.
@@ -16,30 +15,25 @@ use crate::model::doc::ExternalDocId;
 /// See <https://en.wikipedia.org/wiki/Discounted_cumulative_gain>
 pub fn ndcg(
     found_docids: &[ExternalDocId],
-    relevant_docs: &HashMap<ExternalDocId, Relevance>,
+    relevant_docs: &HashMap<ExternalDocId, Score>,
     search_limit: u64,
 ) -> Result<f64> {
     if relevant_docs.is_empty() {
         return Ok(if found_docids.is_empty() { 1.0 } else { 0.0 });
     }
 
-    let retrieved_relevances =
-        extract_relevances(found_docids, relevant_docs, search_limit);
-    let ideal_relevances =
-        compute_ideal_relevances(relevant_docs, search_limit);
+    let retrieved_scores =
+        extract_scores(found_docids, relevant_docs, search_limit);
+    let ideal_scores = compute_ideal_scores(relevant_docs, search_limit);
 
-    compute_ndcg(
-        &retrieved_relevances,
-        &ideal_relevances,
-        WeightingScheme::Burges,
-    )
+    compute_ndcg(&retrieved_scores, &ideal_scores, WeightingScheme::Burges)
 }
 
-fn extract_relevances(
+fn extract_scores(
     found_docids: &[ExternalDocId],
-    relevant_docs: &HashMap<ExternalDocId, Relevance>,
+    relevant_docs: &HashMap<ExternalDocId, Score>,
     search_limit: u64,
-) -> Vec<Relevance> {
+) -> Vec<Score> {
     found_docids
         .iter()
         .take(search_limit as usize)
@@ -47,10 +41,10 @@ fn extract_relevances(
         .collect()
 }
 
-fn compute_ideal_relevances(
-    relevant_docs: &HashMap<ExternalDocId, Relevance>,
+fn compute_ideal_scores(
+    relevant_docs: &HashMap<ExternalDocId, Score>,
     search_limit: u64,
-) -> Vec<Relevance> {
+) -> Vec<Score> {
     relevant_docs
         .values()
         .copied()
@@ -61,12 +55,12 @@ fn compute_ideal_relevances(
 }
 
 fn compute_ndcg(
-    retrieved_relevances: &[Relevance],
-    ideal_relevances: &[Relevance],
+    retrieved_scores: &[Score],
+    ideal_scores: &[Score],
     weighting_scheme: WeightingScheme,
 ) -> Result<f64> {
-    let retrieved_dcg = compute_dcg(retrieved_relevances, weighting_scheme);
-    let ideal_dcg = compute_dcg(ideal_relevances, weighting_scheme);
+    let retrieved_dcg = compute_dcg(retrieved_scores, weighting_scheme);
+    let ideal_dcg = compute_dcg(ideal_scores, weighting_scheme);
 
     if ideal_dcg == 0.0 {
         bail!(
@@ -78,17 +72,14 @@ fn compute_ndcg(
     Ok(retrieved_dcg / ideal_dcg)
 }
 
-fn compute_dcg(
-    relevances: &[Relevance],
-    weighting_scheme: WeightingScheme,
-) -> f64 {
-    relevances
+fn compute_dcg(scores: &[Score], weighting_scheme: WeightingScheme) -> f64 {
+    scores
         .iter()
         .enumerate()
-        .map(|(position, &relevance)| {
-            let weighted_relevance = weighting_scheme.weight(relevance);
+        .map(|(position, &score)| {
+            let weighted_score = weighting_scheme.weight(score);
             let position_rank = (position + 2) as f64;
-            weighted_relevance / f64::log2(position_rank)
+            weighted_score / f64::log2(position_rank)
         })
         .sum()
 }
@@ -96,7 +87,7 @@ fn compute_dcg(
 #[derive(Clone, Copy, Debug)]
 pub enum WeightingScheme {
     /// Original version of NDCG proposed by Järvelin and Kekäläinen.
-    /// Uses relevance scores directly without transformation.
+    /// Uses scores directly without transformation.
     Jarvelin,
 
     /// Later evolution of NDCG metric, which places stronger emphasis on
@@ -107,10 +98,10 @@ pub enum WeightingScheme {
 }
 
 impl WeightingScheme {
-    fn weight(self, relevance: Relevance) -> f64 {
+    fn weight(self, score: Score) -> f64 {
         match self {
-            Self::Jarvelin => relevance,
-            Self::Burges => relevance.exp2() - 1.0,
+            Self::Jarvelin => score,
+            Self::Burges => score.exp2() - 1.0,
         }
     }
 }
@@ -176,15 +167,12 @@ mod test {
     #[test]
     fn test_ndcg_zero_relevant_docs_is_error() {
         let found_docids = vec![1, 2, 3];
-        let relevant_docs: HashMap<ExternalDocId, Relevance> =
+        let relevant_docs: HashMap<ExternalDocId, Score> =
             HashMap::from([(1, 0.0), (2, 0.0), (3, 0.0)]);
         let search_limit = 10;
 
         let res = ndcg(&found_docids, &relevant_docs, search_limit);
-        assert!(
-            res.is_err(),
-            "expected error when all docs have zero relevance"
-        );
+        assert!(res.is_err(), "expected error when all docs have zero score");
     }
 
     #[test]

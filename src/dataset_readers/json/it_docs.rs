@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use serde_json::{Map, Value};
 
 use super::model::JsonDatasetReader;
-use crate::model::doc::{Doc, DocsSource, ExternalDocId};
+use crate::model::{Doc, DocsSource, ExternalDocId};
 
 pub struct JsonDocsIterator {
     lines: Lines<BufReader<File>>,

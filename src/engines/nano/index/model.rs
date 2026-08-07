@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use anyhow::Result;
 
 use super::disk::DiskIndexOptions;
-use crate::model::doc::ExternalDocId;
+use crate::model::ExternalDocId;
 
 pub type Term = String;
 

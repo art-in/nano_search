@@ -6,8 +6,7 @@ use crate::dataset_readers::cisi::CisiDatasetReader;
 use crate::engines::vector::engine::VectorSearchEngine;
 use crate::eval::evaluate_search_quality;
 use crate::eval::model::QueriesSource;
-use crate::model::doc::DocsSource;
-use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
+use crate::model::{CreateOnDiskOptions, DocsSource, SearchEngine};
 
 #[test]
 fn test_eval_create_on_disk_and_open() -> Result<()> {

@@ -1,6 +1,7 @@
 use anyhow::{Result, bail};
 
 use crate::engines::nano::index::model::SegmentDocId;
+use crate::model::Score;
 use crate::utils::TreeNode;
 
 /// Iterator over document IDs.
@@ -46,7 +47,7 @@ pub enum ItDocId {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ItScore {
     NotStarted,
-    Active(f64),
+    Active(Score),
     Exhausted,
 }
 
@@ -79,7 +80,7 @@ impl ItScore {
         self == Self::Exhausted
     }
 
-    pub fn expect(self) -> Result<f64> {
+    pub fn expect(self) -> Result<Score> {
         if let Self::Active(score) = self {
             Ok(score)
         } else {

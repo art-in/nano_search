@@ -4,18 +4,17 @@ use std::path::Path;
 use anyhow::{Context, Result};
 
 use super::utils::parse_id;
-use crate::eval::model::{QueryId, Relevance};
-use crate::model::doc::ExternalDocId;
+use crate::eval::model::QueryId;
+use crate::model::{ExternalDocId, Score};
 use crate::utils::get_file_lines;
 
 pub fn load_qrels(
     file_path: &Path,
-) -> Result<HashMap<QueryId, HashMap<ExternalDocId, Relevance>>> {
+) -> Result<HashMap<QueryId, HashMap<ExternalDocId, Score>>> {
     let lines = get_file_lines(file_path)?;
     let lines = lines.skip(1); // skip header line
 
-    let mut map: HashMap<u64, HashMap<ExternalDocId, Relevance>> =
-        HashMap::new();
+    let mut map: HashMap<u64, HashMap<ExternalDocId, Score>> = HashMap::new();
 
     for line in lines {
         let line = line?;
@@ -23,16 +22,15 @@ pub fn load_qrels(
 
         let query_id = parse_id(parts.next().context("should read query ID")?)?;
         let doc_id = parse_id(parts.next().context("should read doc ID")?)?;
-        let relevance: Relevance =
-            parts.next().context("should read relevance")?.parse()?;
+        let score = parts.next().context("should read score")?.parse()?;
 
         // skip not relevant docs. they may appear in qrels/train.tsv for
         // contrast model training, and don't matter for evaluation
-        if relevance <= 0.0 {
+        if score <= 0.0 {
             continue;
         }
 
-        map.entry(query_id).or_default().insert(doc_id, relevance);
+        map.entry(query_id).or_default().insert(doc_id, score);
     }
 
     Ok(map)

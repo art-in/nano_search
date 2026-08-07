@@ -7,8 +7,7 @@ use crate::dataset_readers::utils::init_dataset_by_name;
 use crate::engines::utils::{
     engine_create_on_disk_by_names, get_engine_index_dir,
 };
-use crate::model::doc::{Doc, DocsSource};
-use crate::model::engine::SearchEngine;
+use crate::model::{Doc, DocsSource, SearchEngine};
 use crate::utils::{format_bytes_si, format_number_si, get_dir_size};
 
 pub fn index(

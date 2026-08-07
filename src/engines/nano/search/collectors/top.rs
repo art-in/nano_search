@@ -5,7 +5,7 @@ use anyhow::Result;
 use super::model::{Collector, SegmentCollector};
 use crate::engines::nano::index::model::{IndexSegment, SegmentDocId};
 use crate::engines::nano::search::model::DocCandidate;
-use crate::model::doc::ExternalDocId;
+use crate::model::{ExternalDocId, Score};
 
 /// Collector that returns top-K documents with highest scores.
 pub struct TopCollector {
@@ -87,12 +87,9 @@ impl SegmentCollector for TopSegmentCollector<'_> {
     fn add_docid_and_score(
         &mut self,
         docid: SegmentDocId,
-        score: f64,
+        score: Score,
     ) -> Result<()> {
-        let candidate = DocCandidate {
-            id: docid,
-            relevance: score,
-        };
+        let candidate = DocCandidate { id: docid, score };
 
         if self.min_heap.len() < self.doc_count {
             self.min_heap.push(candidate);
@@ -111,7 +108,7 @@ impl SegmentCollector for TopSegmentCollector<'_> {
         while let Some(item) = self.min_heap.pop() {
             res.push(DocCandidate {
                 id: self.segment.get_stored_doc(item.id)?.docid,
-                relevance: item.relevance,
+                score: item.score,
             });
         }
 
@@ -129,7 +126,7 @@ mod tests {
     use super::*;
     use crate::engines::nano::index::MemoryIndex;
     use crate::engines::nano::index::model::StoredDoc;
-    use crate::model::doc::ExternalDocId;
+    use crate::model::ExternalDocId;
 
     // TODO: move to utils
     fn err<T>(input: Result<T>) -> Result<String> {

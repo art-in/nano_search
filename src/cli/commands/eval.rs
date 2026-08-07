@@ -7,7 +7,7 @@ use crate::dataset_readers::utils::init_dataset_by_name;
 use crate::engines::utils::engine_open_from_disk_by_names;
 use crate::eval::evaluate_search_quality;
 use crate::eval::model::{Query, SearchQuality};
-use crate::model::engine::SearchEngine;
+use crate::model::SearchEngine;
 
 pub fn eval(
     engines: &[String],

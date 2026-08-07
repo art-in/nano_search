@@ -1,5 +1,4 @@
-//! Scoring module implements various document scoring algorithms for search
-//! relevance.
+use crate::model::Score;
 
 /// Common parameters used across scoring algorithms
 #[derive(Debug, Clone, Copy)]
@@ -26,8 +25,8 @@ pub struct ScoringParams {
 ///
 /// # References
 /// - [TF-IDF on Wikipedia](https://en.wikipedia.org/wiki/Tf-idf)
-#[allow(dead_code)]
-pub fn calc_tfidf(p: ScoringParams) -> f64 {
+#[allow(unused)]
+pub fn calc_tfidf(p: ScoringParams) -> Score {
     let term_frequency =
         p.doc_term_freq as f64 / p.doc_total_terms_count as f64;
 
@@ -49,7 +48,7 @@ pub fn calc_tfidf(p: ScoringParams) -> f64 {
 ///
 /// # References
 /// - [Okapi BM25 on Wikipedia](https://en.wikipedia.org/wiki/Okapi_BM25)
-pub fn calc_bm25(p: ScoringParams, terms_count_per_doc_avg: f64) -> f64 {
+pub fn calc_bm25(p: ScoringParams, terms_count_per_doc_avg: f64) -> Score {
     const K: f64 = 1.2; // usually between [1.2, 2.0]
     const B: f64 = 0.75;
 

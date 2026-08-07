@@ -157,7 +157,7 @@ fn read_qrels<R: Read>(
             .get_mut(&query_id)
             .context("query should exist")?
             .relevant_docs
-            // relevance is not provided in this dataset, so default to 1.0
+            // score is not provided in this dataset, so default to 1.0
             .insert(docid, 1.0);
     }
 

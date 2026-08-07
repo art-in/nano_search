@@ -5,7 +5,7 @@ use anyhow::{Result, bail};
 use crate::engines::nano::engine::NanoSearchEngine;
 use crate::engines::tantivy::engine::TantivySearchEngine;
 use crate::engines::vector::engine::VectorSearchEngine;
-use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
+use crate::model::{CreateOnDiskOptions, SearchEngine};
 
 #[must_use]
 pub fn get_all_engine_names() -> Vec<String> {

@@ -1,6 +1,6 @@
 [Semantic search][1] engine based on embedding vectors.
 
-As opposed to lexical search, based on keywords and TF-IDF/BM25 relevance algorithms.
+As opposed to lexical search, based on keywords and TF-IDF/BM25 scoring algorithms.
 
 Has two main components:
 1. [Embedding model][2] to extract meaning from documents/queries in form of vectors

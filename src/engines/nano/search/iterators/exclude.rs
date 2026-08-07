@@ -107,9 +107,10 @@ impl ScoringDocIdIterator for ExcludingDocIdIterator<'_> {
 mod tests {
     use super::super::test_utils::*;
     use super::*;
+    use crate::model::Score;
 
     pub fn create_it(
-        docids_and_scores: (Vec<SegmentDocId>, Vec<f64>),
+        docids_and_scores: (Vec<SegmentDocId>, Vec<Score>),
         exclude_docids: Vec<SegmentDocId>,
     ) -> Result<ExcludingDocIdIterator<'static>> {
         let (docids, scores) = docids_and_scores;

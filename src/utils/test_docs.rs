@@ -1,5 +1,5 @@
 use super::test_docs_iterator::TestDocsIterator;
-use crate::model::doc::ExternalDocId;
+use crate::model::ExternalDocId;
 
 pub struct TestDoc {
     /// Sequential index this doc will have when emitted from iterator

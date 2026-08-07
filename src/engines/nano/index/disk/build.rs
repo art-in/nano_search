@@ -16,7 +16,7 @@ use super::model::{
 use super::serializer::{BinarySerializable, PostingsSerializer};
 use crate::engines::nano::index::memory::{MemoryIndex, build_memory_index};
 use crate::engines::nano::index::model::IndexSegmentStats;
-use crate::model::doc::Doc;
+use crate::model::Doc;
 use crate::utils::CountingWriter;
 
 const SEGMENT_DIR_PREFIX: &str = "segment-";

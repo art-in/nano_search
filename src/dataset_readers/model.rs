@@ -1,5 +1,5 @@
 use crate::eval::model::QueriesSource;
-use crate::model::doc::DocsSource;
+use crate::model::DocsSource;
 
 // utility super-trait to use with "dyn", e.g.:
 // "Box<dyn DocsSource + QueriesSource>" is not allowed

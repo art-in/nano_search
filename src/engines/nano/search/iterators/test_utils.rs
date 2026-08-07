@@ -3,17 +3,17 @@ use anyhow::{Result, ensure};
 
 use super::model::{DocIdIterator, ItDocId, ItScore, ScoringDocIdIterator};
 use crate::engines::nano::index::model::SegmentDocId;
-use crate::eval::model::Relevance;
+use crate::model::Score;
 use crate::utils::TreeNode;
 
 pub struct TestScoringDocIdIterator {
     docids: Vec<SegmentDocId>,
-    scores: Vec<f64>,
+    scores: Vec<Score>,
     current_idx: Option<usize>,
 }
 
 impl TestScoringDocIdIterator {
-    pub fn new(docids: Vec<SegmentDocId>, scores: Vec<f64>) -> Result<Self> {
+    pub fn new(docids: Vec<SegmentDocId>, scores: Vec<Score>) -> Result<Self> {
         ensure!(docids.len() == scores.len());
         ensure!(docids.is_sorted());
         Ok(Self {
@@ -125,7 +125,7 @@ impl DocIdIterator for TestDocIdIterator {
 
 pub fn collect(
     mut it: impl ScoringDocIdIterator,
-) -> Result<Vec<(SegmentDocId, Relevance)>> {
+) -> Result<Vec<(SegmentDocId, Score)>> {
     // make sure it is in not-started state before first advance
     assert!(it.current_docid()?.is_not_started());
     assert!(it.current_score()?.is_not_started());
@@ -137,7 +137,7 @@ pub fn collect(
 
 pub fn collect_rest(
     mut it: impl ScoringDocIdIterator,
-) -> Result<Vec<(SegmentDocId, Relevance)>> {
+) -> Result<Vec<(SegmentDocId, Score)>> {
     let mut res = Vec::new();
 
     while !it.current_docid()?.is_exhausted() {

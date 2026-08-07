@@ -10,8 +10,7 @@ use sqlite_vec::sqlite3_vec_init;
 use tracing::debug;
 use zerocopy::IntoBytes;
 
-use crate::model::doc::{Doc, ExternalDocId};
-use crate::model::engine::{CreateOnDiskOptions, SearchEngine};
+use crate::model::{CreateOnDiskOptions, Doc, ExternalDocId, SearchEngine};
 use crate::utils::HF_CACHE_DIR;
 
 pub struct VectorSearchEngine {

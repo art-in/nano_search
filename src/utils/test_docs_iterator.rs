@@ -3,7 +3,7 @@ use std::vec::IntoIter;
 use anyhow::Result;
 use itertools::Itertools;
 
-use crate::model::doc::Doc;
+use crate::model::Doc;
 use crate::utils::test_docs::TestDoc;
 
 pub struct TestDocsIterator {
