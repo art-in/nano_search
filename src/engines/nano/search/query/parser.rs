@@ -46,6 +46,7 @@ pub struct Parser<I: Iterator> {
     tokens: Peekable<I>,
 }
 
+// TODO: introduce limit for tree depth to avoid possible DOS attack
 impl<'a, I> Parser<I>
 where
     I: Iterator<Item = Token<'a>>,
@@ -158,16 +159,10 @@ mod tests {
     use super::super::lexer::Lexer;
     use super::*;
     use crate::engines::nano::search::query::test_utils::word;
+    use crate::utils::err;
 
     fn parse(input: &str) -> Result<QueryAst<'_>> {
         Parser::new(Lexer::new(input)).parse()
-    }
-
-    fn err<T>(input: Result<T>) -> Result<String> {
-        match input {
-            Ok(_) => bail!("should return error"),
-            Err(message) => Ok(message.to_string()),
-        }
     }
 
     // --- BASIC ---

@@ -35,3 +35,8 @@ pub mod test_docs_iterator;
 
 #[cfg(test)]
 pub mod test_docs;
+
+#[cfg(test)]
+mod err;
+#[cfg(test)]
+pub use err::err;

@@ -24,6 +24,14 @@ pub fn search(
 
     let mut segment_outputs = Vec::new();
 
+    // TODO: implement multi-threaded search. easiest way is to start separate
+    // thread for each segment, but better would be to slice all segments
+    // between static number of threads.
+    // e.g. Lucene uses intra-segment parallelism, where segments are sliced
+    // between threads by docid-ranges: thread 1 searches segment A by reading
+    // docids in range [0, 1000], thread 2 searches segment A by docids [1000,
+    // 2000], etc. slicing needs efficient advance_to() on postings iterator
+    // through skip lists
     for segment in index.get_segments() {
         let mut it = plan_query_for_segment(&query_ast, segment)?;
         let mut col = collector.create_segment_collector(segment)?;

@@ -35,9 +35,6 @@ use crate::utils::normalize_word;
 /// returning error. E.g. "the AND NOT term" => empty, since "the" stop word is
 /// removed and NOT bubbled up to root node, which is disallowed structure, so
 /// it is silently removed leaving query empty.
-///
-/// Implemented with simple post-order recursion, so each iteration can assume
-/// that children are already normalized.
 pub fn normalize(query: &QueryAst) -> Result<Option<QueryAst<'static>>> {
     if is_not(query) {
         bail!("NOT should not be root expression");
@@ -236,13 +233,7 @@ mod tests {
 
     use super::super::ast::test_utils::*;
     use super::*;
-
-    fn err<T>(input: Result<T>) -> Result<String> {
-        match input {
-            Ok(_) => bail!("should return error"),
-            Err(message) => Ok(message.to_string()),
-        }
-    }
+    use crate::utils::err;
 
     static STOP_WORD: LazyLock<&'static str> = LazyLock::new(|| {
         #[allow(clippy::expect_used)]

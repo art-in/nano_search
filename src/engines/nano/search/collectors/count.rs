@@ -50,17 +50,8 @@ impl SegmentCollector for CountSegmentCollector {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::bail;
-
     use super::*;
-
-    // TODO: move to utils
-    fn err<T>(input: Result<T>) -> Result<String> {
-        match input {
-            Ok(_) => bail!("should return error"),
-            Err(message) => Ok(message.to_string()),
-        }
-    }
+    use crate::utils::err;
 
     #[test]
     fn test_segment_collector_score_passed() -> Result<()> {

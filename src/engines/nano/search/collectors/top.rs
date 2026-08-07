@@ -120,21 +120,13 @@ impl SegmentCollector for TopSegmentCollector<'_> {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::bail;
     use pretty_assertions::assert_eq;
 
     use super::*;
     use crate::engines::nano::index::MemoryIndex;
     use crate::engines::nano::index::model::StoredDoc;
     use crate::model::ExternalDocId;
-
-    // TODO: move to utils
-    fn err<T>(input: Result<T>) -> Result<String> {
-        match input {
-            Ok(_) => bail!("should return error"),
-            Err(message) => Ok(message.to_string()),
-        }
-    }
+    use crate::utils::err;
 
     fn create_segment(doc_count: usize) -> Box<dyn IndexSegment> {
         let mut segment = MemoryIndex::default();
