@@ -1,0 +1,19 @@
+[package]
+name = "ns_engine_tantivy"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+ns_engine = { path = "../ns_engine" }
+anyhow = { workspace = true }
+tantivy = "0.26.1"
+
+[dev-dependencies]
+ns_datasets = { path = "../ns_datasets" }
+ns_eval = { path = "../ns_eval" }
+tempfile = { workspace = true }
+assert_float_eq = { workspace = true }
+
+[lints]
+workspace = true

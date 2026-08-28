@@ -1,0 +1,18 @@
+[package]
+name = "ns_eval"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+ns_engine = { path = "../ns_engine" }
+anyhow = { workspace = true }
+itertools = { workspace = true }
+stats-cli = "3.0.1"
+
+[dev-dependencies]
+assert_float_eq = { workspace = true }
+
+[lints]
+workspace = true
+

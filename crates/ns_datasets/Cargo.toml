@@ -1,0 +1,21 @@
+[package]
+name = "ns_datasets"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+ns_engine = { path = "../ns_engine" }
+ns_eval = { path = "../ns_eval" }
+ns_utils = { path = "../ns_utils" }
+anyhow = { workspace = true }
+serde_json = "1.0"
+parquet = "58.3.0"
+flate2 = "1.1.5"
+bzip2 = "0.5.2"
+parse_wiki_text = "0.1.5"
+quick-xml = "0.37.5"
+
+[lints]
+workspace = true
+

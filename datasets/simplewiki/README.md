@@ -1,3 +1,4 @@
-official wikipedia dump
+Official wikipedia dump.
 
-downloaded from: https://dumps.wikimedia.org/simplewiki/
+Downloaded from: https://dumps.wikimedia.org/simplewiki/
+

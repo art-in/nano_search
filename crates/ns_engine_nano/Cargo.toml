@@ -1,0 +1,27 @@
+[package]
+name = "ns_engine_nano"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+ns_engine = { path = "../ns_engine" }
+ns_utils = { path = "../ns_utils" }
+anyhow = { workspace = true }
+itertools = { workspace = true }
+bon = { workspace = true }
+crossbeam-channel = "0.5.15"
+memmap2 = "0.9.9"
+uuid = { version = "1.17.0", features = ["v4"] }
+
+[dev-dependencies]
+ns_datasets = { path = "../ns_datasets" }
+ns_eval = { path = "../ns_eval" }
+tempfile = { workspace = true }
+assert_float_eq = { workspace = true }
+indoc = { workspace = true }
+pretty_assertions = { workspace = true }
+
+[lints]
+workspace = true
+

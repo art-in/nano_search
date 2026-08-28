@@ -1,0 +1,77 @@
+use std::time::Instant;
+
+use anyhow::Result;
+use colored::Colorize;
+use ns_datasets::init_dataset_by_name;
+use ns_engine::SearchEngine;
+use ns_eval::{Query, SearchQuality, evaluate_search_quality};
+
+use crate::utils::engine_open_from_disk_by_names;
+
+pub fn eval(
+    engines: &[String],
+    dataset: &str,
+    parent_index_dir: &str,
+) -> Result<()> {
+    println!("initializing search engines: {}", engines.join(","));
+    println!("initializing dataset '{dataset}'");
+
+    let engines = engine_open_from_disk_by_names(engines, parent_index_dir)?;
+    let dataset = init_dataset_by_name(dataset)?;
+
+    for engine in engines {
+        evaluate(engine.as_ref(), &mut dataset.queries()?)?;
+    }
+
+    Ok(())
+}
+
+fn evaluate(
+    engine: &dyn SearchEngine,
+    queries: &mut dyn Iterator<Item = Result<Query>>,
+) -> Result<()> {
+    let now = Instant::now();
+    println!("evaluating {} engine...", engine.get_name().red());
+    let quality = evaluate_search_quality(queries, engine, 10)?;
+    println!(
+        "evaluating {} engine... done in {:.1} seconds",
+        engine.get_name(),
+        now.elapsed().as_secs_f32()
+    );
+
+    println!("search quality for {} engine:", engine.get_name());
+    print_quality(&quality);
+
+    Ok(())
+}
+
+fn print_quality(quality: &SearchQuality) {
+    println!("queries count: {}", quality.queries_count);
+
+    println!(
+        "{:<10}{:<3}:  avg={:<6.3} p50={:<6.2} p90={:<6.2} p100={:<6.2}",
+        "Precision",
+        format!("@{}", quality.search_limit),
+        quality.precision_avg,
+        quality.precision_p50,
+        quality.precision_p90,
+        quality.precision_p100
+    );
+
+    println!(
+        "{:<10}{:<3}:  avg={:<6.3} p50={:<6.2} p90={:<6.2} p100={:<6.2}",
+        "Recall",
+        format!("@{}", quality.search_limit),
+        quality.recall_avg,
+        quality.recall_p50,
+        quality.recall_p90,
+        quality.recall_p100
+    );
+
+    println!(
+        "{:<10}{:<3}:  avg={}",
+        "nDCG",
+        format!("@{}", quality.search_limit),
+        format!("{:<6.3}", quality.ndcg_avg).cyan()
+    );
+}

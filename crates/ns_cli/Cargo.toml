@@ -1,0 +1,29 @@
+[package]
+name = "ns_cli"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+ns_datasets = { path = "../ns_datasets" }
+ns_engine = { path = "../ns_engine" }
+ns_engine_nano = { path = "../ns_engine_nano" }
+ns_engine_tantivy = { path = "../ns_engine_tantivy" }
+ns_engine_vector = { path = "../ns_engine_vector" }
+ns_eval = { path = "../ns_eval" }
+ns_utils = { path = "../ns_utils" }
+anyhow = { workspace = true }
+colored = { workspace = true }
+clap = { version = "4.5.53", features = ["derive", "string"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[dev-dependencies]
+gungraun = "=0.19.0"
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "engine"
+harness = false
+

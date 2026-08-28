@@ -1,0 +1,28 @@
+use std::borrow::Cow;
+use std::collections::btree_map;
+
+use anyhow::Result;
+
+use crate::index::model::{DocPosting, SegmentDocId};
+
+pub struct MemoryDocPostingsIterator<'a> {
+    postings: btree_map::Values<'a, SegmentDocId, DocPosting>,
+}
+
+impl<'a> MemoryDocPostingsIterator<'a> {
+    pub const fn new(
+        postings: btree_map::Values<'a, SegmentDocId, DocPosting>,
+    ) -> Self {
+        Self { postings }
+    }
+}
+
+impl<'a> Iterator for MemoryDocPostingsIterator<'a> {
+    type Item = Result<Cow<'a, DocPosting>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.postings
+            .next()
+            .map(|posting| Ok(Cow::Borrowed(posting)))
+    }
+}

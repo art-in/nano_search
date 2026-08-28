@@ -1,0 +1,178 @@
+use std::path::Path;
+
+use anyhow::{Context, Result};
+use ns_engine::{CreateOnDiskOptions, Doc, ExternalDocId, SearchEngine};
+use tantivy::collector::TopDocs;
+use tantivy::query::QueryParser;
+use tantivy::schema::{
+    Field, IndexRecordOption, NumericOptions, Schema, TextFieldIndexing,
+    TextOptions, Value,
+};
+use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
+
+pub struct TantivySearchEngine {
+    index: Index,
+    index_writer: IndexWriter,
+    index_reader: IndexReader,
+
+    id_field: Field,
+    text_field: Field,
+}
+
+impl TantivySearchEngine {
+    fn new(index: Index, index_threads: Option<usize>) -> Result<Self> {
+        const MEMORY_BUDGET_BYTES: usize = 50_000_000;
+
+        let index_writer = index_threads
+            .map_or_else(
+                || index.writer(MEMORY_BUDGET_BYTES),
+                |n| index.writer_with_num_threads(n, MEMORY_BUDGET_BYTES),
+            )
+            .context("index writer should be created")?;
+
+        let index_reader = index
+            .reader_builder()
+            .reload_policy(ReloadPolicy::Manual)
+            .try_into()
+            .context("should get index reader")?;
+
+        let id_field = index
+            .schema()
+            .get_field("id")
+            .context("id field should be created")?;
+        let text_field = index
+            .schema()
+            .get_field("text")
+            .context("text field should be created")?;
+
+        Ok(Self {
+            index,
+            index_writer,
+            index_reader,
+            id_field,
+            text_field,
+        })
+    }
+}
+
+fn create_schema() -> Schema {
+    let mut schema_builder = Schema::builder();
+    schema_builder.add_u64_field("id", NumericOptions::default().set_stored());
+    schema_builder.add_text_field(
+        "text",
+        // explicitly configure text field instead of using `TEXT` preset.
+        // this switches record format from `WithFreqsAndPositions` to
+        // `WithFreqs`, which removes positional indexing and disables
+        // phrase query support in `QueryParser`, to match nano behavior
+        TextOptions::default().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer("default")
+                .set_fieldnorms(true)
+                .set_index_option(IndexRecordOption::WithFreqs),
+        ),
+    );
+    schema_builder.build()
+}
+
+impl SearchEngine for TantivySearchEngine {
+    fn name() -> &'static str {
+        "tantivy"
+    }
+
+    fn get_name(&self) -> &'static str {
+        Self::name()
+    }
+
+    fn create_in_memory() -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let index = Index::create_in_ram(create_schema());
+        Self::new(index, None)
+    }
+
+    fn create_on_disk(opts: CreateOnDiskOptions) -> Result<Self> {
+        if opts.index_dir.exists() {
+            std::fs::remove_dir_all(&opts.index_dir)
+                .context("existing index dir should be removed")?;
+        }
+        std::fs::create_dir_all(&opts.index_dir)
+            .context("index dir should be created")?;
+
+        let index = Index::create_in_dir(&opts.index_dir, create_schema())
+            .context("index should be created in dir")?;
+
+        Self::new(index, opts.index_threads)
+    }
+
+    fn open_from_disk(index_dir: impl AsRef<Path>) -> Result<Self> {
+        let index = Index::open_in_dir(index_dir)
+            .context("index should be opened from dir")?;
+
+        Self::new(index, None)
+    }
+
+    fn index_docs(
+        &mut self,
+        docs: &mut dyn Iterator<Item = Result<Doc>>,
+    ) -> Result<()> {
+        for doc in docs {
+            let doc = doc.context("doc should be valid")?;
+
+            let mut tantivy_doc = TantivyDocument::default();
+            tantivy_doc.add_u64(self.id_field, doc.id);
+            tantivy_doc.add_text(self.text_field, doc.text);
+
+            self.index_writer
+                .add_document(tantivy_doc)
+                .context("doc should be added to index")?;
+        }
+
+        self.index_writer
+            .commit()
+            .context("indexer_writer should commit documents to index")?;
+
+        self.index_reader
+            .reload()
+            .context("index reader should be reloaded after writer commit")?;
+
+        // garbage collect unused index files after switching reader to new
+        // segments, and thus releasing old segments
+        self.index_writer
+            .garbage_collect_files()
+            .wait()
+            .context("index_writer should garbage collect index files")?;
+
+        Ok(())
+    }
+
+    fn search(&self, query: &str, limit: u64) -> Result<Vec<ExternalDocId>> {
+        let searcher = self.index_reader.searcher();
+
+        let query_parser =
+            QueryParser::for_index(&self.index, vec![self.text_field]);
+
+        let (query, _) = query_parser.parse_query_lenient(query);
+
+        let top_docs = searcher
+            .search(
+                &query,
+                &TopDocs::with_limit(limit as usize).order_by_score(),
+            )
+            .context("should search")?;
+
+        let mut result = Vec::new();
+
+        for (_score, doc_address) in top_docs {
+            let retrieved_doc: TantivyDocument =
+                searcher.doc(doc_address).context("document")?;
+            let id = retrieved_doc
+                .get_first(self.id_field)
+                .context("should get id from found document")?;
+
+            result.push(id.as_u64().context("id should be integer")?);
+        }
+
+        Ok(result)
+    }
+}

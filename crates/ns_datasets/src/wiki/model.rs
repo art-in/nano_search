@@ -1,0 +1,17 @@
+use std::path::Path;
+
+use anyhow::Result;
+
+use super::wikidump::WikiDump;
+
+pub struct WikiDatasetReader {
+    pub wikidump: WikiDump,
+}
+
+impl WikiDatasetReader {
+    pub fn new<P: AsRef<Path>>(file_path: P) -> Result<Self> {
+        Ok(Self {
+            wikidump: WikiDump::new(file_path),
+        })
+    }
+}

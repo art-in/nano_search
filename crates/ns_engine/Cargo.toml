@@ -1,0 +1,13 @@
+[package]
+name = "ns_engine"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+bon = { workspace = true }
+
+[lints]
+workspace = true
+

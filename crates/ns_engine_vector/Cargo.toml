@@ -1,0 +1,31 @@
+[package]
+name = "ns_engine_vector"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+ns_engine = { path = "../ns_engine" }
+ns_utils = { path = "../ns_utils" }
+anyhow = { workspace = true }
+itertools = { workspace = true }
+tracing = { workspace = true }
+fastembed = "5.2.0"
+ort = { version = "=2.0.0-rc.10", features = ["coreml"] }
+sqlite-vec = "0.1.6"
+rusqlite = { version = "0.37.0", features = ["bundled"] }
+zerocopy = "0.8.27"
+
+[dev-dependencies]
+ns_datasets = { path = "../ns_datasets" }
+ns_eval = { path = "../ns_eval" }
+tempfile = { workspace = true }
+assert_float_eq = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+# try to enable CoreML for hardware acceleration of embeddings
+coreml = []
+

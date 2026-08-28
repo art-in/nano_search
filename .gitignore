@@ -8,5 +8,6 @@
 profile.json.gz
 
 # cache for models/datasets downloaded from huggingface.co
-# used by fastembed crate and utils/download_hf_file.rs
+# used by fastembed crate and download_hf.rs util
 .hf_cache
+

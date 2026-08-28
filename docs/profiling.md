@@ -30,7 +30,7 @@ Install: [samply](https://github.com/mstange/samply).
 2. Run and record a profile:
 
     ```sh
-    samply record ./target/profiling/nano_search --engines=nano --dataset=cisi index
+    samply record ./target/profiling/ns_cli --engines=nano --dataset=cisi index
     ```
 
 3. Open recorded profile in [Firefox Profiler](https://profiler.firefox.com/)

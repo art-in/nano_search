@@ -1,0 +1,15 @@
+[package]
+name = "ns_utils"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+num-traits = "0.2.19"
+human_format = "1.1.0"
+hf-hub = "0.4.3"
+
+[lints]
+workspace = true
+
